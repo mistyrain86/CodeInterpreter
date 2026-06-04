@@ -17,7 +17,7 @@ protected:
     std::string run(StmtPtr stmt) {
         std::vector<StmtPtr> stmts;
         stmts.push_back(std::move(stmt));
-        return captureOutput([&]{ m_interp.interpret(stmts); });
+        return captureOutput([&]{ Interpreter().interpret(stmts); });
     }
     std::string runAll(std::vector<StmtPtr> stmts) {
         return captureOutput([&]{ m_interp.interpret(stmts); });
