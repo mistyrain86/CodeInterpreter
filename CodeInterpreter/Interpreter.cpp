@@ -4,6 +4,10 @@
 #include <sstream>
 
 namespace {
+static constexpr auto UNIMPLEMENTED_EXPR = "미구현 표현식 타입";
+static constexpr auto UNIMPLEMENTED_UNARY  = "미구현 단항 연산자";
+static constexpr auto UNIMPLEMENTED_BINARY = "미구현 이항 연산자";
+
 struct ScopeGuard {
     std::shared_ptr<Environment>& ref;
     std::shared_ptr<Environment>  prev;
@@ -31,7 +35,7 @@ Value Interpreter::evaluate(Expr* expr) {
         return v;
     }
     if (auto* e = dynamic_cast<BinaryExpr*>(expr))   return evaluateBinary(e);
-    throw RuntimeError("미구현 표현식 타입");
+    throw RuntimeError(UNIMPLEMENTED_EXPR);
 }
 
 Value Interpreter::evaluateUnary(UnaryExpr* e) {
@@ -41,7 +45,7 @@ Value Interpreter::evaluateUnary(UnaryExpr* e) {
         return -std::get<double>(r);
     }
     if (e->op.type == TokenType::BANG) return !isTruthy(r);
-    throw RuntimeError("미구현 단항 연산자");
+    throw RuntimeError(UNIMPLEMENTED_UNARY);
 }
 
 Value Interpreter::evaluateBinary(BinaryExpr* e) {
@@ -97,7 +101,7 @@ Value Interpreter::evaluateBinary(BinaryExpr* e) {
         case TokenType::BANG_EQUAL:    return Value{!(l == r)};
         default: break;
     }
-    throw RuntimeError("미구현 이항 연산자");
+    throw RuntimeError(UNIMPLEMENTED_BINARY);
 }
 
 void Interpreter::execute(Stmt* stmt) {
