@@ -138,3 +138,21 @@ TEST(LexerTest, IdentifierNotKeyword) {
     EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
     EXPECT_EQ(tokenArray[1].type, TokenType::KW_VAR);
 }
+
+TEST(LexerTest, LineNumberTracking) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("var\nif\nfor");
+    EXPECT_EQ(tokenArray[0].line, 1);
+    EXPECT_EQ(tokenArray[1].line, 2);
+    EXPECT_EQ(tokenArray[2].line, 3);
+}
+
+TEST(LexerTest, WhitespaceIgnored) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("   +   -   ");
+    EXPECT_EQ(tokenArray[0].type, TokenType::PLUS);
+    EXPECT_EQ(tokenArray[1].type, TokenType::MINUS);
+}
+
+TEST(LexerTest, UnknownChar_At) { Lexer lexer; EXPECT_THROW(lexer.tokenize("@"), std::runtime_error); }
+TEST(LexerTest, UnknownChar_Hash) { Lexer lexer; EXPECT_THROW(lexer.tokenize("#"), std::runtime_error); }
