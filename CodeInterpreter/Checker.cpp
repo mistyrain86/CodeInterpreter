@@ -1,3 +1,4 @@
+#include <cassert>
 #include "Checker.h"
 
 void Checker::check(const std::vector<StmtPtr>& stmts) { checkStmts(stmts); }
@@ -20,6 +21,7 @@ void Checker::checkStmt(Stmt* stmt) {
 }
 
 void Checker::checkExpr(Expr* expr) {
+    assert(expr != nullptr);
     if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
         checkExpr(e->left.get()); checkExpr(e->right.get());
     }
