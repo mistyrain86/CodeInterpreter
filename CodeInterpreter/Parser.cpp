@@ -62,6 +62,8 @@ ExprPtr Parser::parsePrimary() {
     if (match({TokenType::STRING}))
         return std::make_unique<LiteralExpr>(
             Value{std::get<std::string>(previous().literal)});
+    if (match({TokenType::IDENTIFIER}))
+        return std::make_unique<VariableExpr>(previous());
     if (match({TokenType::LEFT_PAREN})) {
         ExprPtr e = parseExpression();
         consume(TokenType::RIGHT_PAREN, "표현식 뒤에 ')'가 필요합니다.");
