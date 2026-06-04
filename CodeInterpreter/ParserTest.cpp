@@ -56,6 +56,45 @@ TEST(ParserUnit, Grouping) {
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
 }
 
+TEST(ParserUnit, Addition) {
+    auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
+                        t(TokenType::PLUS,"+"),
+                        t(TokenType::NUMBER,"2",2.0), semi(), eof()});
+    auto* bin = dynamic_cast<BinaryExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    ASSERT_NE(bin, nullptr);
+    EXPECT_EQ(bin->op.type, TokenType::PLUS);
+}
+TEST(ParserUnit, Precedence_MulBeforeAdd) {
+    // 1 + 2 * 3 → right 쪽이 Binary(*)
+    auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::PLUS,"+"),
+                        t(TokenType::NUMBER,"2",2.0), t(TokenType::STAR,"*"),
+                        t(TokenType::NUMBER,"3",3.0), semi(), eof()});
+    auto* add = dynamic_cast<BinaryExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    ASSERT_NE(add, nullptr);
+    EXPECT_EQ(add->op.type, TokenType::PLUS);
+    auto* mul = dynamic_cast<BinaryExpr*>(add->right.get());
+    ASSERT_NE(mul, nullptr);
+    EXPECT_EQ(mul->op.type, TokenType::STAR);
+}
+TEST(ParserUnit, LeftAssociativity) {
+    // 10 - 4 - 3 → left 쪽이 Binary(-)
+    auto stmts = parse({t(TokenType::NUMBER,"10",10.0), t(TokenType::MINUS,"-"),
+                        t(TokenType::NUMBER,"4",4.0),   t(TokenType::MINUS,"-"),
+                        t(TokenType::NUMBER,"3",3.0),   semi(), eof()});
+    auto* outer = dynamic_cast<BinaryExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(outer->left.get()), nullptr);
+}
+TEST(ParserUnit, Comparison_Less) {
+    auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::LESS,"<"),
+                        t(TokenType::NUMBER,"2",2.0), semi(), eof()});
+    auto* bin = dynamic_cast<BinaryExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    EXPECT_EQ(bin->op.type, TokenType::LESS);
+}
+
 TEST(ParserUnit, UnaryMinus) {
     auto stmts = parse({t(TokenType::MINUS,"-"),
                         t(TokenType::NUMBER,"3",3.0), semi(), eof()});
