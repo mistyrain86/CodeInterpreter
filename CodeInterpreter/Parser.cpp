@@ -30,7 +30,6 @@ ParseError Parser::error(const Token& tok, const std::string& msg) const {
                       + "] 구문 오류: " + msg + loc);
 }
 
-// ── 미구현 스텁 (테스트가 추가될 때마다 채워짐) ────────────
 StmtPtr Parser::parseStatement() {
     if (match({TokenType::KW_VAR}))     return parseVarDecl();
     if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
@@ -87,7 +86,7 @@ StmtPtr Parser::parseExprStmt() {
     consume(TokenType::SEMICOLON, "';'가 필요합니다.");
     return std::make_unique<ExprStmt>(std::move(e));
 }
-ExprPtr  Parser::parseExpression() { return parseAssignment(); }
+ExprPtr Parser::parseExpression() { return parseAssignment(); }
 ExprPtr Parser::parseAssignment() {
     ExprPtr expr = parseEquality();
     if (match({TokenType::EQUAL})) {
