@@ -13,49 +13,55 @@ void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
 Value Interpreter::evaluate(Expr* expr) {
     if (auto* e = dynamic_cast<LiteralExpr*>(expr))  return e->value;
     if (auto* e = dynamic_cast<GroupingExpr*>(expr)) return evaluate(e->expression.get());
-    if (auto* e = dynamic_cast<UnaryExpr*>(expr)) {
-        Value r = evaluate(e->right.get());
-        if (e->op.type == TokenType::MINUS) {
-            checkNumericOperand(r, e->op.line);
-            return -std::get<double>(r);
-        }
-        if (e->op.type == TokenType::BANG) return !isTruthy(r);
-    }
+    if (auto* e = dynamic_cast<UnaryExpr*>(expr))    return evaluateUnary(e);
     if (auto* e = dynamic_cast<VariableExpr*>(expr)) return m_currentEnv->get(e->name);
     if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
         Value v = evaluate(e->value.get());
         m_currentEnv->assign(e->name, v);
         return v;
     }
-    if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
-        Value l = evaluate(e->left.get());
-        Value r = evaluate(e->right.get());
-        const int line = e->op.line;
-        switch (e->op.type) {
-            case TokenType::PLUS:
-                if (std::holds_alternative<double>(l) && std::holds_alternative<double>(r))
-                    return std::get<double>(l) + std::get<double>(r);
-                if (std::holds_alternative<std::string>(l) && std::holds_alternative<std::string>(r))
-                    return std::get<std::string>(l) + std::get<std::string>(r);
-                throw RuntimeError("[라인 " + std::to_string(line)
-                    + "] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
-            case TokenType::MINUS:      checkNumericPair(l, r, line); return std::get<double>(l) - std::get<double>(r);
-            case TokenType::STAR:       checkNumericPair(l, r, line); return std::get<double>(l) * std::get<double>(r);
-            case TokenType::SLASH:
-                checkNumericPair(l, r, line);
-                if (std::get<double>(r) == 0.0)
-                    throw RuntimeError("[라인 " + std::to_string(line) + "] 런타임 오류: 0으로 나눌 수 없습니다.");
-                return std::get<double>(l) / std::get<double>(r);
-            case TokenType::GREATER:       checkNumericPair(l, r, line); return std::get<double>(l) >  std::get<double>(r);
-            case TokenType::GREATER_EQUAL: checkNumericPair(l, r, line); return std::get<double>(l) >= std::get<double>(r);
-            case TokenType::LESS:          checkNumericPair(l, r, line); return std::get<double>(l) <  std::get<double>(r);
-            case TokenType::LESS_EQUAL:    checkNumericPair(l, r, line); return std::get<double>(l) <= std::get<double>(r);
-            case TokenType::EQUAL_EQUAL:   return Value{l == r};
-            case TokenType::BANG_EQUAL:    return Value{!(l == r)};
-            default: break;
-        }
-    }
+    if (auto* e = dynamic_cast<BinaryExpr*>(expr))   return evaluateBinary(e);
     throw RuntimeError("미구현 표현식 타입");
+}
+
+Value Interpreter::evaluateUnary(UnaryExpr* e) {
+    Value r = evaluate(e->right.get());
+    if (e->op.type == TokenType::MINUS) {
+        checkNumericOperand(r, e->op.line);
+        return -std::get<double>(r);
+    }
+    if (e->op.type == TokenType::BANG) return !isTruthy(r);
+    throw RuntimeError("미구현 단항 연산자");
+}
+
+Value Interpreter::evaluateBinary(BinaryExpr* e) {
+    Value l = evaluate(e->left.get());
+    Value r = evaluate(e->right.get());
+    const int line = e->op.line;
+    switch (e->op.type) {
+        case TokenType::PLUS:
+            if (std::holds_alternative<double>(l) && std::holds_alternative<double>(r))
+                return std::get<double>(l) + std::get<double>(r);
+            if (std::holds_alternative<std::string>(l) && std::holds_alternative<std::string>(r))
+                return std::get<std::string>(l) + std::get<std::string>(r);
+            throw RuntimeError("[라인 " + std::to_string(line)
+                + "] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
+        case TokenType::MINUS:      checkNumericPair(l, r, line); return std::get<double>(l) - std::get<double>(r);
+        case TokenType::STAR:       checkNumericPair(l, r, line); return std::get<double>(l) * std::get<double>(r);
+        case TokenType::SLASH:
+            checkNumericPair(l, r, line);
+            if (std::get<double>(r) == 0.0)
+                throw RuntimeError("[라인 " + std::to_string(line) + "] 런타임 오류: 0으로 나눌 수 없습니다.");
+            return std::get<double>(l) / std::get<double>(r);
+        case TokenType::GREATER:       checkNumericPair(l, r, line); return std::get<double>(l) >  std::get<double>(r);
+        case TokenType::GREATER_EQUAL: checkNumericPair(l, r, line); return std::get<double>(l) >= std::get<double>(r);
+        case TokenType::LESS:          checkNumericPair(l, r, line); return std::get<double>(l) <  std::get<double>(r);
+        case TokenType::LESS_EQUAL:    checkNumericPair(l, r, line); return std::get<double>(l) <= std::get<double>(r);
+        case TokenType::EQUAL_EQUAL:   return Value{l == r};
+        case TokenType::BANG_EQUAL:    return Value{!(l == r)};
+        default: break;
+    }
+    throw RuntimeError("미구현 이항 연산자");
 }
 
 void Interpreter::execute(Stmt* stmt) {

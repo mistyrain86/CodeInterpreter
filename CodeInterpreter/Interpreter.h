@@ -17,6 +17,8 @@ public:
 private:
     std::shared_ptr<Environment> m_currentEnv;
     Value       evaluate(Expr* expr);
+    Value       evaluateUnary(UnaryExpr* expr);
+    Value       evaluateBinary(BinaryExpr* expr);
     void        execute(Stmt* stmt);
     void        executeBlock(const std::vector<StmtPtr>& stmts,
                              std::shared_ptr<Environment> env);
