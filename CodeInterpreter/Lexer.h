@@ -19,4 +19,7 @@ private:
     void reset(const std::string& source);
     void scanToken();
     void addToken(TokenType type);
+    void addToken(TokenType type, std::variant<std::monostate, double, std::string> literal);
+
+    bool match(char expected);
 };
