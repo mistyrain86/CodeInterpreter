@@ -155,6 +155,7 @@
     <ClInclude Include="ParseError.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="Interpreter.h" />
+    <ClInclude Include="ReturnSignal.h" />
     <ClInclude Include="RuntimeError.h" />
     <ClInclude Include="Expr.h" />
     <ClInclude Include="ExprVisitor.h" />
