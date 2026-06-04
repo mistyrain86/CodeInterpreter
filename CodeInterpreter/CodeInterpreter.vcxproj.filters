@@ -18,6 +18,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Environment.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Expr.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -53,6 +56,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Environment.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="EnvironmentTest.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="LangFactory.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
