@@ -107,3 +107,43 @@ protected:
             std::move(interpreter));
     }
 };
+
+TEST_F(RealParserFixture, PrintStmt_Integration) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::KW_PRINT, "print"),
+        numTok(5.0),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mc, check(_)).Times(1);
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+
+    factory->run("print 5;");
+}
+
+TEST_F(RealParserFixture, VarDecl_Integration) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(10.0),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mc, check(_)).Times(1);
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+
+    factory->run("var x = 10;");
+}
+
+TEST_F(RealParserFixture, ParseError_RealParser_Propagates) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        numTok(1.0),
+        numTok(2.0),
+        eofTok()
+    }));
+    EXPECT_CALL(*mc, check(_)).Times(0);
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+
+    EXPECT_THROW(factory->run(""), ParseError);
+}
