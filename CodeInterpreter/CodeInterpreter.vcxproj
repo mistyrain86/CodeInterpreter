@@ -146,6 +146,7 @@
     <ClInclude Include="ILexer.h" />
     <ClInclude Include="IParser.h" />
     <ClInclude Include="LangFactory.h" />
+    <ClInclude Include="Parser.h" />
     <ClInclude Include="Lexer.h" />
     <ClInclude Include="Mocks.h" />
     <ClInclude Include="Stmt.h" />
@@ -162,6 +163,7 @@
     <ClCompile Include="InterpreterTest.cpp" />
     <ClCompile Include="LangFactory.cpp" />
     <ClCompile Include="Lexer.cpp" />
+    <ClCompile Include="Parser.cpp" />
     <ClCompile Include="LexerTest.cpp" />
     <ClCompile Include="LangFactoryTest.cpp" />
     <ClCompile Include="main.cpp">
