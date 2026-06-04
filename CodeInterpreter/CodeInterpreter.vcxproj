@@ -159,6 +159,7 @@
     <ClInclude Include="Expr.h" />
     <ClInclude Include="ExprVisitor.h" />
     <ClInclude Include="StmtVisitor.h" />
+    <ClInclude Include="ICallable.h" />
     <ClInclude Include="IChecker.h" />
     <ClInclude Include="IInterpreter.h" />
     <ClInclude Include="ILexer.h" />
