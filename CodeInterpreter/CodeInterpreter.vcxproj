@@ -141,6 +141,7 @@
     <ClInclude Include="ILexer.h" />
     <ClInclude Include="IParser.h" />
     <ClInclude Include="LangFactory.h" />
+    <ClInclude Include="Lexer.h" />
     <ClInclude Include="Mocks.h" />
     <ClInclude Include="Stmt.h" />
     <ClInclude Include="TestUtils.h" />
@@ -151,6 +152,8 @@
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="EnvironmentTest.cpp" />
     <ClCompile Include="LangFactory.cpp" />
+    <ClCompile Include="Lexer.cpp" />
+    <ClCompile Include="LexerTest.cpp" />
     <ClCompile Include="main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
