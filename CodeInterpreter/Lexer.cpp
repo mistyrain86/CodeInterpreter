@@ -1,8 +1,20 @@
 ﻿#include "Lexer.h"
 
 std::vector<Token> Lexer::tokenize(const std::string& source) {
-    if (source[0] == '(') {
-        addToken(TokenType::LEFT_PAREN, "(");
+    for (char singleChar : source) {
+        switch (singleChar) {
+            case '(': addToken(TokenType::LEFT_PAREN, "(");  break;
+            case ')': addToken(TokenType::RIGHT_PAREN, ")"); break;
+            case '{': addToken(TokenType::LEFT_BRACE, "{");  break;
+            case '}': addToken(TokenType::RIGHT_BRACE, "}"); break;
+            case ';': addToken(TokenType::SEMICOLON, ";");   break;
+            case ' ':
+            case '\r':
+            case '\t':
+                break;
+            case '\n': m_line++; break;
+            default: break;
+        }
     }
 
     addToken(TokenType::END_OF_FILE, "");
