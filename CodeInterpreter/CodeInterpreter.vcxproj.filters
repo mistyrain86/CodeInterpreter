@@ -33,6 +33,9 @@
     <ClInclude Include="IParser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Stmt.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Value.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>

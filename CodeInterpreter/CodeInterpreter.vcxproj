@@ -136,6 +136,7 @@
     <ClInclude Include="IInterpreter.h" />
     <ClInclude Include="ILexer.h" />
     <ClInclude Include="IParser.h" />
+    <ClInclude Include="Stmt.h" />
     <ClInclude Include="Token.h" />
     <ClInclude Include="Value.h" />
   </ItemGroup>
