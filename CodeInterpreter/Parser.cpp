@@ -82,8 +82,11 @@ StmtPtr Parser::parseBlock() {
     consume(TokenType::RIGHT_BRACE, "블록 뒤에 '}'가 필요합니다.");
     return std::make_unique<BlockStmt>(std::move(stmts));
 }
-StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenType::SEMICOLON, "';'가 필요합니다.");
-return std::make_unique<ExprStmt>(std::move(e)); }
+StmtPtr Parser::parseExprStmt() {
+    auto e = parseExpression();
+    consume(TokenType::SEMICOLON, "';'가 필요합니다.");
+    return std::make_unique<ExprStmt>(std::move(e));
+}
 ExprPtr  Parser::parseExpression() { return parseAssignment(); }
 ExprPtr Parser::parseAssignment() {
     ExprPtr expr = parseEquality();
