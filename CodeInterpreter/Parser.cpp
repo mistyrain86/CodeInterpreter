@@ -60,8 +60,28 @@ StmtPtr Parser::parseIfStmt() {
     if (match({TokenType::KW_ELSE})) elseB = parseStatement(); // Greedy 매칭
     return std::make_unique<IfStmt>(std::move(cond), std::move(thenB), std::move(elseB));
 }
-StmtPtr  Parser::parseForStmt()    { return nullptr; }
-StmtPtr  Parser::parseBlock()      { return nullptr; }
+StmtPtr Parser::parseForStmt() {
+    consume(TokenType::LEFT_PAREN, "for 뒤에 '('가 필요합니다.");
+    StmtPtr init;
+    if      (match({TokenType::SEMICOLON})) { /* empty */ }
+    else if (match({TokenType::KW_VAR}))    init = parseVarDecl();
+    else                                    init = parseExprStmt();
+    ExprPtr cond;
+    if (!check(TokenType::SEMICOLON)) cond = parseExpression();
+    consume(TokenType::SEMICOLON, "for 조건식 뒤에 ';'가 필요합니다.");
+    ExprPtr incr;
+    if (!check(TokenType::RIGHT_PAREN)) incr = parseExpression();
+    consume(TokenType::RIGHT_PAREN, "for 증감식 뒤에 ')'가 필요합니다.");
+    return std::make_unique<ForStmt>(std::move(init), std::move(cond),
+                                     std::move(incr), parseStatement());
+}
+StmtPtr Parser::parseBlock() {
+    std::vector<StmtPtr> stmts;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd())
+        stmts.push_back(parseStatement());
+    consume(TokenType::RIGHT_BRACE, "블록 뒤에 '}'가 필요합니다.");
+    return std::make_unique<BlockStmt>(std::move(stmts));
+}
 StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenType::SEMICOLON, "';'가 필요합니다.");
 return std::make_unique<ExprStmt>(std::move(e)); }
 ExprPtr  Parser::parseExpression() { return parseAssignment(); }
