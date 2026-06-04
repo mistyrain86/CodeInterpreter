@@ -72,6 +72,19 @@ TEST(ParserUnit, UnaryBang) {
     EXPECT_EQ(un->op.type, TokenType::BANG);
 }
 
+TEST(ParserUnit, NestedUnary) {
+    auto stmts = parse({t(TokenType::MINUS,"-"),
+                        t(TokenType::MINUS,"-"),
+                        t(TokenType::NUMBER,"5",5.0), semi(), eof()});
+    auto* outer = dynamic_cast<UnaryExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    ASSERT_NE(outer, nullptr);
+    EXPECT_EQ(outer->op.type, TokenType::MINUS);
+    auto* inner = dynamic_cast<UnaryExpr*>(outer->operand.get());
+    ASSERT_NE(inner, nullptr);
+    EXPECT_EQ(inner->op.type, TokenType::MINUS);
+}
+
 // ── Mock 통합 테스트 ─────────────────────────────────────
 TEST(ParserMock, NumberLiteral_PassesThrough) {
     auto ml = std::make_unique<MockLexer>();
