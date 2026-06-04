@@ -56,6 +56,25 @@ TEST(ParserUnit, Grouping) {
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
 }
 
+TEST(ParserUnit, DanglingElse) {
+    // if(true) if(false) print 1; else print 2;
+    // else → 안쪽 if에 결합
+    auto stmts = parse({
+        t(TokenType::KW_IF,"if"),      t(TokenType::LEFT_PAREN,"("),
+        t(TokenType::KW_TRUE,"true"),  t(TokenType::RIGHT_PAREN,")"),
+        t(TokenType::KW_IF,"if"),      t(TokenType::LEFT_PAREN,"("),
+        t(TokenType::KW_FALSE,"false"),t(TokenType::RIGHT_PAREN,")"),
+        t(TokenType::KW_PRINT,"print"),t(TokenType::NUMBER,"1",1.0),semi(),
+        t(TokenType::KW_ELSE,"else"),
+        t(TokenType::KW_PRINT,"print"),t(TokenType::NUMBER,"2",2.0),semi(),eof()
+    });
+    auto* outer = dynamic_cast<IfStmt*>(stmts[0].get());
+    ASSERT_NE(outer, nullptr);
+    EXPECT_EQ(outer->elseBranch, nullptr);  // 바깥 if → else 없음
+    auto* inner = dynamic_cast<IfStmt*>(outer->thenBranch.get());
+    EXPECT_NE(inner->elseBranch, nullptr);  // 안쪽 if → else 있음
+}
+
 TEST(ParserUnit, PrintStmt) {
     auto stmts = parse({t(TokenType::KW_PRINT,"print"),
                         t(TokenType::NUMBER,"5",5.0), semi(), eof()});

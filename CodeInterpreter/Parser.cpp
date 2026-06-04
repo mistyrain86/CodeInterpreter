@@ -51,7 +51,15 @@ StmtPtr Parser::parsePrintStmt() {
     consume(TokenType::SEMICOLON, "값 출력 뒤에 ';'가 필요합니다.");
     return std::make_unique<PrintStmt>(std::move(val));
 }
-StmtPtr  Parser::parseIfStmt()     { return nullptr; }
+StmtPtr Parser::parseIfStmt() {
+    consume(TokenType::LEFT_PAREN,  "if 뒤에 '('가 필요합니다.");
+    ExprPtr cond = parseExpression();
+    consume(TokenType::RIGHT_PAREN, "조건식 뒤에 ')'가 필요합니다.");
+    StmtPtr thenB = parseStatement();
+    StmtPtr elseB;
+    if (match({TokenType::KW_ELSE})) elseB = parseStatement(); // Greedy 매칭
+    return std::make_unique<IfStmt>(std::move(cond), std::move(thenB), std::move(elseB));
+}
 StmtPtr  Parser::parseForStmt()    { return nullptr; }
 StmtPtr  Parser::parseBlock()      { return nullptr; }
 StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenType::SEMICOLON, "';'가 필요합니다.");
