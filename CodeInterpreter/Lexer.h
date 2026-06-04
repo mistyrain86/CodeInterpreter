@@ -28,4 +28,5 @@ private:
     char peek() const;
 
     void scanString();
+    void advanceToClosingQuote();
 };
