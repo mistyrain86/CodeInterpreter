@@ -18,6 +18,25 @@ void Checker::checkStmt(Stmt* stmt) {
         checkStmts(s->statements);
         endScope();
     }
+    else if (auto* s = dynamic_cast<IfStmt*>(stmt)) {
+        checkExpr(s->condition.get());
+        checkStmt(s->thenBranch.get());
+        if (s->elseBranch) checkStmt(s->elseBranch.get());
+    }
+    else if (auto* s = dynamic_cast<ForStmt*>(stmt)) {
+        beginScope();
+        if (s->initializer) checkStmt(s->initializer.get());
+        if (s->condition)   checkExpr(s->condition.get());
+        if (s->increment)   checkExpr(s->increment.get());
+        checkStmt(s->body.get());
+        endScope();
+    }
+    else if (auto* s = dynamic_cast<PrintStmt*>(stmt)) {
+        checkExpr(s->expression.get());
+    }
+    else if (auto* s = dynamic_cast<ExprStmt*>(stmt)) {
+        checkExpr(s->expression.get());
+    }
 }
 
 void Checker::checkExpr(Expr* expr) {
