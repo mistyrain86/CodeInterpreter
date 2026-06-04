@@ -3,7 +3,7 @@
 std::vector<Token> Lexer::tokenize(const std::string& source) {
     reset(source);
 
-    while (m_currentIdx < (int)m_source.size()) {
+    while (m_currentIdx < m_source.size()) {
         m_startIdx = m_currentIdx;
         scanToken();
     }
