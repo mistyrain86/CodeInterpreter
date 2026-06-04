@@ -11,4 +11,5 @@ public:
 
 private:
     std::vector<Token> m_tokens;
+    int                m_line = 1;
 };
