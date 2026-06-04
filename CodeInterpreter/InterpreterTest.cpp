@@ -5,39 +5,37 @@
 static Token opTok(TokenType t, std::string lex, int line = 1) {
     return Token{t, std::move(lex), std::monostate{}, line};
 }
-static std::string run(std::vector<StmtPtr> stmts) {
-    return captureOutput([&]{ Interpreter().interpret(stmts); });
-}
 
-TEST(InterpreterTest, PrintInteger)   { std::vector<StmtPtr> s; s.push_back(printStmt(litNum(5.0)));
-EXPECT_EQ(run(std::move(s)), "5\n");     }
-TEST(InterpreterTest, PrintFloat)     { std::vector<StmtPtr> s; s.push_back(printStmt(litNum(3.14)));
-EXPECT_EQ(run(std::move(s)), "3.14\n");  }
-TEST(InterpreterTest, PrintIntFormat) { std::vector<StmtPtr> s; s.push_back(printStmt(litNum(5.0)));
-EXPECT_EQ(run(std::move(s)), "5\n");     }
-TEST(InterpreterTest, PrintString)    { std::vector<StmtPtr> s; s.push_back(printStmt(litStr("hello")));
-EXPECT_EQ(run(std::move(s)), "hello\n"); }
-TEST(InterpreterTest, PrintBoolTrue)  { std::vector<StmtPtr> s; s.push_back(printStmt(litBool(true)));
-EXPECT_EQ(run(std::move(s)), "true\n");  }
-TEST(InterpreterTest, PrintBoolFalse) { std::vector<StmtPtr> s; s.push_back(printStmt(litBool(false)));
-EXPECT_EQ(run(std::move(s)), "false\n"); }
+class InterpreterFixture : public ::testing::Test {
+protected:
+    std::string run(StmtPtr stmt) {
+        std::vector<StmtPtr> stmts;
+        stmts.push_back(std::move(stmt));
+        return captureOutput([&]{ Interpreter().interpret(stmts); });
+    }
+};
 
-TEST(InterpreterTest, UnaryMinus) {
-    std::vector<StmtPtr> s;
-    s.push_back(printStmt(
-        std::make_unique<UnaryExpr>(opTok(TokenType::MINUS, "-"), litNum(3.0))));
-    EXPECT_EQ(run(std::move(s)), "-3\n");
+TEST_F(InterpreterFixture, PrintInteger)   { EXPECT_EQ(run(printStmt(litNum(5.0))),       "5\n");     }
+TEST_F(InterpreterFixture, PrintFloat)     { EXPECT_EQ(run(printStmt(litNum(3.14))),      "3.14\n");  }
+TEST_F(InterpreterFixture, PrintIntFormat) { EXPECT_EQ(run(printStmt(litNum(5.0))),       "5\n");     }
+TEST_F(InterpreterFixture, PrintString)    { EXPECT_EQ(run(printStmt(litStr("hello"))),   "hello\n"); }
+TEST_F(InterpreterFixture, PrintBoolTrue)  { EXPECT_EQ(run(printStmt(litBool(true))),     "true\n");  }
+TEST_F(InterpreterFixture, PrintBoolFalse) { EXPECT_EQ(run(printStmt(litBool(false))),    "false\n"); }
+
+TEST_F(InterpreterFixture, UnaryMinus) {
+    EXPECT_EQ(run(printStmt(
+        std::make_unique<UnaryExpr>(opTok(TokenType::MINUS, "-"), litNum(3.0)))),
+        "-3\n");
 }
-TEST(InterpreterTest, UnaryBang_True) {
-    std::vector<StmtPtr> s;
-    s.push_back(printStmt(
-        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"), litBool(true))));
-    EXPECT_EQ(run(std::move(s)), "false\n");
+TEST_F(InterpreterFixture, UnaryBang_True) {
+    EXPECT_EQ(run(printStmt(
+        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"), litBool(true)))),
+        "false\n");
 }
-TEST(InterpreterTest, UnaryMinus_OnString_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ExprStmt>(
+TEST_F(InterpreterFixture, UnaryMinus_OnString_Throws) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<ExprStmt>(
         std::make_unique<UnaryExpr>(opTok(TokenType::MINUS, "-"), litStr("oops"))));
     Interpreter interp;
-    EXPECT_THROW(interp.interpret(s), RuntimeError);
+    EXPECT_THROW(interp.interpret(stmts), RuntimeError);
 }
