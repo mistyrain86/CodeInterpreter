@@ -12,4 +12,6 @@ public:
 private:
     std::vector<Token> m_tokens;
     int                m_line = 1;
+
+    void addToken(TokenType type, std::string singleChar);
 };
