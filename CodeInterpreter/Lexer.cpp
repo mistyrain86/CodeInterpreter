@@ -3,7 +3,7 @@
 std::vector<Token> Lexer::tokenize(const std::string& source) {
     reset(source);
 
-    while (m_currentIdx < m_source.size()) {
+    while (!isAtEnd()) {
         m_startIdx = m_currentIdx;
         scanToken();
     }
@@ -18,6 +18,8 @@ void Lexer::reset(const std::string& source) {
     m_startIdx = m_currentIdx = 0;
     m_line = 1;
 }
+
+bool Lexer::isAtEnd() const { return m_currentIdx >= m_source.size(); }
 
 void Lexer::scanToken() {
     char singleChar = m_source[m_currentIdx++];
@@ -56,7 +58,13 @@ void Lexer::addToken(TokenType type,
 }
 
 bool Lexer::match(char expected) {
-    if (m_currentIdx >= m_source.size() || m_source[m_currentIdx] != expected) return false;
+    if (isAtEnd() || checkNextChar(expected))
+        return false;
     m_currentIdx++;
     return true;
+}
+
+bool Lexer::checkNextChar(char expected)
+{
+    return m_source[m_currentIdx] != expected;
 }
