@@ -31,9 +31,26 @@ ParseError Parser::error(const Token& tok, const std::string& msg) const {
 }
 
 // ── 미구현 스텁 (테스트가 추가될 때마다 채워짐) ────────────
-StmtPtr  Parser::parseStatement()  { return parseExprStmt(); }
-StmtPtr  Parser::parseVarDecl()    { return nullptr; }
-StmtPtr  Parser::parsePrintStmt()  { return nullptr; }
+StmtPtr Parser::parseStatement() {
+    if (match({TokenType::KW_VAR}))     return parseVarDecl();
+    if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
+    if (match({TokenType::KW_IF}))      return parseIfStmt();
+    if (match({TokenType::KW_FOR}))     return parseForStmt();
+    if (match({TokenType::LEFT_BRACE})) return parseBlock();
+    return parseExprStmt();
+}
+StmtPtr Parser::parseVarDecl() {
+    Token name = consume(TokenType::IDENTIFIER, "변수 이름이 필요합니다.");
+    ExprPtr init;
+    if (match({TokenType::EQUAL})) init = parseExpression();
+    consume(TokenType::SEMICOLON, "변수 선언 뒤에 ';'가 필요합니다.");
+    return std::make_unique<VarStmt>(std::move(name), std::move(init));
+}
+StmtPtr Parser::parsePrintStmt() {
+    ExprPtr val = parseExpression();
+    consume(TokenType::SEMICOLON, "값 출력 뒤에 ';'가 필요합니다.");
+    return std::make_unique<PrintStmt>(std::move(val));
+}
 StmtPtr  Parser::parseIfStmt()     { return nullptr; }
 StmtPtr  Parser::parseForStmt()    { return nullptr; }
 StmtPtr  Parser::parseBlock()      { return nullptr; }
