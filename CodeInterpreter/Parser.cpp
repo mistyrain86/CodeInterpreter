@@ -30,6 +30,7 @@ ParseError Parser::error(const Token& tok, const std::string& msg) const {
                       + "] 구문 오류: " + msg + loc);
 }
 
+// ── 미구현 스텁 (테스트가 추가될 때마다 채워짐) ────────────
 StmtPtr  Parser::parseStatement()  { return parseExprStmt(); }
 StmtPtr  Parser::parseVarDecl()    { return nullptr; }
 StmtPtr  Parser::parsePrintStmt()  { return nullptr; }
