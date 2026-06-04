@@ -2,7 +2,10 @@
 #include <gmock/gmock.h>
 #include "Mocks.h"
 #include "Checker.h"
+#include "Interpreter.h"
 #include "LangFactory.h"
+#include "Lexer.h"
+#include "Parser.h"
 #include "TestUtils.h"
 
 using ::testing::_;
@@ -225,4 +228,56 @@ TEST(CheckerMock, ValidCode_MockParser_NoThrow) {
     LangFactory factory(std::move(ml), std::move(mp),
         std::make_unique<Checker>(), std::move(mi));
     EXPECT_NO_THROW(factory.run(""));
+}
+
+// ── 실제 Lexer + Parser 통합 테스트 ──────────────────────
+// MockParser 대신 실제 Lexer·Parser를 사용해 소스 문자열 전체 파이프라인 검증
+// Interpreter는 MockInterpreter로 호출 여부만 확인한다
+
+// { var a = 1; var a = 2; } → 중복 선언: Checker에서 CheckError, Interpreter 미호출
+TEST(CheckerRealParser, DuplicateVar_Throws) {
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+    LangFactory factory(
+        std::make_unique<Lexer>(),
+        std::make_unique<Parser>(),
+        std::make_unique<Checker>(),
+        std::move(mi));
+    EXPECT_THROW(factory.run("{ var a = 1; var a = 2; }"), CheckError);
+}
+
+// var a = 10; → 정상 선언: Checker 통과, Interpreter 정확히 1회 호출
+TEST(CheckerRealParser, ValidVarDecl_NoThrow) {
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+    LangFactory factory(
+        std::make_unique<Lexer>(),
+        std::make_unique<Parser>(),
+        std::make_unique<Checker>(),
+        std::move(mi));
+    EXPECT_NO_THROW(factory.run("var a = 10;"));
+}
+
+// { var a = a; } → 자기 참조 초기화: CheckError, Interpreter 미호출
+TEST(CheckerRealParser, SelfRefInit_Throws) {
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+    LangFactory factory(
+        std::make_unique<Lexer>(),
+        std::make_unique<Parser>(),
+        std::make_unique<Checker>(),
+        std::move(mi));
+    EXPECT_THROW(factory.run("{ var a = a; }"), CheckError);
+}
+
+// var x = 1; { var x = 2; } → 섀도잉 허용: Checker 통과, Interpreter 1회 호출
+TEST(CheckerRealParser, Shadowing_NoThrow) {
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+    LangFactory factory(
+        std::make_unique<Lexer>(),
+        std::make_unique<Parser>(),
+        std::make_unique<Checker>(),
+        std::move(mi));
+    EXPECT_NO_THROW(factory.run("var x = 1; { var x = 2; }"));
 }
