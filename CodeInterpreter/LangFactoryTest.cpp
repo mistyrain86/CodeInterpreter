@@ -6,6 +6,7 @@
 #include "CheckError.h"
 #include "Parser.h"
 #include "Checker.h"
+#include "RuntimeError.h"
 #include "TestUtils.h"
 
 using ::testing::_;
@@ -210,4 +211,57 @@ TEST_F(RealCheckerFixture, SelfReference_InBlock_Throws) {
     EXPECT_CALL(*mi, interpret(_)).Times(0);
 
     EXPECT_THROW(factory->run(""), CheckError);
+}
+
+// 커버리지 보강
+TEST_F(LangFactoryFixture, LexerError_StopsBeforeParser) {
+    EXPECT_CALL(*ml, tokenize(_))
+        .WillOnce(::testing::Throw(std::runtime_error("lexer error")));
+    EXPECT_CALL(*mp, parse(_)).Times(0);
+    EXPECT_CALL(*mc, check(_)).Times(0);
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+
+    EXPECT_THROW(factory->run(""), std::runtime_error);
+}
+
+TEST_F(RealCheckerFixture, RuntimeError_Propagates) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::KW_PRINT,  "print"),
+        numTok(1.0),
+        tok(TokenType::SLASH,     "/"),
+        numTok(0.0),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mi, interpret(_))
+        .WillOnce([](const std::vector<StmtPtr>&) {
+            throw RuntimeError("0으로 나눌 수 없습니다.");
+        });
+
+    EXPECT_THROW(factory->run(""), RuntimeError);
+}
+
+TEST_F(RealCheckerFixture, Complex_VarAndArith_Integration) {
+    // var a = 1; var b = 2; print a + b;
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"a"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(1.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"b"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(2.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::KW_PRINT,  "print"),
+        tok(TokenType::IDENTIFIER,"a"),
+        tok(TokenType::PLUS,      "+"),
+        tok(TokenType::IDENTIFIER,"b"),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+
+    EXPECT_NO_THROW(factory->run("var a = 1; var b = 2; print a + b;"));
 }
