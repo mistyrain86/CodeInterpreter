@@ -61,9 +61,9 @@ TEST_F(ScopeFixture, AssignInEnclosing_UpdatesOuter) {
     EXPECT_DOUBLE_EQ(std::get<double>(global->get(tok("count"))), 1.0);
 }
 TEST_F(ScopeFixture, ThreeLevels_DeepLookup) {
-    auto l1 = std::make_shared<Environment>();
-    l1->define("a", Value{10.0});
-    auto l2 = std::make_shared<Environment>(l1);
-    auto l3 = std::make_shared<Environment>(l2);
-    EXPECT_DOUBLE_EQ(std::get<double>(l3->get(tok("a"))), 10.0);
+    auto level1 = std::make_shared<Environment>();
+    level1->define("a", Value{10.0});
+    auto level2 = std::make_shared<Environment>(level1);
+    auto level3 = std::make_shared<Environment>(level2);
+    EXPECT_DOUBLE_EQ(std::get<double>(level3->get(tok("a"))), 10.0);
 }
