@@ -4,11 +4,23 @@
 #include "LangFactory.h"
 #include "ParseError.h"
 #include "CheckError.h"
+#include "Parser.h"
 #include "TestUtils.h"
 
 using ::testing::_;
 using ::testing::InSequence;
 using ::testing::Throw;
+
+// 토큰 시퀀스 헬퍼
+static Token tok(TokenType t, std::string lex, int line = 1) {
+    return Token{t, std::move(lex), std::monostate{}, line};
+}
+static Token numTok(double v, int line = 1) {
+    return Token{TokenType::NUMBER, std::to_string(v), v, line};
+}
+static Token eofTok() {
+    return Token{TokenType::END_OF_FILE, "", std::monostate{}, 1};
+}
 
 static auto emptyParse() {
     return ::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> { return {}; });
@@ -70,3 +82,28 @@ TEST_F(LangFactoryFixture, CheckerError_StopsBeforeInterpreter) {
 
     EXPECT_THROW(factory->run(""), CheckError);
 }
+
+// ── Real Parser 통합 픽스처 ──────────────────────────────────────
+class RealParserFixture : public ::testing::Test {
+protected:
+    MockLexer*       ml = nullptr;
+    MockChecker*     mc = nullptr;
+    MockInterpreter* mi = nullptr;
+    std::unique_ptr<LangFactory> factory;
+
+    void SetUp() override {
+        auto lexer       = std::make_unique<MockLexer>();
+        auto checker     = std::make_unique<MockChecker>();
+        auto interpreter = std::make_unique<MockInterpreter>();
+
+        ml = lexer.get();
+        mc = checker.get();
+        mi = interpreter.get();
+
+        factory = std::make_unique<LangFactory>(
+            std::move(lexer),
+            std::make_unique<Parser>(),
+            std::move(checker),
+            std::move(interpreter));
+    }
+};
