@@ -56,7 +56,9 @@ std::string Interpreter::stringify(const Value& v) const {
         double d = std::get<double>(v);
         if (std::isfinite(d) && d == std::floor(d))
             return std::to_string(static_cast<long long>(d));
-        std::ostringstream oss; oss << d; return oss.str();
+        std::ostringstream oss;
+        oss << d;
+        return oss.str();
     }
     return std::get<std::string>(v);
 }
