@@ -94,7 +94,7 @@ TEST(InterpreterTest, UndefinedVar_Throws) {
     s.push_back(printStmt(std::make_unique<VariableExpr>(
         Token{TokenType::IDENTIFIER, "notDef", std::monostate{}, 3})));
     Interpreter i;
-    EXPECT_THROW(i.interpret(s), std::runtime_error);
+    EXPECT_THROW(i.interpret(s), RuntimeError);
 }
 TEST(InterpreterTest, BlockScope_Isolation) {
     Interpreter interp;
@@ -104,7 +104,7 @@ TEST(InterpreterTest, BlockScope_Isolation) {
     inner.push_back(printStmt(varRef("x")));
     s.push_back(blockStmt(std::move(inner)));
     s.push_back(printStmt(varRef("x")));
-    EXPECT_THROW(interp.interpret(s), std::runtime_error);
+    EXPECT_THROW(interp.interpret(s), RuntimeError);
 }
 TEST_F(InterpreterFixture, IfTrue) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
