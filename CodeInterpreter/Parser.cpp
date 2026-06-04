@@ -40,7 +40,17 @@ StmtPtr  Parser::parseBlock()      { return nullptr; }
 StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenType::SEMICOLON, "';'가 필요합니다.");
 return std::make_unique<ExprStmt>(std::move(e)); }
 ExprPtr  Parser::parseExpression() { return parseAssignment(); }
-ExprPtr  Parser::parseAssignment() { return parseEquality(); }
+ExprPtr Parser::parseAssignment() {
+    ExprPtr expr = parseEquality();
+    if (match({TokenType::EQUAL})) {
+        Token eq = previous();
+        ExprPtr val = parseAssignment();
+        if (auto* v = dynamic_cast<VariableExpr*>(expr.get()))
+            return std::make_unique<AssignExpr>(v->name, std::move(val));
+        throw error(eq, "잘못된 할당 대상입니다.");
+    }
+    return expr;
+}
 ExprPtr Parser::parseEquality() {
     ExprPtr e = parseComparison();
     while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
@@ -92,6 +102,8 @@ ExprPtr Parser::parsePrimary() {
     if (match({TokenType::STRING}))
         return std::make_unique<LiteralExpr>(
             Value{std::get<std::string>(previous().literal)});
+    if (match({TokenType::IDENTIFIER}))
+        return std::make_unique<VariableExpr>(previous());
     if (match({TokenType::LEFT_PAREN})) {
         ExprPtr e = parseExpression();
         consume(TokenType::RIGHT_PAREN, "표현식 뒤에 ')'가 필요합니다.");

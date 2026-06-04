@@ -56,6 +56,25 @@ TEST(ParserUnit, Grouping) {
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
 }
 
+TEST(ParserUnit, VariableRef) {
+    auto stmts = parse({t(TokenType::IDENTIFIER,"a"), semi(), eof()});
+    EXPECT_NE(dynamic_cast<VariableExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
+}
+TEST(ParserUnit, Assignment) {
+    auto stmts = parse({t(TokenType::IDENTIFIER,"a"), t(TokenType::EQUAL,"="),
+                        t(TokenType::NUMBER,"5",5.0), semi(), eof()});
+    auto* asg = dynamic_cast<AssignExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    ASSERT_NE(asg, nullptr);
+    EXPECT_EQ(asg->name.lexeme, "a");
+}
+TEST(ParserUnit, InvalidAssignTarget_Throws) {
+    EXPECT_THROW(parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::PLUS,"+"),
+                        t(TokenType::NUMBER,"2",2.0), t(TokenType::EQUAL,"="),
+                        t(TokenType::NUMBER,"3",3.0), semi(), eof()}), ParseError);
+}
+
 TEST(ParserUnit, Addition) {
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
                         t(TokenType::PLUS,"+"),
