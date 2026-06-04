@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="CodeInterpreter/CodeInterpreter.vcxproj" />
+  <Project Path="CodeInterpreter/CodeInterpreter.vcxproj" Id="0390e20c-3e89-4a89-8ba6-02ff4d79b3ad" />
 </Solution>
