@@ -45,7 +45,13 @@ ExprPtr  Parser::parseEquality()   { return parseComparison(); }
 ExprPtr  Parser::parseComparison() { return parseTerm(); }
 ExprPtr  Parser::parseTerm()       { return parseFactor(); }
 ExprPtr  Parser::parseFactor()     { return parseUnary(); }
-ExprPtr  Parser::parseUnary()      { return parsePrimary(); }
+ExprPtr Parser::parseUnary() {
+    if (match({TokenType::BANG, TokenType::MINUS})) {
+        Token op = previous();
+        return std::make_unique<UnaryExpr>(op, parseUnary());
+    }
+    return parsePrimary();
+}
 ExprPtr Parser::parsePrimary() {
     if (match({TokenType::KW_FALSE}))
         return std::make_unique<LiteralExpr>(Value{false});

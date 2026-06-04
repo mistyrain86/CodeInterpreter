@@ -56,6 +56,22 @@ TEST(ParserUnit, Grouping) {
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
 }
 
+TEST(ParserUnit, UnaryMinus) {
+    auto stmts = parse({t(TokenType::MINUS,"-"),
+                        t(TokenType::NUMBER,"3",3.0), semi(), eof()});
+    auto* un = dynamic_cast<UnaryExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    ASSERT_NE(un, nullptr);
+    EXPECT_EQ(un->op.type, TokenType::MINUS);
+}
+TEST(ParserUnit, UnaryBang) {
+    auto stmts = parse({t(TokenType::BANG,"!"),
+                        t(TokenType::KW_TRUE,"true"), semi(), eof()});
+    auto* un = dynamic_cast<UnaryExpr*>(
+        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    EXPECT_EQ(un->op.type, TokenType::BANG);
+}
+
 // ── Mock 통합 테스트 ─────────────────────────────────────
 TEST(ParserMock, NumberLiteral_PassesThrough) {
     auto ml = std::make_unique<MockLexer>();
