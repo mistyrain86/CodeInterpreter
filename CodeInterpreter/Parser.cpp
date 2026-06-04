@@ -37,18 +37,20 @@ StmtPtr  Parser::parsePrintStmt()  { return nullptr; }
 StmtPtr  Parser::parseIfStmt()     { return nullptr; }
 StmtPtr  Parser::parseForStmt()    { return nullptr; }
 StmtPtr  Parser::parseBlock()      { return nullptr; }
-StmtPtr Parser::parseExprStmt() {
-    auto e = parseExpression();
-    consume(TokenType::SEMICOLON, "';'가 필요합니다.");
-    return std::make_unique<ExprStmt>(std::move(e));
-}
-ExprPtr Parser::parseExpression() { return parseAssignment(); }
+StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenType::SEMICOLON, "';'가 필요합니다."); return std::make_unique<ExprStmt>(std::move(e)); }
+ExprPtr  Parser::parseExpression() { return parseAssignment(); }
 ExprPtr  Parser::parseAssignment() { return parseEquality(); }
 ExprPtr  Parser::parseEquality()   { return parseComparison(); }
 ExprPtr  Parser::parseComparison() { return parseTerm(); }
 ExprPtr  Parser::parseTerm()       { return parseFactor(); }
 ExprPtr  Parser::parseFactor()     { return parseUnary(); }
-ExprPtr  Parser::parseUnary()      { return parsePrimary(); }
+ExprPtr Parser::parseUnary() {
+    if (match({TokenType::BANG, TokenType::MINUS})) {
+        Token op = previous();
+        return std::make_unique<UnaryExpr>(op, parseUnary());
+    }
+    return parsePrimary();
+}
 ExprPtr Parser::parsePrimary() {
     if (match({TokenType::KW_FALSE}))
         return std::make_unique<LiteralExpr>(Value{false});
