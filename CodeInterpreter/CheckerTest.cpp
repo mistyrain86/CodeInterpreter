@@ -45,7 +45,8 @@ TEST(CheckerUnit, DuplicateLocal_ErrorContainsName) {
     block.push_back(varDecl("myVar", litNum(2.0), 2));
     std::vector<StmtPtr> stmts;
     stmts.push_back(blockStmt(std::move(block)));
-    try { Checker().check(stmts); FAIL(); }
+    try { Checker().check(stmts); FAIL() << "Expected CheckError was not thrown for duplicate local variable.";
+    }
     catch (const CheckError& e) {
         EXPECT_NE(std::string(e.what()).find("myVar"), std::string::npos);
     }
