@@ -69,24 +69,28 @@ void Interpreter::execute(Stmt* stmt) {
     }
     else if (auto* s = dynamic_cast<BlockStmt*>(stmt))
         executeBlock(s->statements, std::make_shared<Environment>(m_currentEnv));
-    else if (auto* s = dynamic_cast<IfStmt*>(stmt)) {
-        if (isTruthy(evaluate(s->condition.get()))) execute(s->thenBranch.get());
-        else if (s->elseBranch)                     execute(s->elseBranch.get());
-    }
-    else if (auto* s = dynamic_cast<ForStmt*>(stmt)) {
-        auto loopEnv = std::make_shared<Environment>(m_currentEnv);
-        auto prev    = m_currentEnv;
-        m_currentEnv = loopEnv;
-        try {
-            if (s->initializer) execute(s->initializer.get());
-            while (true) {
-                if (s->condition && !isTruthy(evaluate(s->condition.get()))) break;
-                execute(s->body.get());
-                if (s->increment) evaluate(s->increment.get());
-            }
-        } catch (...) { m_currentEnv = prev; throw; }
-        m_currentEnv = prev;
-    }
+    else if (auto* s = dynamic_cast<IfStmt*>(stmt))  executeIf(s);
+    else if (auto* s = dynamic_cast<ForStmt*>(stmt)) executeFor(s);
+}
+
+void Interpreter::executeIf(IfStmt* s) {
+    if (isTruthy(evaluate(s->condition.get()))) execute(s->thenBranch.get());
+    else if (s->elseBranch)                     execute(s->elseBranch.get());
+}
+
+void Interpreter::executeFor(ForStmt* s) {
+    auto loopEnv = std::make_shared<Environment>(m_currentEnv);
+    auto prev    = m_currentEnv;
+    m_currentEnv = loopEnv;
+    try {
+        if (s->initializer) execute(s->initializer.get());
+        while (true) {
+            if (s->condition && !isTruthy(evaluate(s->condition.get()))) break;
+            execute(s->body.get());
+            if (s->increment) evaluate(s->increment.get());
+        }
+    } catch (...) { m_currentEnv = prev; throw; }
+    m_currentEnv = prev;
 }
 
 void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
