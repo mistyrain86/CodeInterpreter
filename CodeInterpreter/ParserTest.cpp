@@ -187,6 +187,7 @@ TEST(ParserUnit, LeftAssociativity) {
                         t(TokenType::NUMBER,"3",3.0),   semi(), eof()});
     auto* outer = dynamic_cast<BinaryExpr*>(
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    ASSERT_NE(outer, nullptr);
     EXPECT_NE(dynamic_cast<BinaryExpr*>(outer->left.get()), nullptr);
 }
 TEST(ParserUnit, Comparison_Less) {
@@ -194,6 +195,7 @@ TEST(ParserUnit, Comparison_Less) {
                         t(TokenType::NUMBER,"2",2.0), semi(), eof()});
     auto* bin = dynamic_cast<BinaryExpr*>(
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    ASSERT_NE(bin, nullptr);
     EXPECT_EQ(bin->op.type, TokenType::LESS);
 }
 
