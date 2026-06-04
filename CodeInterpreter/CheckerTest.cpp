@@ -66,6 +66,27 @@ TEST(CheckerUnit, SameName_DifferentScope_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
+// {
+//     var x = 1;  ← 외부 로컬 스코프
+//     {
+//         var x = 2;  ← 내부 로컬 스코프 (진짜 섀도잉)
+//     }
+// }
+// 검증: 중첩된 두 블록 스코프 사이의 섀도잉은 에러가 아니어야 함
+TEST(CheckerUnit, NestedBlock_Shadowing_NoThrow) {
+    std::vector<StmtPtr> inner;
+    inner.push_back(varDecl("x", litNum(2.0)));
+
+    std::vector<StmtPtr> outer;
+    outer.push_back(varDecl("x", litNum(1.0)));
+    outer.push_back(blockStmt(std::move(inner)));
+
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(blockStmt(std::move(outer)));
+
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
 //var a = 1.0;   // 전역 스코프
 //var a = 2.0;   // 전역 스코프에서 재선언
 //
