@@ -157,6 +157,8 @@
     <ClInclude Include="Interpreter.h" />
     <ClInclude Include="RuntimeError.h" />
     <ClInclude Include="Expr.h" />
+    <ClInclude Include="ExprVisitor.h" />
+    <ClInclude Include="StmtVisitor.h" />
     <ClInclude Include="IChecker.h" />
     <ClInclude Include="IInterpreter.h" />
     <ClInclude Include="ILexer.h" />
