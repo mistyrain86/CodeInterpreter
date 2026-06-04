@@ -64,3 +64,16 @@ TEST(LexerTest, SingleVsCompound) {
     EXPECT_EQ(tokenArray[2].type, TokenType::BANG);
     EXPECT_EQ(tokenArray[3].type, TokenType::BANG_EQUAL);
 }
+
+TEST(LexerTest, LineCommentIgnored) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("+ // 주석\n-");
+    EXPECT_EQ(tokenArray[0].type, TokenType::PLUS);
+    EXPECT_EQ(tokenArray[1].type, TokenType::MINUS);
+    EXPECT_EQ((int)tokenArray.size(), 3);
+}
+
+TEST(LexerTest, CommentOnly) {
+    Lexer lexer;
+    EXPECT_EQ((int)lexer.tokenize("// 전체 주석").size(), 1);
+}

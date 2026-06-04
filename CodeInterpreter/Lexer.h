@@ -24,4 +24,5 @@ private:
 
     bool match(char expected);
     bool checkNextChar(char expected);
+    char peek() const;
 };

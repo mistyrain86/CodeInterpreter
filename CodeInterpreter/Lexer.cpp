@@ -32,7 +32,14 @@ void Lexer::scanToken() {
     case '+': addToken(TokenType::PLUS);        break;
     case '-': addToken(TokenType::MINUS);       break;
     case '*': addToken(TokenType::STAR);        break;
-    case '/': addToken(TokenType::SLASH);       break;
+    case '/': 
+            if (match('/')) {
+                while (peek() != '\n' && !isAtEnd())
+                    m_currentIdx++;
+            }
+            else
+                addToken(TokenType::SLASH);
+            break;
     case '!': addToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);    break;
     case '=': addToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);   break;
     case '<': addToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);    break;
@@ -67,4 +74,8 @@ bool Lexer::match(char expected) {
 bool Lexer::checkNextChar(char expected)
 {
     return m_source[m_currentIdx] != expected;
+}
+
+char Lexer::peek() const {
+    return isAtEnd() ? '\0' : m_source[m_currentIdx];
 }
