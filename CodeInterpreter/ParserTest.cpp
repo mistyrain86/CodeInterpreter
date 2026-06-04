@@ -33,7 +33,9 @@ TEST(ParserUnit, NumberLiteral) {
 TEST(ParserUnit, StringLiteral) {
     auto stmts = parse({t(TokenType::STRING,"\"hi\"",std::string("hi")), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
     auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<std::string>(lit->value), "hi");
 }
 TEST(ParserUnit, BoolTrue) {
