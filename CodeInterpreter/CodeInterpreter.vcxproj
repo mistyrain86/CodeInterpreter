@@ -136,6 +136,7 @@
   <ItemGroup>
     <ClInclude Include="Checker.h" />
     <ClInclude Include="Environment.h" />
+    <ClInclude Include="Interpreter.h" />
     <ClInclude Include="Expr.h" />
     <ClInclude Include="IChecker.h" />
     <ClInclude Include="IInterpreter.h" />
@@ -153,6 +154,8 @@
     <ClCompile Include="CheckerTest.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="EnvironmentTest.cpp" />
+    <ClCompile Include="Interpreter.cpp" />
+    <ClCompile Include="InterpreterTest.cpp" />
     <ClCompile Include="LangFactory.cpp" />
     <ClCompile Include="main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
