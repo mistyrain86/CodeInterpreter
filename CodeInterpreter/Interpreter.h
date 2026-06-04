@@ -20,6 +20,8 @@ private:
     void        execute(Stmt* stmt);
     void        executeBlock(const std::vector<StmtPtr>& stmts,
                              std::shared_ptr<Environment> env);
+    void        executeIf(IfStmt* stmt);
+    void        executeFor(ForStmt* stmt);
     bool        isTruthy(const Value& val) const;
     std::string stringify(const Value& val) const;
     void        checkNumericOperand(const Value& val, int line) const;
