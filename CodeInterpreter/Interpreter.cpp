@@ -1,0 +1,126 @@
+#include "Interpreter.h"
+#include <cmath>
+#include <iostream>
+#include <sstream>
+
+Interpreter::Interpreter()
+    : m_currentEnv(std::make_shared<Environment>()) {}
+
+void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
+    for (const auto& s : stmts) execute(s.get());
+}
+
+Value Interpreter::evaluate(Expr* expr) {
+    if (auto* e = dynamic_cast<LiteralExpr*>(expr))  return e->value;
+    if (auto* e = dynamic_cast<GroupingExpr*>(expr)) return evaluate(e->expression.get());
+    if (auto* e = dynamic_cast<UnaryExpr*>(expr)) {
+        Value r = evaluate(e->right.get());
+        if (e->op.type == TokenType::MINUS) {
+            checkNumericOperand(r, e->op.line);
+            return -std::get<double>(r);
+        }
+        if (e->op.type == TokenType::BANG) return !isTruthy(r);
+    }
+    if (auto* e = dynamic_cast<VariableExpr*>(expr)) return m_currentEnv->get(e->name);
+    if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
+        Value v = evaluate(e->value.get());
+        m_currentEnv->assign(e->name, v);
+        return v;
+    }
+    if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
+        Value l = evaluate(e->left.get());
+        Value r = evaluate(e->right.get());
+        const int line = e->op.line;
+        switch (e->op.type) {
+            case TokenType::PLUS:
+                if (std::holds_alternative<double>(l) && std::holds_alternative<double>(r))
+                    return std::get<double>(l) + std::get<double>(r);
+                if (std::holds_alternative<std::string>(l) && std::holds_alternative<std::string>(r))
+                    return std::get<std::string>(l) + std::get<std::string>(r);
+                throw RuntimeError("[라인 " + std::to_string(line)
+                    + "] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
+            case TokenType::MINUS:      checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) - std::get<double>(r);
+            case TokenType::STAR:       checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) * std::get<double>(r);
+            case TokenType::SLASH:
+                checkNumericOperand(l, line); checkNumericOperand(r, line);
+                if (std::get<double>(r) == 0.0)
+                    throw RuntimeError("[라인 " + std::to_string(line) + "] 런타임 오류: 0으로 나눌 수 없습니다.");
+                return std::get<double>(l) / std::get<double>(r);
+            case TokenType::GREATER:       checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) >  std::get<double>(r);
+            case TokenType::GREATER_EQUAL: checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) >= std::get<double>(r);
+            case TokenType::LESS:          checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) <  std::get<double>(r);
+            case TokenType::LESS_EQUAL:    checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) <= std::get<double>(r);
+            case TokenType::EQUAL_EQUAL:   return Value{l == r};
+            case TokenType::BANG_EQUAL:    return Value{!(l == r)};
+            default: break;
+        }
+    }
+    throw RuntimeError("미구현 표현식 타입");
+}
+
+void Interpreter::execute(Stmt* stmt) {
+    if (auto* s = dynamic_cast<PrintStmt*>(stmt))
+        std::cout << stringify(evaluate(s->expression.get())) << "\n";
+    else if (auto* s = dynamic_cast<ExprStmt*>(stmt))
+        evaluate(s->expression.get());
+    else if (auto* s = dynamic_cast<VarStmt*>(stmt)) {
+        Value v = s->initializer ? evaluate(s->initializer.get()) : Value{std::monostate{}};
+        m_currentEnv->define(s->name.lexeme, std::move(v));
+    }
+    else if (auto* s = dynamic_cast<BlockStmt*>(stmt))
+        executeBlock(s->statements, std::make_shared<Environment>(m_currentEnv));
+    else if (auto* s = dynamic_cast<IfStmt*>(stmt)) {
+        if (isTruthy(evaluate(s->condition.get()))) execute(s->thenBranch.get());
+        else if (s->elseBranch)                     execute(s->elseBranch.get());
+    }
+    else if (auto* s = dynamic_cast<ForStmt*>(stmt)) {
+        auto loopEnv = std::make_shared<Environment>(m_currentEnv);
+        auto prev    = m_currentEnv;
+        m_currentEnv = loopEnv;
+        try {
+            if (s->initializer) execute(s->initializer.get());
+            while (true) {
+                if (s->condition && !isTruthy(evaluate(s->condition.get()))) break;
+                execute(s->body.get());
+                if (s->increment) evaluate(s->increment.get());
+            }
+        } catch (...) { m_currentEnv = prev; throw; }
+        m_currentEnv = prev;
+    }
+}
+
+void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
+                                std::shared_ptr<Environment> env) {
+    auto prev = m_currentEnv;
+    m_currentEnv = std::move(env);
+    try { for (const auto& s : stmts) execute(s.get()); }
+    catch (...) { m_currentEnv = prev; throw; }
+    m_currentEnv = prev;
+}
+
+void Interpreter::checkNumericOperand(const Value& v, int line) const {
+    if (!std::holds_alternative<double>(v))
+        throw RuntimeError("[라인 " + std::to_string(line)
+            + "] 런타임 오류: 피연산자는 반드시 숫자여야 합니다.");
+}
+
+bool Interpreter::isTruthy(const Value& v) const {
+    if (std::holds_alternative<std::monostate>(v)) return false;
+    if (std::holds_alternative<bool>(v))           return std::get<bool>(v);
+    if (std::holds_alternative<double>(v))         return std::get<double>(v) != 0.0;
+    return true;
+}
+
+std::string Interpreter::stringify(const Value& v) const {
+    if (std::holds_alternative<std::monostate>(v)) return "nil";
+    if (std::holds_alternative<bool>(v)) return std::get<bool>(v) ? "true" : "false";
+    if (std::holds_alternative<double>(v)) {
+        double d = std::get<double>(v);
+        if (std::isfinite(d) && d == std::floor(d))
+            return std::to_string(static_cast<long long>(d));
+        std::ostringstream oss;
+        oss << d;
+        return oss.str();
+    }
+    return std::get<std::string>(v);
+}
