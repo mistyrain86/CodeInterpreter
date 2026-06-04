@@ -44,5 +44,28 @@ ExprPtr  Parser::parseEquality()   { return parseComparison(); }
 ExprPtr  Parser::parseComparison() { return parseTerm(); }
 ExprPtr  Parser::parseTerm()       { return parseFactor(); }
 ExprPtr  Parser::parseFactor()     { return parseUnary(); }
-ExprPtr  Parser::parseUnary()      { return parsePrimary(); }
-ExprPtr  Parser::parsePrimary()    { throw error(peek(), "표현식이 필요합니다."); }
+ExprPtr Parser::parseUnary() {
+    if (match({TokenType::BANG, TokenType::MINUS})) {
+        Token op = previous();
+        return std::make_unique<UnaryExpr>(op, parseUnary());
+    }
+    return parsePrimary();
+}
+ExprPtr Parser::parsePrimary() {
+    if (match({TokenType::KW_FALSE}))
+        return std::make_unique<LiteralExpr>(Value{false});
+    if (match({TokenType::KW_TRUE}))
+        return std::make_unique<LiteralExpr>(Value{true});
+    if (match({TokenType::NUMBER}))
+        return std::make_unique<LiteralExpr>(
+            Value{std::get<double>(previous().literal)});
+    if (match({TokenType::STRING}))
+        return std::make_unique<LiteralExpr>(
+            Value{std::get<std::string>(previous().literal)});
+    if (match({TokenType::LEFT_PAREN})) {
+        ExprPtr e = parseExpression();
+        consume(TokenType::RIGHT_PAREN, "표현식 뒤에 ')'가 필요합니다.");
+        return std::make_unique<GroupingExpr>(std::move(e));
+    }
+    throw error(peek(), "표현식이 필요합니다.");
+}
