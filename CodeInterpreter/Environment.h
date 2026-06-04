@@ -16,5 +16,5 @@ public:
 private:
     std::unordered_map<std::string, Value> m_values;
     std::shared_ptr<Environment>           m_enclosing;
-    std::string undefinedVarError(const Token& name) const;
+    std::string makeUndefinedVarMessage(const Token& name) const;
 };
