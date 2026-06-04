@@ -45,3 +45,22 @@ TEST(LexerTest, LogicalAndAssignmentOperators) {
     EXPECT_EQ(tokenArray[0].type, TokenType::EQUAL);
     EXPECT_EQ(tokenArray[1].type, TokenType::BANG);
 }
+
+TEST(LexerTest, ComparisonOperators) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("== != <= >=");
+
+    EXPECT_EQ(tokenArray[0].type, TokenType::EQUAL_EQUAL);
+    EXPECT_EQ(tokenArray[1].type, TokenType::BANG_EQUAL);
+    EXPECT_EQ(tokenArray[2].type, TokenType::LESS_EQUAL);
+    EXPECT_EQ(tokenArray[3].type, TokenType::GREATER_EQUAL);
+}
+
+TEST(LexerTest, SingleVsCompound) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("= == ! !=");
+    EXPECT_EQ(tokenArray[0].type, TokenType::EQUAL);
+    EXPECT_EQ(tokenArray[1].type, TokenType::EQUAL_EQUAL);
+    EXPECT_EQ(tokenArray[2].type, TokenType::BANG);
+    EXPECT_EQ(tokenArray[3].type, TokenType::BANG_EQUAL);
+}

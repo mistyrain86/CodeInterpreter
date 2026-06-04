@@ -31,10 +31,10 @@ void Lexer::scanToken() {
     case '-': addToken(TokenType::MINUS);       break;
     case '*': addToken(TokenType::STAR);        break;
     case '/': addToken(TokenType::SLASH);       break;
-    case '!': addToken(TokenType::BANG);        break;
-    case '=': addToken(TokenType::EQUAL);       break;
-    case '<': addToken(TokenType::LESS);        break;
-    case '>': addToken(TokenType::GREATER);     break;
+    case '!': addToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);    break;
+    case '=': addToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);   break;
+    case '<': addToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);    break;
+    case '>': addToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER); break;
     case ' ':
     case '\r':
     case '\t':
@@ -47,4 +47,16 @@ void Lexer::scanToken() {
 void Lexer::addToken(TokenType type) {
     std::string singleChar = m_source.substr(m_startIdx, m_currentIdx - m_startIdx);
     m_tokens.emplace_back(type, std::move(singleChar), std::monostate{}, m_line);
+}
+
+void Lexer::addToken(TokenType type,
+    std::variant<std::monostate, double, std::string> literal) {
+    std::string lex = m_source.substr(m_startIdx, m_currentIdx - m_startIdx);
+    m_tokens.emplace_back(type, std::move(lex), std::move(literal), m_line);
+}
+
+bool Lexer::match(char expected) {
+    if (m_currentIdx >= m_source.size() || m_source[m_currentIdx] != expected) return false;
+    m_currentIdx++;
+    return true;
 }
