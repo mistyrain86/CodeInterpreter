@@ -131,6 +131,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Expr.h" />
     <ClInclude Include="IChecker.h" />
     <ClInclude Include="IInterpreter.h" />
     <ClInclude Include="ILexer.h" />
