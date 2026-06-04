@@ -22,17 +22,25 @@ void Lexer::reset(const std::string& source) {
 void Lexer::scanToken() {
     char singleChar = m_source[m_currentIdx++];
     switch (singleChar) {
-        case '(': addToken(TokenType::LEFT_PAREN);  break;
-        case ')': addToken(TokenType::RIGHT_PAREN); break;
-        case '{': addToken(TokenType::LEFT_BRACE);  break;
-        case '}': addToken(TokenType::RIGHT_BRACE); break;
-        case ';': addToken(TokenType::SEMICOLON);   break;
-        case ' ':
-        case '\r':
-        case '\t':
-            break;
-        case '\n': m_line++; break;
-        default: break;
+    case '(': addToken(TokenType::LEFT_PAREN);  break;
+    case ')': addToken(TokenType::RIGHT_PAREN); break;
+    case '{': addToken(TokenType::LEFT_BRACE);  break;
+    case '}': addToken(TokenType::RIGHT_BRACE); break;
+    case ';': addToken(TokenType::SEMICOLON);   break;
+    case '+': addToken(TokenType::PLUS);        break;
+    case '-': addToken(TokenType::MINUS);       break;
+    case '*': addToken(TokenType::STAR);        break;
+    case '/': addToken(TokenType::SLASH);       break;
+    case '!': addToken(TokenType::BANG);        break;
+    case '=': addToken(TokenType::EQUAL);       break;
+    case '<': addToken(TokenType::LESS);        break;
+    case '>': addToken(TokenType::GREATER);     break;
+    case ' ':
+    case '\r':
+    case '\t':
+        break;
+    case '\n': m_line++; break;
+    default: break;
     }
 }
 

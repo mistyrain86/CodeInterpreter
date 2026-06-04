@@ -28,3 +28,20 @@ TEST(LexerTest, AllSingleCharTokens) {
     EXPECT_EQ(tokenArray[5].type, TokenType::END_OF_FILE);
     EXPECT_EQ((int)tokenArray.size(), 6);
 }
+
+TEST(LexerTest, ArithmeticOperators) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("+ - * /");
+    EXPECT_EQ(tokenArray[0].type, TokenType::PLUS);
+    EXPECT_EQ(tokenArray[1].type, TokenType::MINUS);
+    EXPECT_EQ(tokenArray[2].type, TokenType::STAR);
+    EXPECT_EQ(tokenArray[3].type, TokenType::SLASH);
+}
+
+TEST(LexerTest, LogicalAndAssignmentOperators) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("= !");
+
+    EXPECT_EQ(tokenArray[0].type, TokenType::EQUAL);
+    EXPECT_EQ(tokenArray[1].type, TokenType::BANG);
+}
