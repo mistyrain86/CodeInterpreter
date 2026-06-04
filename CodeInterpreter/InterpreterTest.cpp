@@ -12,10 +12,15 @@ static ExprPtr bin(ExprPtr l, TokenType op, std::string lex, ExprPtr r) {
 
 class InterpreterFixture : public ::testing::Test {
 protected:
+    Interpreter m_interp;
+
     std::string run(StmtPtr stmt) {
         std::vector<StmtPtr> stmts;
         stmts.push_back(std::move(stmt));
-        return captureOutput([&]{ Interpreter().interpret(stmts); });
+        return captureOutput([&]{ m_interp.interpret(stmts); });
+    }
+    std::string runAll(std::vector<StmtPtr> stmts) {
+        return captureOutput([&]{ m_interp.interpret(stmts); });
     }
 };
 
@@ -73,50 +78,44 @@ TEST_F(InterpreterFixture, CmpBangEqual_True) {
 TEST_F(InterpreterFixture, TypeMismatch_Throws) {
     std::vector<StmtPtr> s;
     s.push_back(std::make_unique<ExprStmt>(bin(litNum(1), TokenType::PLUS, "+", litStr("HI"))));
-    Interpreter i;
-    EXPECT_THROW(i.interpret(s), RuntimeError);
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 TEST_F(InterpreterFixture, DivByZero_Throws) {
     std::vector<StmtPtr> s;
     s.push_back(std::make_unique<ExprStmt>(bin(litNum(1), TokenType::SLASH, "/", litNum(0))));
-    Interpreter i;
-    EXPECT_THROW(i.interpret(s), RuntimeError);
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 
 // 변수 & 제어흐름
-TEST(InterpreterTest, VarDeclAndUse) {
-    Interpreter interp;
+TEST_F(InterpreterFixture, VarDeclAndUse) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("a", litNum(10.0)));
     s.push_back(printStmt(varRef("a")));
-    EXPECT_EQ(captureOutput([&]{ interp.interpret(s); }), "10\n");
+    EXPECT_EQ(runAll(std::move(s)), "10\n");
 }
-TEST(InterpreterTest, Reassignment) {
-    Interpreter interp;
+TEST_F(InterpreterFixture, Reassignment) {
     Token a = makeIdent("a");
     std::vector<StmtPtr> s;
     s.push_back(varDecl("a", litNum(1.0)));
     s.push_back(std::make_unique<ExprStmt>(
         std::make_unique<AssignExpr>(a, litNum(2.0))));
     s.push_back(printStmt(varRef("a")));
-    EXPECT_EQ(captureOutput([&]{ interp.interpret(s); }), "2\n");
+    EXPECT_EQ(runAll(std::move(s)), "2\n");
 }
-TEST(InterpreterTest, UndefinedVar_Throws) {
+TEST_F(InterpreterFixture, UndefinedVar_Throws) {
     std::vector<StmtPtr> s;
     s.push_back(printStmt(std::make_unique<VariableExpr>(
         Token{TokenType::IDENTIFIER, "notDef", std::monostate{}, 3})));
-    Interpreter i;
-    EXPECT_THROW(i.interpret(s), RuntimeError);
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
-TEST(InterpreterTest, BlockScope_Isolation) {
-    Interpreter interp;
+TEST_F(InterpreterFixture, BlockScope_Isolation) {
     std::vector<StmtPtr> s;
     std::vector<StmtPtr> inner;
     inner.push_back(varDecl("x", litStr("inner")));
     inner.push_back(printStmt(varRef("x")));
     s.push_back(blockStmt(std::move(inner)));
     s.push_back(printStmt(varRef("x")));
-    EXPECT_THROW(interp.interpret(s), RuntimeError);
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 TEST_F(InterpreterFixture, IfTrue) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
@@ -124,8 +123,7 @@ TEST_F(InterpreterFixture, IfTrue) {
 TEST_F(InterpreterFixture, IfFalse_GoesElse) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(false), printStmt(litStr("no")), printStmt(litStr("yes")))), "yes\n");
 }
-TEST(InterpreterTest, ForLoop_0to2) {
-    Interpreter interp;
+TEST_F(InterpreterFixture, ForLoop_0to2) {
     Token j  = makeIdent("j");
     Token lt = Token{TokenType::LESS,  "<", std::monostate{}, 1};
     Token pl = Token{TokenType::PLUS,  "+", std::monostate{}, 1};
@@ -138,5 +136,5 @@ TEST(InterpreterTest, ForLoop_0to2) {
         std::make_unique<AssignExpr>(j,
             std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), pl, litNum(1.0))),
         blockStmt(std::move(body))));
-    EXPECT_EQ(captureOutput([&]{ interp.interpret(s); }), "0\n1\n2\n");
+    EXPECT_EQ(runAll(std::move(s)), "0\n1\n2\n");
 }
