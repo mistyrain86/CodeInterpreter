@@ -40,7 +40,7 @@ TEST(ParserUnit, StringLiteral) {
 }
 TEST(ParserUnit, BoolTrue) {
     auto stmts = parse({t(TokenType::KW_TRUE,"true"), semi(), eof()});
-    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
     auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
     ASSERT_NE(lit, nullptr);
@@ -48,7 +48,7 @@ TEST(ParserUnit, BoolTrue) {
 }
 TEST(ParserUnit, BoolFalse) {
     auto stmts = parse({t(TokenType::KW_FALSE,"false"), semi(), eof()});
-    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
     auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
     ASSERT_NE(lit, nullptr);
@@ -61,7 +61,6 @@ TEST(ParserUnit, Grouping) {
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
     EXPECT_NE(dynamic_cast<GroupingExpr*>(es->expression.get()), nullptr);
-
 }
 
 // ── Mock 통합 테스트 ─────────────────────────────────────
