@@ -1,54 +1,43 @@
 #pragma once
 #include <memory>
-#include <string>
+#include "Token.h"
 #include "Value.h"
 
-struct Expr {
-    virtual ~Expr() = default;
-};
+struct Expr { virtual ~Expr() = default; };
 using ExprPtr = std::unique_ptr<Expr>;
 
-struct LiteralExpr : Expr {
-    Value m_value;
-    explicit LiteralExpr(Value value) : m_value(std::move(value)) {}
-};
-
-struct VariableExpr : Expr {
-    std::string m_name;
-    explicit VariableExpr(std::string name) : m_name(std::move(name)) {}
-};
-
-struct AssignExpr : Expr {
-    std::string m_name;
-    ExprPtr m_value;
-    AssignExpr(std::string name, ExprPtr value)
-        : m_name(std::move(name)), m_value(std::move(value)) {}
-};
-
 struct BinaryExpr : Expr {
-    ExprPtr m_left;
-    std::string m_op;
-    ExprPtr m_right;
-    BinaryExpr(ExprPtr left, std::string op, ExprPtr right)
-        : m_left(std::move(left)), m_op(std::move(op)), m_right(std::move(right)) {}
-};
-
-struct UnaryExpr : Expr {
-    std::string m_op;
-    ExprPtr m_right;
-    UnaryExpr(std::string op, ExprPtr right)
-        : m_op(std::move(op)), m_right(std::move(right)) {}
+    ExprPtr left;
+    Token   op;
+    ExprPtr right;
+    BinaryExpr(ExprPtr l, Token op, ExprPtr r)
+        : left(std::move(l)), op(std::move(op)), right(std::move(r)) {}
 };
 
 struct GroupingExpr : Expr {
-    ExprPtr m_expr;
-    explicit GroupingExpr(ExprPtr expr) : m_expr(std::move(expr)) {}
+    ExprPtr expression;
+    explicit GroupingExpr(ExprPtr e) : expression(std::move(e)) {}
 };
 
-struct LogicalExpr : Expr {
-    ExprPtr m_left;
-    std::string m_op;
-    ExprPtr m_right;
-    LogicalExpr(ExprPtr left, std::string op, ExprPtr right)
-        : m_left(std::move(left)), m_op(std::move(op)), m_right(std::move(right)) {}
+struct LiteralExpr : Expr {
+    Value value;
+    explicit LiteralExpr(Value v) : value(std::move(v)) {}
+};
+
+struct UnaryExpr : Expr {
+    Token   op;
+    ExprPtr right;
+    UnaryExpr(Token op, ExprPtr r) : op(std::move(op)), right(std::move(r)) {}
+};
+
+struct VariableExpr : Expr {
+    Token name;
+    explicit VariableExpr(Token n) : name(std::move(n)) {}
+};
+
+struct AssignExpr : Expr {
+    Token   name;
+    ExprPtr value;
+    AssignExpr(Token n, ExprPtr v)
+        : name(std::move(n)), value(std::move(v)) {}
 };
