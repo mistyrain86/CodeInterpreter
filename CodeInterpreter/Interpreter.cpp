@@ -1,4 +1,5 @@
 #include "Interpreter.h"
+#include "ICallable.h"
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -192,6 +193,22 @@ std::string Interpreter::stringify(const Value& v) const {
             return std::to_string(static_cast<long long>(d));
         std::ostringstream oss;
         oss << d;
+        return oss.str();
+    }
+    if (std::holds_alternative<std::shared_ptr<ICallable>>(v)) {
+        auto& fn = std::get<std::shared_ptr<ICallable>>(v);
+        return fn ? "<fn " + fn->name() + ">" : "<fn>";
+    }
+    if (std::holds_alternative<ArrayType>(v)) {
+        auto& arr = std::get<ArrayType>(v);
+        if (!arr) return "[]";
+        std::ostringstream oss;
+        oss << "[";
+        for (std::size_t i = 0; i < arr->size(); ++i) {
+            if (i) oss << ", ";
+            oss << stringify((*arr)[i]);
+        }
+        oss << "]";
         return oss.str();
     }
     return std::get<std::string>(v);
