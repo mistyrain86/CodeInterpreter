@@ -10,13 +10,33 @@ using ::testing::_;
 using ::testing::InSequence;
 using ::testing::Throw;
 
-TEST(LangFactoryTest, Pipeline_CallsInOrder) {
-    InSequence seq;
-    auto ml = std::make_unique<MockLexer>();
-    auto mp = std::make_unique<MockParser>();
-    auto mc = std::make_unique<MockChecker>();
-    auto mi = std::make_unique<MockInterpreter>();
+class LangFactoryFixture : public ::testing::Test {
+protected:
+    MockLexer*       ml;
+    MockParser*      mp;
+    MockChecker*     mc;
+    MockInterpreter* mi;
+    std::unique_ptr<LangFactory> factory;
 
+    void SetUp() override {
+        auto lexer       = std::make_unique<MockLexer>();
+        auto parser      = std::make_unique<MockParser>();
+        auto checker     = std::make_unique<MockChecker>();
+        auto interpreter = std::make_unique<MockInterpreter>();
+
+        ml = lexer.get();
+        mp = parser.get();
+        mc = checker.get();
+        mi = interpreter.get();
+
+        factory = std::make_unique<LangFactory>(
+            std::move(lexer), std::move(parser),
+            std::move(checker), std::move(interpreter));
+    }
+};
+
+TEST_F(LangFactoryFixture, Pipeline_CallsInOrder) {
+    InSequence seq;
     EXPECT_CALL(*ml, tokenize("print 5;")).Times(1);
     EXPECT_CALL(*mp, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs(
@@ -24,34 +44,20 @@ TEST(LangFactoryTest, Pipeline_CallsInOrder) {
     EXPECT_CALL(*mc, check(_)).Times(1);
     EXPECT_CALL(*mi, interpret(_)).Times(1);
 
-    LangFactory factory(std::move(ml), std::move(mp),
-                        std::move(mc), std::move(mi));
-    factory.run("print 5;");
+    factory->run("print 5;");
 }
 
-TEST(LangFactoryTest, ParseError_StopsBeforeChecker) {
-    auto ml = std::make_unique<MockLexer>();
-    auto mp = std::make_unique<MockParser>();
-    auto mc = std::make_unique<MockChecker>();
-    auto mi = std::make_unique<MockInterpreter>();
-
+TEST_F(LangFactoryFixture, ParseError_StopsBeforeChecker) {
     EXPECT_CALL(*ml, tokenize(_)).Times(1);
     EXPECT_CALL(*mp, parse(_))
         .WillOnce(Throw(ParseError("[라인 1] 구문 오류: 테스트")));
     EXPECT_CALL(*mc, check(_)).Times(0);
     EXPECT_CALL(*mi, interpret(_)).Times(0);
 
-    LangFactory factory(std::move(ml), std::move(mp),
-                        std::move(mc), std::move(mi));
-    EXPECT_THROW(factory.run(""), ParseError);
+    EXPECT_THROW(factory->run(""), ParseError);
 }
 
-TEST(LangFactoryTest, CheckerError_StopsBeforeInterpreter) {
-    auto ml = std::make_unique<MockLexer>();
-    auto mp = std::make_unique<MockParser>();
-    auto mc = std::make_unique<MockChecker>();
-    auto mi = std::make_unique<MockInterpreter>();
-
+TEST_F(LangFactoryFixture, CheckerError_StopsBeforeInterpreter) {
     EXPECT_CALL(*ml, tokenize(_)).Times(1);
     EXPECT_CALL(*mp, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs(
@@ -60,7 +66,5 @@ TEST(LangFactoryTest, CheckerError_StopsBeforeInterpreter) {
         .WillOnce(Throw(CheckError("[라인 1] 의미 오류: 테스트")));
     EXPECT_CALL(*mi, interpret(_)).Times(0);
 
-    LangFactory factory(std::move(ml), std::move(mp),
-                        std::move(mc), std::move(mi));
-    EXPECT_THROW(factory.run(""), CheckError);
+    EXPECT_THROW(factory->run(""), CheckError);
 }
