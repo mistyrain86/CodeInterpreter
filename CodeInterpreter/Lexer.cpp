@@ -33,10 +33,8 @@ void Lexer::scanToken() {
     case '-': addToken(TokenType::MINUS);       break;
     case '*': addToken(TokenType::STAR);        break;
     case '/': 
-            if (match('/')) {
-                while (peek() != '\n' && !isAtEnd())
-                    m_currentIdx++;
-            }
+            if (match('/'))
+                skipLineComment();
             else
                 addToken(TokenType::SLASH);
             break;
@@ -74,6 +72,12 @@ bool Lexer::match(char expected) {
 bool Lexer::checkNextChar(char expected)
 {
     return m_source[m_currentIdx] != expected;
+}
+
+void Lexer::skipLineComment()
+{
+    while (peek() != '\n' && !isAtEnd())
+        m_currentIdx++;
 }
 
 char Lexer::peek() const {
