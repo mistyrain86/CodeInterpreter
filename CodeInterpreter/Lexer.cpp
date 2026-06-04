@@ -87,18 +87,24 @@ char Lexer::peek() const {
 }
 
 void Lexer::scanString() {
+    advanceToClosingQuote();
+
+    m_currentIdx++;
+    std::string lex = m_source.substr(m_startIdx + 1, m_currentIdx - m_startIdx - 2);
+    addToken(TokenType::STRING, std::move(lex));
+}
+
+void Lexer::advanceToClosingQuote()
+{
     while (peek() != '"' && !isAtEnd()) {
         if (peek() == '\n')
             m_line++;
         m_currentIdx++;
     }
 
-    if (isAtEnd())
+    if (isAtEnd()) {
         throw std::runtime_error(
-        "[라인 " + std::to_string(m_line) + "] 어휘 오류: 문자열이 닫히지 않았습니다.");
+            "[라인 " + std::to_string(m_line) + "] 어휘 오류: 문자열이 닫히지 않았습니다.");
+    }
 
-    m_currentIdx++;
-    std::string lex = m_source.substr(m_startIdx + 1, m_currentIdx - m_startIdx - 2);
-    
-    addToken(TokenType::STRING, std::move(lex));
 }
