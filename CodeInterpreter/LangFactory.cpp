@@ -1,6 +1,5 @@
 #include "LangFactory.h"
 
-LangFactory::LangFactory() {}
 
 LangFactory::LangFactory(std::unique_ptr<ILexer>       lexer,
                          std::unique_ptr<IParser>      parser,
