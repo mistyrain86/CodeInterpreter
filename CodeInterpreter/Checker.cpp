@@ -28,7 +28,7 @@ void Checker::checkStmt(Stmt* stmt) {
         if (s->initializer) checkStmt(s->initializer.get());
         if (s->condition)   checkExpr(s->condition.get());
         if (s->increment)   checkExpr(s->increment.get());
-        checkStmt(s->body.get());
+        if (s->body)        checkStmt(s->body.get());
         endScope();
     }
     else if (auto* s = dynamic_cast<PrintStmt*>(stmt)) {
