@@ -38,4 +38,5 @@ private:
     bool peekNext() const;
 
     void scanIdentifier();
+    void advanceIdentifierChars();
 };
