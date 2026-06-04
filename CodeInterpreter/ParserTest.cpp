@@ -58,14 +58,16 @@ TEST(ParserUnit, Grouping) {
 
 TEST(ParserUnit, VariableRef) {
     auto stmts = parse({t(TokenType::IDENTIFIER,"a"), semi(), eof()});
-    EXPECT_NE(dynamic_cast<VariableExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
+    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    EXPECT_NE(dynamic_cast<VariableExpr*>(es->expression.get()), nullptr);
 }
 TEST(ParserUnit, Assignment) {
     auto stmts = parse({t(TokenType::IDENTIFIER,"a"), t(TokenType::EQUAL,"="),
                         t(TokenType::NUMBER,"5",5.0), semi(), eof()});
-    auto* asg = dynamic_cast<AssignExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    auto* asg = dynamic_cast<AssignExpr*>(es->expression.get());
     ASSERT_NE(asg, nullptr);
     EXPECT_EQ(asg->name.lexeme, "a");
 }
