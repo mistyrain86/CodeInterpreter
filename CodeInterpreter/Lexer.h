@@ -39,4 +39,6 @@ private:
 
     void scanIdentifier();
     void advanceIdentifierChars();
+
+    void runtimeErrorUnexpectedChar(char singleChar);
 };
