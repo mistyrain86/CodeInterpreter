@@ -134,3 +134,95 @@ TEST(CheckerUnit, ValidInit_NoThrow) {
     stmts.push_back(blockStmt(std::move(block)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
+
+
+// ── 단위 테스트 ──────────────────────────────────────
+//var a = 1.0;       ← 전역 스코프 선언
+//{
+//    print(a);      ← 내부 블록에서 전역 변수 참조
+//}
+TEST(CheckerUnit, NestedScope_OuterAccessible) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("a", litNum(1.0)));
+    std::vector<StmtPtr> inner;
+    inner.push_back(printStmt(std::make_unique<VariableExpr>(makeIdent("a"))));
+    stmts.push_back(blockStmt(std::move(inner)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+//for (var i = 0; i < 3; i = i + 1) {
+//    print(i);      ← 루프 변수 i를 본문에서 참조
+//}
+TEST(CheckerUnit, ForLoopVar_InBody_NoThrow) {
+    Token i = makeIdent("i");
+    Token lt = Token{ TokenType::LESS, "<", std::monostate{}, 1 };
+    Token pl = Token{ TokenType::PLUS, "+", std::monostate{}, 1 };
+    std::vector<StmtPtr> body;
+    body.push_back(printStmt(std::make_unique<VariableExpr>(i)));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<ForStmt>(
+        varDecl("i", litNum(0.0)),
+        std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(i), lt, litNum(3.0)),
+        std::make_unique<AssignExpr>(i,
+            std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(i), pl, litNum(1.0))),
+        blockStmt(std::move(body))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+//if (true) {
+//    var x = 1.0;   ← then 브랜치 안에서 변수 선언
+//}
+TEST(CheckerUnit, IfBranch_NoThrow) {
+    std::vector<StmtPtr> thenB;
+    thenB.push_back(varDecl("x", litNum(1.0)));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<IfStmt>(
+        litBool(true), blockStmt(std::move(thenB)), nullptr));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// ── Mock 통합 테스트 ──────────────────────────────────
+//{
+//    var a = 1.0;   ← line 1
+//    var a = 2.0;   ← line 2  (중복!)
+//}
+TEST(CheckerMock, DuplicateVar_MockParser_Throws) {
+    auto ml = std::make_unique<MockLexer>();
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{}));
+    auto mp = std::make_unique<MockParser>();
+    EXPECT_CALL(*mp, parse(_))
+        .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
+        std::vector<StmtPtr> block;
+        block.push_back(varDecl("a", litNum(1.0), 1));
+        block.push_back(varDecl("a", litNum(2.0), 2));
+        std::vector<StmtPtr> stmts;
+        stmts.push_back(blockStmt(std::move(block)));
+        return stmts;
+            }));
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+    LangFactory factory(std::move(ml), std::move(mp),
+        std::make_unique<Checker>(), std::move(mi));
+    EXPECT_THROW(factory.run(""), CheckError);
+}
+
+//MockLexer  →[](빈 토큰)
+//MockParser →  var a = 10.0; AST 직접 반환
+//Checker    →  통과(에러 없음)
+//MockInterpreter  ← Times(1) : 정확히 한 번 호출되어야 함
+TEST(CheckerMock, ValidCode_MockParser_NoThrow) {
+    auto ml = std::make_unique<MockLexer>();
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{}));
+    auto mp = std::make_unique<MockParser>();
+    EXPECT_CALL(*mp, parse(_))
+        .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
+        std::vector<StmtPtr> stmts;
+        stmts.push_back(varDecl("a", litNum(10.0)));
+        return stmts;
+            }));
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+    LangFactory factory(std::move(ml), std::move(mp),
+        std::make_unique<Checker>(), std::move(mi));
+    EXPECT_NO_THROW(factory.run(""));
+}
