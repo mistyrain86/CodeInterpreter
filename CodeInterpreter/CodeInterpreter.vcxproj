@@ -158,6 +158,7 @@
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="InterpreterTest.cpp" />
     <ClCompile Include="LangFactory.cpp" />
+    <ClCompile Include="LangFactoryTest.cpp" />
     <ClCompile Include="main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
