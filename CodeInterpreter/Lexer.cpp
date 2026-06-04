@@ -49,7 +49,9 @@ void Lexer::scanToken() {
         break;
     case '\n': m_line++; break;
     case '"' : scanString(); break;
-    default: break;
+    default: 
+            if (std::isdigit((unsigned char)singleChar)) scanNumber();
+            else break;
     }
 }
 
@@ -107,4 +109,24 @@ void Lexer::advanceToClosingQuote()
             "[라인 " + std::to_string(m_line) + "] 어휘 오류: 문자열이 닫히지 않았습니다.");
     }
 
+}
+
+void Lexer::scanNumber() {
+    while (std::isdigit((unsigned char)peek()))
+        m_currentIdx++;
+
+    if (peek() == '.' && peekNext()) {
+        m_currentIdx++;
+
+        while (std::isdigit((unsigned char)peek()))
+            m_currentIdx++;
+    }
+
+    double val = std::stod(m_source.substr(m_startIdx, m_currentIdx - m_startIdx));
+    addToken(TokenType::NUMBER, val);
+}
+
+bool Lexer::peekNext() const {
+    char nextChar = (m_currentIdx + 1 >= m_source.size()) ? '\0' : m_source[m_currentIdx + 1];
+    return std::isdigit((unsigned char)nextChar);
 }

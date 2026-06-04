@@ -94,3 +94,20 @@ TEST(LexerTest, UnterminatedString_Throws) {
     Lexer l;
     EXPECT_THROW(l.tokenize("\"hello"), std::runtime_error);
 }
+
+TEST(LexerTest, IntegerNumber) {
+    Lexer l;
+    auto t = l.tokenize("42");
+    EXPECT_EQ(t[0].type, TokenType::NUMBER);
+    EXPECT_DOUBLE_EQ(std::get<double>(t[0].literal), 42.0);
+}
+
+TEST(LexerTest, FloatNumber) {
+    Lexer l;
+    EXPECT_DOUBLE_EQ(std::get<double>(l.tokenize("3.14")[0].literal), 3.14);
+}
+
+TEST(LexerTest, ZeroNumber) {
+    Lexer l;
+    EXPECT_DOUBLE_EQ(std::get<double>(l.tokenize("0")[0].literal), 0.0);
+}
