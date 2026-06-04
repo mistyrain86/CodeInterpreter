@@ -33,7 +33,19 @@
     <ClInclude Include="IParser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="LangFactory.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Mocks.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Stmt.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="TestUtils.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Token.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Value.h">
@@ -41,7 +53,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LangFactory.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="TestMain.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

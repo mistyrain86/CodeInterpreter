@@ -136,12 +136,22 @@
     <ClInclude Include="IInterpreter.h" />
     <ClInclude Include="ILexer.h" />
     <ClInclude Include="IParser.h" />
+    <ClInclude Include="LangFactory.h" />
+    <ClInclude Include="Mocks.h" />
     <ClInclude Include="Stmt.h" />
+    <ClInclude Include="TestUtils.h" />
     <ClInclude Include="Token.h" />
     <ClInclude Include="Value.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LangFactory.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="TestMain.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
