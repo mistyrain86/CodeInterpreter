@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include "RuntimeError.h"
 #include "Token.h"
 #include "Value.h"
 
