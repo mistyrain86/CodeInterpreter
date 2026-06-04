@@ -4,7 +4,7 @@
 #include <sstream>
 
 namespace {
-static constexpr auto UNIMPLEMENTED_EXPR = "미구현 표현식 타입";
+static constexpr auto UNIMPLEMENTED_EXPR   = "미구현 표현식 타입";
 static constexpr auto UNIMPLEMENTED_UNARY  = "미구현 단항 연산자";
 static constexpr auto UNIMPLEMENTED_BINARY = "미구현 이항 연산자";
 
@@ -20,39 +20,51 @@ struct ScopeGuard {
 Interpreter::Interpreter()
     : m_currentEnv(std::make_shared<Environment>()) {}
 
+// ── 공개 진입점 ────────────────────────────────────────────────────
+
 void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
-    for (const auto& s : stmts) execute(s.get());
+    for (const auto& s : stmts) execute(*s);
 }
 
-Value Interpreter::evaluate(Expr* expr) {
-    if (auto* e = dynamic_cast<LiteralExpr*>(expr))  return e->value;
-    if (auto* e = dynamic_cast<GroupingExpr*>(expr)) return evaluate(e->expression.get());
-    if (auto* e = dynamic_cast<UnaryExpr*>(expr))    return evaluateUnary(e);
-    if (auto* e = dynamic_cast<VariableExpr*>(expr)) return m_currentEnv->get(e->name);
-    if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
-        Value v = evaluate(e->value.get());
-        m_currentEnv->assign(e->name, v);
-        return v;
-    }
-    if (auto* e = dynamic_cast<BinaryExpr*>(expr))   return evaluateBinary(e);
-    throw RuntimeError(UNIMPLEMENTED_EXPR);
+Value Interpreter::evaluate(Expr& expr) {
+    return expr.accept(*this);
 }
 
-Value Interpreter::evaluateUnary(UnaryExpr* e) {
-    Value r = evaluate(e->right.get());
-    if (e->op.type == TokenType::MINUS) {
-        checkNumericOperand(r, e->op.line);
+void Interpreter::execute(Stmt& stmt) {
+    stmt.accept(*this);
+}
+
+void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
+                                std::shared_ptr<Environment> env) {
+    ScopeGuard guard(m_currentEnv, std::move(env));
+    for (const auto& s : stmts) execute(*s);
+}
+
+// ── ExprVisitor 구현 ───────────────────────────────────────────────
+
+Value Interpreter::visitLiteral(LiteralExpr& e) {
+    return e.value;
+}
+
+Value Interpreter::visitGrouping(GroupingExpr& e) {
+    return evaluate(*e.expression);
+}
+
+Value Interpreter::visitUnary(UnaryExpr& e) {
+    Value r = evaluate(*e.right);
+    if (e.op.type == TokenType::MINUS) {
+        checkNumericOperand(r, e.op.line);
         return -std::get<double>(r);
     }
-    if (e->op.type == TokenType::BANG) return !isTruthy(r);
+    if (e.op.type == TokenType::BANG) return !isTruthy(r);
     throw RuntimeError(UNIMPLEMENTED_UNARY);
 }
 
-Value Interpreter::evaluateBinary(BinaryExpr* e) {
-    Value l = evaluate(e->left.get());
-    Value r = evaluate(e->right.get());
-    const int line = e->op.line;
-    switch (e->op.type) {
+Value Interpreter::visitBinary(BinaryExpr& e) {
+    Value l = evaluate(*e.left);
+    Value r = evaluate(*e.right);
+    const int line = e.op.line;
+    switch (e.op.type) {
         case TokenType::PLUS:
             if (std::holds_alternative<double>(l) && std::holds_alternative<double>(r))
                 return std::get<double>(l) + std::get<double>(r);
@@ -74,7 +86,8 @@ Value Interpreter::evaluateBinary(BinaryExpr* e) {
             checkNumericPair(l, r, line);
             const double dl = std::get<double>(l), dr = std::get<double>(r);
             if (dr == 0.0)
-                throw RuntimeError("[라인 " + std::to_string(line) + "] 런타임 오류: 0으로 나눌 수 없습니다.");
+                throw RuntimeError("[라인 " + std::to_string(line)
+                    + "] 런타임 오류: 0으로 나눌 수 없습니다.");
             return dl / dr;
         }
         case TokenType::GREATER: {
@@ -97,50 +110,60 @@ Value Interpreter::evaluateBinary(BinaryExpr* e) {
             const double dl = std::get<double>(l), dr = std::get<double>(r);
             return dl <= dr;
         }
-        case TokenType::EQUAL_EQUAL:   return Value{l == r};
-        case TokenType::BANG_EQUAL:    return Value{!(l == r)};
+        case TokenType::EQUAL_EQUAL: return Value{l == r};
+        case TokenType::BANG_EQUAL:  return Value{!(l == r)};
         default: break;
     }
     throw RuntimeError(UNIMPLEMENTED_BINARY);
 }
 
-void Interpreter::execute(Stmt* stmt) {
-    if (auto* s = dynamic_cast<PrintStmt*>(stmt))
-        std::cout << stringify(evaluate(s->expression.get())) << "\n";
-    else if (auto* s = dynamic_cast<ExprStmt*>(stmt))
-        evaluate(s->expression.get());
-    else if (auto* s = dynamic_cast<VarStmt*>(stmt)) {
-        Value v = s->initializer ? evaluate(s->initializer.get()) : Value{std::monostate{}};
-        m_currentEnv->define(s->name.lexeme, std::move(v));
-    }
-    else if (auto* s = dynamic_cast<BlockStmt*>(stmt))
-        executeBlock(s->statements, std::make_shared<Environment>(m_currentEnv));
-    else if (auto* s = dynamic_cast<IfStmt*>(stmt))  executeIf(s);
-    else if (auto* s = dynamic_cast<ForStmt*>(stmt)) executeFor(s);
+Value Interpreter::visitVariable(VariableExpr& e) {
+    return m_currentEnv->get(e.name);
 }
 
-void Interpreter::executeIf(IfStmt* s) {
-    if (isTruthy(evaluate(s->condition.get()))) execute(s->thenBranch.get());
-    else if (s->elseBranch)                     execute(s->elseBranch.get());
+Value Interpreter::visitAssign(AssignExpr& e) {
+    Value v = evaluate(*e.value);
+    m_currentEnv->assign(e.name, v);
+    return v;
 }
 
-void Interpreter::executeFor(ForStmt* s) {
-    if (!s->body)
+// ── StmtVisitor 구현 ───────────────────────────────────────────────
+
+void Interpreter::visitExprStmt(ExprStmt& s) {
+    evaluate(*s.expression);
+}
+
+void Interpreter::visitPrintStmt(PrintStmt& s) {
+    std::cout << stringify(evaluate(*s.expression)) << "\n";
+}
+
+void Interpreter::visitVarStmt(VarStmt& s) {
+    Value v = s.initializer ? evaluate(*s.initializer) : Value{std::monostate{}};
+    m_currentEnv->define(s.name.lexeme, std::move(v));
+}
+
+void Interpreter::visitBlockStmt(BlockStmt& s) {
+    executeBlock(s.statements, std::make_shared<Environment>(m_currentEnv));
+}
+
+void Interpreter::visitIfStmt(IfStmt& s) {
+    if (isTruthy(evaluate(*s.condition))) execute(*s.thenBranch);
+    else if (s.elseBranch)               execute(*s.elseBranch);
+}
+
+void Interpreter::visitForStmt(ForStmt& s) {
+    if (!s.body)
         throw RuntimeError("런타임 오류: ForStmt body가 null입니다.");
     ScopeGuard guard(m_currentEnv, std::make_shared<Environment>(m_currentEnv));
-    if (s->initializer) execute(s->initializer.get());
+    if (s.initializer) execute(*s.initializer);
     while (true) {
-        if (s->condition && !isTruthy(evaluate(s->condition.get()))) break;
-        execute(s->body.get());
-        if (s->increment) evaluate(s->increment.get());
+        if (s.condition && !isTruthy(evaluate(*s.condition))) break;
+        execute(*s.body);
+        if (s.increment) evaluate(*s.increment);
     }
 }
 
-void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
-                                std::shared_ptr<Environment> env) {
-    ScopeGuard guard(m_currentEnv, std::move(env));
-    for (const auto& s : stmts) execute(s.get());
-}
+// ── 헬퍼 ──────────────────────────────────────────────────────────
 
 void Interpreter::checkNumericPair(const Value& l, const Value& r, int line) const {
     checkNumericOperand(l, line);
