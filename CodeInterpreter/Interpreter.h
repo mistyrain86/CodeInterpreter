@@ -6,13 +6,9 @@
 #include "IInterpreter.h"
 #include "Environment.h"
 #include "Expr.h"
+#include "RuntimeError.h"
 #include "Stmt.h"
 #include "Value.h"
-
-class RuntimeError : public std::runtime_error {
-public:
-    explicit RuntimeError(const std::string& msg) : std::runtime_error(msg) {}
-};
 
 class Interpreter : public IInterpreter {
 public:
@@ -27,4 +23,5 @@ private:
                              std::shared_ptr<Environment> env);
     bool        isTruthy(const Value& val) const;
     std::string stringify(const Value& val) const;
+    void        checkNumericOperand(const Value& val, int line) const;
 };
