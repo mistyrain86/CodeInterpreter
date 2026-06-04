@@ -125,6 +125,8 @@ void Interpreter::executeIf(IfStmt* s) {
 }
 
 void Interpreter::executeFor(ForStmt* s) {
+    if (!s->body)
+        throw RuntimeError("런타임 오류: ForStmt body가 null입니다.");
     ScopeGuard guard(m_currentEnv, std::make_shared<Environment>(m_currentEnv));
     if (s->initializer) execute(s->initializer.get());
     while (true) {
