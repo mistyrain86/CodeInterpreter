@@ -145,10 +145,15 @@ bool Lexer::peekNext() const {
 }
 
 void Lexer::scanIdentifier() {
-    while (std::isalnum((unsigned char)peek()) || peek() == '_')
-        m_currentIdx++;
+    advanceIdentifierChars();
 
     std::string text = m_source.substr(m_startIdx, m_currentIdx - m_startIdx);
     auto it = s_keywords.find(text);
     addToken(it != s_keywords.end() ? it->second : TokenType::IDENTIFIER);
+}
+
+void Lexer::advanceIdentifierChars()
+{
+    while (std::isalnum((unsigned char)peek()) || peek() == '_')
+        m_currentIdx++;
 }
