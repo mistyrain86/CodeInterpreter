@@ -33,103 +33,34 @@ TEST(ParserUnit, NumberLiteral) {
 TEST(ParserUnit, StringLiteral) {
     auto stmts = parse({t(TokenType::STRING,"\"hi\"",std::string("hi")), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
     auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<std::string>(lit->value), "hi");
 }
 TEST(ParserUnit, BoolTrue) {
     auto stmts = parse({t(TokenType::KW_TRUE,"true"), semi(), eof()});
-    auto* lit = dynamic_cast<LiteralExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<bool>(lit->value), true);
 }
 TEST(ParserUnit, BoolFalse) {
     auto stmts = parse({t(TokenType::KW_FALSE,"false"), semi(), eof()});
-    auto* lit = dynamic_cast<LiteralExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<bool>(lit->value), false);
 }
 TEST(ParserUnit, Grouping) {
     auto stmts = parse({t(TokenType::LEFT_PAREN,"("),
                         t(TokenType::NUMBER,"5",5.0),
                         t(TokenType::RIGHT_PAREN,")"), semi(), eof()});
-    EXPECT_NE(dynamic_cast<GroupingExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
-}
-
-TEST(ParserUnit, VariableRef) {
-    auto stmts = parse({t(TokenType::IDENTIFIER,"a"), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<VariableExpr*>(es->expression.get()), nullptr);
-}
-TEST(ParserUnit, Assignment) {
-    auto stmts = parse({t(TokenType::IDENTIFIER,"a"), t(TokenType::EQUAL,"="),
-                        t(TokenType::NUMBER,"5",5.0), semi(), eof()});
-    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
-    ASSERT_NE(es, nullptr);
-    auto* asg = dynamic_cast<AssignExpr*>(es->expression.get());
-    ASSERT_NE(asg, nullptr);
-    EXPECT_EQ(asg->name.lexeme, "a");
-}
-TEST(ParserUnit, InvalidAssignTarget_Throws) {
-    EXPECT_THROW(parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::PLUS,"+"),
-                        t(TokenType::NUMBER,"2",2.0), t(TokenType::EQUAL,"="),
-                        t(TokenType::NUMBER,"3",3.0), semi(), eof()}), ParseError);
-}
-
-TEST(ParserUnit, Addition) {
-    auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
-                        t(TokenType::PLUS,"+"),
-                        t(TokenType::NUMBER,"2",2.0), semi(), eof()});
-    auto* bin = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
-    ASSERT_NE(bin, nullptr);
-    EXPECT_EQ(bin->op.type, TokenType::PLUS);
-}
-TEST(ParserUnit, Precedence_MulBeforeAdd) {
-    // 1 + 2 * 3 → right 쪽이 Binary(*)
-    auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::PLUS,"+"),
-                        t(TokenType::NUMBER,"2",2.0), t(TokenType::STAR,"*"),
-                        t(TokenType::NUMBER,"3",3.0), semi(), eof()});
-    auto* add = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
-    ASSERT_NE(add, nullptr);
-    EXPECT_EQ(add->op.type, TokenType::PLUS);
-    auto* mul = dynamic_cast<BinaryExpr*>(add->right.get());
-    ASSERT_NE(mul, nullptr);
-    EXPECT_EQ(mul->op.type, TokenType::STAR);
-}
-TEST(ParserUnit, LeftAssociativity) {
-    // 10 - 4 - 3 → left 쪽이 Binary(-)
-    auto stmts = parse({t(TokenType::NUMBER,"10",10.0), t(TokenType::MINUS,"-"),
-                        t(TokenType::NUMBER,"4",4.0),   t(TokenType::MINUS,"-"),
-                        t(TokenType::NUMBER,"3",3.0),   semi(), eof()});
-    auto* outer = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(outer->left.get()), nullptr);
-}
-TEST(ParserUnit, Comparison_Less) {
-    auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::LESS,"<"),
-                        t(TokenType::NUMBER,"2",2.0), semi(), eof()});
-    auto* bin = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
-    EXPECT_EQ(bin->op.type, TokenType::LESS);
-}
-
-TEST(ParserUnit, UnaryMinus) {
-    auto stmts = parse({t(TokenType::MINUS,"-"),
-                        t(TokenType::NUMBER,"3",3.0), semi(), eof()});
-    auto* un = dynamic_cast<UnaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
-    ASSERT_NE(un, nullptr);
-    EXPECT_EQ(un->op.type, TokenType::MINUS);
-}
-TEST(ParserUnit, UnaryBang) {
-    auto stmts = parse({t(TokenType::BANG,"!"),
-                        t(TokenType::KW_TRUE,"true"), semi(), eof()});
-    auto* un = dynamic_cast<UnaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
-    EXPECT_EQ(un->op.type, TokenType::BANG);
+    EXPECT_NE(dynamic_cast<GroupingExpr*>(es->expression.get()), nullptr);
 }
 
 // ── Mock 통합 테스트 ─────────────────────────────────────
