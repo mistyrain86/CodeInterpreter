@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "ILexer.h"
 #include "Token.h"
 
@@ -15,6 +16,8 @@ private:
     int                m_line = 1;
     std::size_t        m_startIdx = 0;
     std::size_t        m_currentIdx = 0;
+
+    static const std::unordered_map<std::string, TokenType> s_keywords;
 
     void reset(const std::string& source);
     bool isAtEnd() const;
@@ -33,4 +36,7 @@ private:
     void scanNumber();
     void advanceDigits();
     bool peekNext() const;
+
+    void scanIdentifier();
+    void advanceIdentifierChars();
 };
