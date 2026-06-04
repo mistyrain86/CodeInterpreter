@@ -3,6 +3,16 @@
 #include <iostream>
 #include <sstream>
 
+namespace {
+struct ScopeGuard {
+    std::shared_ptr<Environment>& ref;
+    std::shared_ptr<Environment>  prev;
+    ScopeGuard(std::shared_ptr<Environment>& r, std::shared_ptr<Environment> next)
+        : ref(r), prev(r) { r = std::move(next); }
+    ~ScopeGuard() { ref = prev; }
+};
+}
+
 Interpreter::Interpreter()
     : m_currentEnv(std::make_shared<Environment>()) {}
 
@@ -111,27 +121,19 @@ void Interpreter::executeIf(IfStmt* s) {
 }
 
 void Interpreter::executeFor(ForStmt* s) {
-    auto loopEnv = std::make_shared<Environment>(m_currentEnv);
-    auto prev    = m_currentEnv;
-    m_currentEnv = loopEnv;
-    try {
-        if (s->initializer) execute(s->initializer.get());
-        while (true) {
-            if (s->condition && !isTruthy(evaluate(s->condition.get()))) break;
-            execute(s->body.get());
-            if (s->increment) evaluate(s->increment.get());
-        }
-    } catch (...) { m_currentEnv = prev; throw; }
-    m_currentEnv = prev;
+    ScopeGuard guard(m_currentEnv, std::make_shared<Environment>(m_currentEnv));
+    if (s->initializer) execute(s->initializer.get());
+    while (true) {
+        if (s->condition && !isTruthy(evaluate(s->condition.get()))) break;
+        execute(s->body.get());
+        if (s->increment) evaluate(s->increment.get());
+    }
 }
 
 void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
                                 std::shared_ptr<Environment> env) {
-    auto prev = m_currentEnv;
-    m_currentEnv = std::move(env);
-    try { for (const auto& s : stmts) execute(s.get()); }
-    catch (...) { m_currentEnv = prev; throw; }
-    m_currentEnv = prev;
+    ScopeGuard guard(m_currentEnv, std::move(env));
+    for (const auto& s : stmts) execute(s.get());
 }
 
 void Interpreter::checkNumericPair(const Value& l, const Value& r, int line) const {
