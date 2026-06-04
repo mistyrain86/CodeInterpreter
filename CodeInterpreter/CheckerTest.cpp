@@ -99,3 +99,38 @@ TEST(CheckerUnit, DuplicateGlobal_NoThrow) {
     stmts.push_back(varDecl("a", litNum(2.0)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
+
+//{
+//    var a = a;   // 자기 자신을 초기화 식에서 참조
+//}
+//a는 선언은 됐지만 아직 값이 정해지지 않은 상태라 오류 처리
+
+TEST(CheckerUnit, SelfReferenceInInit_Throws) {
+    Token a = makeIdent("a", 1);
+    std::vector<StmtPtr> block;
+    block.push_back(std::make_unique<VarStmt>(
+        a, std::make_unique<VariableExpr>(a)));  // var a = a
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(blockStmt(std::move(block)));
+    EXPECT_THROW(Checker().check(stmts), CheckError);
+}
+
+//{
+//    var a = 5.0;       // a가 먼저 완전히 정의됨
+//    var b = a + 1.0;   // 이미 정의된 a를 참조 → 정상
+//}
+// 정상 동작 확인
+
+TEST(CheckerUnit, ValidInit_NoThrow) {
+    Token a = makeIdent("a", 1);
+    Token b = makeIdent("b", 2);
+    Token plus = Token{ TokenType::PLUS, "+", std::monostate{}, 2 };
+    std::vector<StmtPtr> block;
+    block.push_back(varDecl("a", litNum(5.0), 1));
+    block.push_back(std::make_unique<VarStmt>(b,
+        std::make_unique<BinaryExpr>(
+            std::make_unique<VariableExpr>(a), plus, litNum(1.0))));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(blockStmt(std::move(block)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
