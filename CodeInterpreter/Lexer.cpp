@@ -1,4 +1,5 @@
 ﻿#include "Lexer.h"
+#include <stdexcept>
 
 std::vector<Token> Lexer::tokenize(const std::string& source) {
     reset(source);
@@ -47,6 +48,7 @@ void Lexer::scanToken() {
     case '\t':
         break;
     case '\n': m_line++; break;
+    case '"' : scanString(); break;
     default: break;
     }
 }
@@ -82,4 +84,21 @@ void Lexer::skipLineComment()
 
 char Lexer::peek() const {
     return isAtEnd() ? '\0' : m_source[m_currentIdx];
+}
+
+void Lexer::scanString() {
+    while (peek() != '"' && !isAtEnd()) {
+        if (peek() == '\n')
+            m_line++;
+        m_currentIdx++;
+    }
+
+    if (isAtEnd())
+        throw std::runtime_error(
+        "[라인 " + std::to_string(m_line) + "] 어휘 오류: 문자열이 닫히지 않았습니다.");
+
+    m_currentIdx++;
+    std::string lex = m_source.substr(m_startIdx + 1, m_currentIdx - m_startIdx - 2);
+    
+    addToken(TokenType::STRING, std::move(lex));
 }

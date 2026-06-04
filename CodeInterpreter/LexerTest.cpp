@@ -77,3 +77,20 @@ TEST(LexerTest, CommentOnly) {
     Lexer lexer;
     EXPECT_EQ((int)lexer.tokenize("// 전체 주석").size(), 1);
 }
+
+TEST(LexerTest, StringLiteral) {
+    Lexer l;
+    auto t = l.tokenize("\"hello\"");
+    EXPECT_EQ(t[0].type, TokenType::STRING);
+    EXPECT_EQ(std::get<std::string>(t[0].literal), "hello");
+}
+
+TEST(LexerTest, EmptyString) {
+    Lexer l;
+    EXPECT_EQ(std::get<std::string>(l.tokenize("\"\"")[0].literal), "");
+}
+
+TEST(LexerTest, UnterminatedString_Throws) {
+    Lexer l;
+    EXPECT_THROW(l.tokenize("\"hello"), std::runtime_error);
+}
