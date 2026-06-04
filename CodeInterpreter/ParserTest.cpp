@@ -56,6 +56,28 @@ TEST(ParserUnit, Grouping) {
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
 }
 
+TEST(ParserUnit, PrintStmt) {
+    auto stmts = parse({t(TokenType::KW_PRINT,"print"),
+                        t(TokenType::NUMBER,"5",5.0), semi(), eof()});
+    EXPECT_NE(dynamic_cast<PrintStmt*>(stmts[0].get()), nullptr);
+}
+TEST(ParserUnit, VarDecl_WithInit) {
+    auto stmts = parse({t(TokenType::KW_VAR,"var"),
+                        t(TokenType::IDENTIFIER,"a"),
+                        t(TokenType::EQUAL,"="),
+                        t(TokenType::NUMBER,"10",10.0), semi(), eof()});
+    auto* vs = dynamic_cast<VarStmt*>(stmts[0].get());
+    ASSERT_NE(vs, nullptr);
+    EXPECT_EQ(vs->name.lexeme, "a");
+    EXPECT_NE(vs->initializer, nullptr);
+}
+TEST(ParserUnit, VarDecl_NoInit) {
+    auto stmts = parse({t(TokenType::KW_VAR,"var"),
+                        t(TokenType::IDENTIFIER,"x"), semi(), eof()});
+    auto* vs = dynamic_cast<VarStmt*>(stmts[0].get());
+    EXPECT_EQ(vs->initializer, nullptr);
+}
+
 TEST(ParserUnit, VariableRef) {
     auto stmts = parse({t(TokenType::IDENTIFIER,"a"), semi(), eof()});
     EXPECT_NE(dynamic_cast<VariableExpr*>(
