@@ -37,3 +37,33 @@ TEST_F(EnvironmentFixture, Assign_UpdatesValue) {
 TEST_F(EnvironmentFixture, Assign_Undefined_Throws) {
     EXPECT_THROW(env.assign(tok("x"), Value{1.0}), std::runtime_error);
 }
+
+// TASK-D02: 스코프 체인 테스트
+TEST(EnvironmentTest, LookupInEnclosing) {
+    auto global = std::make_shared<Environment>();
+    global->define("x", Value{42.0});
+    Environment local(global);
+    EXPECT_DOUBLE_EQ(std::get<double>(local.get(tok("x"))), 42.0);
+}
+TEST(EnvironmentTest, Shadowing_LocalFirst) {
+    auto global = std::make_shared<Environment>();
+    global->define("x", Value{1.0});
+    Environment local(global);
+    local.define("x", Value{2.0});
+    EXPECT_DOUBLE_EQ(std::get<double>(local.get(tok("x"))), 2.0);
+    EXPECT_DOUBLE_EQ(std::get<double>(global->get(tok("x"))), 1.0);
+}
+TEST(EnvironmentTest, AssignInEnclosing_UpdatesOuter) {
+    auto global = std::make_shared<Environment>();
+    global->define("count", Value{0.0});
+    Environment local(global);
+    local.assign(tok("count"), Value{1.0});
+    EXPECT_DOUBLE_EQ(std::get<double>(global->get(tok("count"))), 1.0);
+}
+TEST(EnvironmentTest, ThreeLevels_DeepLookup) {
+    auto l1 = std::make_shared<Environment>();
+    l1->define("a", Value{10.0});
+    auto l2 = std::make_shared<Environment>(l1);
+    auto l3 = std::make_shared<Environment>(l2);
+    EXPECT_DOUBLE_EQ(std::get<double>(l3->get(tok("a"))), 10.0);
+}
