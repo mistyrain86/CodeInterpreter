@@ -53,10 +53,22 @@ TEST_F(InterpreterFixture, StrConcat) {
     EXPECT_EQ(run(printStmt(bin(litStr("Hi"), TokenType::PLUS, "+", litStr("!")))), "Hi!\n");
 }
 TEST_F(InterpreterFixture, CmpLess_True) {
-    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::LESS,    "<", litNum(2)))), "true\n");
+    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::LESS,          "<",  litNum(2)))), "true\n");
+}
+TEST_F(InterpreterFixture, CmpLessEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(2), TokenType::LESS_EQUAL,    "<=", litNum(2)))), "true\n");
 }
 TEST_F(InterpreterFixture, CmpGreater_False) {
-    EXPECT_EQ(run(printStmt(bin(litNum(3), TokenType::GREATER, ">", litNum(5)))), "false\n");
+    EXPECT_EQ(run(printStmt(bin(litNum(3), TokenType::GREATER,       ">",  litNum(5)))), "false\n");
+}
+TEST_F(InterpreterFixture, CmpGreaterEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(5), TokenType::GREATER_EQUAL, ">=", litNum(5)))), "true\n");
+}
+TEST_F(InterpreterFixture, CmpEqualEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(3), TokenType::EQUAL_EQUAL,   "==", litNum(3)))), "true\n");
+}
+TEST_F(InterpreterFixture, CmpBangEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::BANG_EQUAL,    "!=", litNum(2)))), "true\n");
 }
 TEST_F(InterpreterFixture, TypeMismatch_Throws) {
     std::vector<StmtPtr> s;
