@@ -37,3 +37,33 @@ TEST_F(EnvironmentFixture, Assign_UpdatesValue) {
 TEST_F(EnvironmentFixture, Assign_Undefined_Throws) {
     EXPECT_THROW(env.assign(tok("x"), Value{1.0}), std::runtime_error);
 }
+
+// TASK-D02: 스코프 체인 테스트
+class ScopeFixture : public ::testing::Test {
+protected:
+    std::shared_ptr<Environment> global = std::make_shared<Environment>();
+    Environment                  local{global};
+};
+
+TEST_F(ScopeFixture, LookupInEnclosing) {
+    global->define("x", Value{42.0});
+    EXPECT_DOUBLE_EQ(std::get<double>(local.get(tok("x"))), 42.0);
+}
+TEST_F(ScopeFixture, Shadowing_LocalFirst) {
+    global->define("x", Value{1.0});
+    local.define("x", Value{2.0});
+    EXPECT_DOUBLE_EQ(std::get<double>(local.get(tok("x"))), 2.0);
+    EXPECT_DOUBLE_EQ(std::get<double>(global->get(tok("x"))), 1.0);
+}
+TEST_F(ScopeFixture, AssignInEnclosing_UpdatesOuter) {
+    global->define("count", Value{0.0});
+    local.assign(tok("count"), Value{1.0});
+    EXPECT_DOUBLE_EQ(std::get<double>(global->get(tok("count"))), 1.0);
+}
+TEST_F(ScopeFixture, ThreeLevels_DeepLookup) {
+    auto level1 = std::make_shared<Environment>();
+    level1->define("a", Value{10.0});
+    auto level2 = std::make_shared<Environment>(level1);
+    auto level3 = std::make_shared<Environment>(level2);
+    EXPECT_DOUBLE_EQ(std::get<double>(level3->get(tok("a"))), 10.0);
+}

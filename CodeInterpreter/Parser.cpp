@@ -30,108 +30,19 @@ ParseError Parser::error(const Token& tok, const std::string& msg) const {
                       + "] 구문 오류: " + msg + loc);
 }
 
-// ── 미구현 스텁 (테스트가 추가될 때마다 채워짐) ────────────
-StmtPtr Parser::parseStatement() {
-    if (match({TokenType::KW_VAR}))     return parseVarDecl();
-    if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
-    if (match({TokenType::KW_IF}))      return parseIfStmt();
-    if (match({TokenType::KW_FOR}))     return parseForStmt();
-    if (match({TokenType::LEFT_BRACE})) return parseBlock();
-    return parseExprStmt();
-}
-StmtPtr Parser::parseVarDecl() {
-    Token name = consume(TokenType::IDENTIFIER, "변수 이름이 필요합니다.");
-    ExprPtr init;
-    if (match({TokenType::EQUAL})) init = parseExpression();
-    consume(TokenType::SEMICOLON, "변수 선언 뒤에 ';'가 필요합니다.");
-    return std::make_unique<VarStmt>(std::move(name), std::move(init));
-}
-StmtPtr Parser::parsePrintStmt() {
-    ExprPtr val = parseExpression();
-    consume(TokenType::SEMICOLON, "값 출력 뒤에 ';'가 필요합니다.");
-    return std::make_unique<PrintStmt>(std::move(val));
-}
-StmtPtr Parser::parseIfStmt() {
-    consume(TokenType::LEFT_PAREN,  "if 뒤에 '('가 필요합니다.");
-    ExprPtr cond = parseExpression();
-    consume(TokenType::RIGHT_PAREN, "조건식 뒤에 ')'가 필요합니다.");
-    StmtPtr thenB = parseStatement();
-    StmtPtr elseB;
-    if (match({TokenType::KW_ELSE})) elseB = parseStatement(); // Greedy 매칭
-    return std::make_unique<IfStmt>(std::move(cond), std::move(thenB), std::move(elseB));
-}
-StmtPtr Parser::parseForStmt() {
-    consume(TokenType::LEFT_PAREN, "for 뒤에 '('가 필요합니다.");
-    StmtPtr init;
-    if      (match({TokenType::SEMICOLON})) { /* empty */ }
-    else if (match({TokenType::KW_VAR}))    init = parseVarDecl();
-    else                                    init = parseExprStmt();
-    ExprPtr cond;
-    if (!check(TokenType::SEMICOLON)) cond = parseExpression();
-    consume(TokenType::SEMICOLON, "for 조건식 뒤에 ';'가 필요합니다.");
-    ExprPtr incr;
-    if (!check(TokenType::RIGHT_PAREN)) incr = parseExpression();
-    consume(TokenType::RIGHT_PAREN, "for 증감식 뒤에 ')'가 필요합니다.");
-    return std::make_unique<ForStmt>(std::move(init), std::move(cond),
-                                     std::move(incr), parseStatement());
-}
-StmtPtr Parser::parseBlock() {
-    std::vector<StmtPtr> stmts;
-    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd())
-        stmts.push_back(parseStatement());
-    consume(TokenType::RIGHT_BRACE, "블록 뒤에 '}'가 필요합니다.");
-    return std::make_unique<BlockStmt>(std::move(stmts));
-}
-StmtPtr Parser::parseExprStmt() {
-    auto e = parseExpression();
-    consume(TokenType::SEMICOLON, "';'가 필요합니다.");
-    return std::make_unique<ExprStmt>(std::move(e));
-}
-ExprPtr Parser::parseExpression() { return parseAssignment(); }
-ExprPtr Parser::parseAssignment() {
-    ExprPtr expr = parseEquality();
-    if (match({TokenType::EQUAL})) {
-        Token eq = previous();
-        ExprPtr val = parseAssignment();
-        if (auto* v = dynamic_cast<VariableExpr*>(expr.get()))
-            return std::make_unique<AssignExpr>(v->name, std::move(val));
-        throw error(eq, "잘못된 할당 대상입니다.");
-    }
-    return expr;
-}
-ExprPtr Parser::parseEquality() {
-    ExprPtr e = parseComparison();
-    while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseComparison());
-    }
-    return e;
-}
-ExprPtr Parser::parseComparison() {
-    ExprPtr e = parseTerm();
-    while (match({TokenType::GREATER, TokenType::GREATER_EQUAL,
-                  TokenType::LESS,    TokenType::LESS_EQUAL})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseTerm());
-    }
-    return e;
-}
-ExprPtr Parser::parseTerm() {
-    ExprPtr e = parseFactor();
-    while (match({TokenType::PLUS, TokenType::MINUS})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseFactor());
-    }
-    return e;
-}
-ExprPtr Parser::parseFactor() {
-    ExprPtr e = parseUnary();
-    while (match({TokenType::STAR, TokenType::SLASH})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseUnary());
-    }
-    return e;
-}
+StmtPtr  Parser::parseStatement()  { return parseExprStmt(); }
+StmtPtr  Parser::parseVarDecl()    { return nullptr; }
+StmtPtr  Parser::parsePrintStmt()  { return nullptr; }
+StmtPtr  Parser::parseIfStmt()     { return nullptr; }
+StmtPtr  Parser::parseForStmt()    { return nullptr; }
+StmtPtr  Parser::parseBlock()      { return nullptr; }
+StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenType::SEMICOLON, "';'가 필요합니다."); return std::make_unique<ExprStmt>(std::move(e)); }
+ExprPtr  Parser::parseExpression() { return parseAssignment(); }
+ExprPtr  Parser::parseAssignment() { return parseEquality(); }
+ExprPtr  Parser::parseEquality()   { return parseComparison(); }
+ExprPtr  Parser::parseComparison() { return parseTerm(); }
+ExprPtr  Parser::parseTerm()       { return parseFactor(); }
+ExprPtr  Parser::parseFactor()     { return parseUnary(); }
 ExprPtr Parser::parseUnary() {
     if (match({TokenType::BANG, TokenType::MINUS})) {
         Token op = previous();
