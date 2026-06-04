@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <vector>
 #include "IInterpreter.h"
@@ -18,10 +17,15 @@ public:
 private:
     std::shared_ptr<Environment> m_currentEnv;
     Value       evaluate(Expr* expr);
+    Value       evaluateUnary(UnaryExpr* expr);
+    Value       evaluateBinary(BinaryExpr* expr);
     void        execute(Stmt* stmt);
     void        executeBlock(const std::vector<StmtPtr>& stmts,
                              std::shared_ptr<Environment> env);
+    void        executeIf(IfStmt* stmt);
+    void        executeFor(ForStmt* stmt);
     bool        isTruthy(const Value& val) const;
     std::string stringify(const Value& val) const;
     void        checkNumericOperand(const Value& val, int line) const;
+    void        checkNumericPair(const Value& l, const Value& r, int line) const;
 };
