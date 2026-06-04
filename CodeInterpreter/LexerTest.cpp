@@ -95,6 +95,13 @@ TEST(LexerTest, UnterminatedString_Throws) {
     EXPECT_THROW(lexer.tokenize("\"hello"), std::runtime_error);
 }
 
+TEST(LexerTest, MultilineString_LineIncremented) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("\"he\nllo\"");
+    EXPECT_EQ(tokenArray[0].type, TokenType::STRING);
+    EXPECT_EQ(tokenArray[1].line, 2);
+}
+
 TEST(LexerTest, IntegerNumber) {
     Lexer lexer;
     auto tokenArray = lexer.tokenize("42");
