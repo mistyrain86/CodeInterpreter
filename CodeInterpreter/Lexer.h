@@ -11,7 +11,12 @@ public:
 
 private:
     std::vector<Token> m_tokens;
+    std::string        m_source;
     int                m_line = 1;
+    int                m_startIdx = 0;
+    int                m_currentIdx = 0;
 
-    void addToken(TokenType type, std::string singleChar);
+    void reset(const std::string& source);
+    void scanToken();
+    void addToken(TokenType type);
 };
