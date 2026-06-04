@@ -1,14 +1,6 @@
 #include "LangFactory.h"
-// NOTE: 실제 구현체는 각 팀원 작업 완료 후 include 추가
-// 현재는 DI 생성자만 동작
 
-LangFactory::LangFactory() {
-    // TODO: A,B,C,D 완료 후
-    // m_lexer        = std::make_unique<Lexer>();
-    // m_parser       = std::make_unique<Parser>();
-    // m_checker      = std::make_unique<Checker>();
-    // m_interpreter  = std::make_unique<Interpreter>();
-}
+LangFactory::LangFactory() {}
 
 LangFactory::LangFactory(std::unique_ptr<ILexer>       lexer,
                          std::unique_ptr<IParser>      parser,
