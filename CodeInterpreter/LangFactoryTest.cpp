@@ -16,10 +16,10 @@ static auto emptyParse() {
 
 class LangFactoryFixture : public ::testing::Test {
 protected:
-    MockLexer*       ml;
-    MockParser*      mp;
-    MockChecker*     mc;
-    MockInterpreter* mi;
+    MockLexer*       ml = nullptr;
+    MockParser*      mp = nullptr;
+    MockChecker*     mc = nullptr;
+    MockInterpreter* mi = nullptr;
     std::unique_ptr<LangFactory> factory;
 
     void SetUp() override {
