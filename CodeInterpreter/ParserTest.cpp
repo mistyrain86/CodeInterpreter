@@ -61,6 +61,7 @@ TEST(ParserUnit, Grouping) {
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
     EXPECT_NE(dynamic_cast<GroupingExpr*>(es->expression.get()), nullptr);
+
 }
 
 // ── Mock 통합 테스트 ─────────────────────────────────────
