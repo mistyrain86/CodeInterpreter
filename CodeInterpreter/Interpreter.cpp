@@ -13,6 +13,16 @@ void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
 Value Interpreter::evaluate(Expr* expr) {
     if (auto* e = dynamic_cast<LiteralExpr*>(expr))  return e->value;
     if (auto* e = dynamic_cast<GroupingExpr*>(expr)) return evaluate(e->expression.get());
+    if (auto* e = dynamic_cast<UnaryExpr*>(expr)) {
+        Value r = evaluate(e->right.get());
+        if (e->op.type == TokenType::MINUS) {
+            if (!std::holds_alternative<double>(r))
+                throw RuntimeError("[라인 " + std::to_string(e->op.line)
+                    + "] 런타임 오류: 피연산자는 반드시 숫자여야 합니다.");
+            return -std::get<double>(r);
+        }
+        if (e->op.type == TokenType::BANG) return !isTruthy(r);
+    }
     throw RuntimeError("미구현 표현식 타입");
 }
 
