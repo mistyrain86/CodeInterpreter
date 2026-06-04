@@ -172,3 +172,42 @@ TEST_F(RealCheckerFixture, ParseError_RealParser_Propagates) {
 
     EXPECT_THROW(factory->run(""), ParseError);
 }
+
+TEST_F(RealCheckerFixture, DuplicateVar_InBlock_Throws) {
+    // { var x = 1; var x = 2; }
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::LEFT_BRACE, "{"),
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(1.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(2.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::RIGHT_BRACE, "}"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+
+    EXPECT_THROW(factory->run(""), CheckError);
+}
+
+TEST_F(RealCheckerFixture, SelfReference_InBlock_Throws) {
+    // { var x = x; }
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::LEFT_BRACE, "{"),
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::RIGHT_BRACE, "}"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+
+    EXPECT_THROW(factory->run(""), CheckError);
+}
