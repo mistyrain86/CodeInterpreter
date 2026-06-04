@@ -1,16 +1,11 @@
 #pragma once
 #include <map>
-#include <stdexcept>
 #include <string>
 #include <vector>
+#include "CheckError.h"
 #include "IChecker.h"
 #include "Expr.h"
 #include "Stmt.h"
-
-class CheckError : public std::runtime_error {
-public:
-    explicit CheckError(const std::string& msg) : std::runtime_error(msg) {}
-};
 
 class Checker : public IChecker {
 public:
