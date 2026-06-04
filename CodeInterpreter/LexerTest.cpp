@@ -1,0 +1,147 @@
+#include <gtest/gtest.h>
+#include "Lexer.h"
+
+class LexerFixture : public ::testing::Test {
+protected:
+    Lexer lexer;
+};
+
+TEST_F(LexerFixture, EOFAlwaysAppended) {
+    auto tokenArray = lexer.tokenize("");
+    ASSERT_EQ((int)tokenArray.size(), 1);
+    EXPECT_EQ(tokenArray[0].type, TokenType::END_OF_FILE);
+}
+
+TEST_F(LexerFixture, LeftParenToken) {
+    auto tokenArray = lexer.tokenize("(");
+    EXPECT_EQ(tokenArray[0].type, TokenType::LEFT_PAREN);
+    EXPECT_EQ(tokenArray[0].lexeme, "(");
+    EXPECT_EQ(tokenArray[0].line, 1);
+    EXPECT_EQ((int)tokenArray.size(), 2);
+}
+
+TEST_F(LexerFixture, AllSingleCharTokens) {
+    auto tokenArray = lexer.tokenize("( ) { } ;");
+    EXPECT_EQ(tokenArray[0].type, TokenType::LEFT_PAREN);
+    EXPECT_EQ(tokenArray[1].type, TokenType::RIGHT_PAREN);
+    EXPECT_EQ(tokenArray[2].type, TokenType::LEFT_BRACE);
+    EXPECT_EQ(tokenArray[3].type, TokenType::RIGHT_BRACE);
+    EXPECT_EQ(tokenArray[4].type, TokenType::SEMICOLON);
+    EXPECT_EQ(tokenArray[5].type, TokenType::END_OF_FILE);
+    EXPECT_EQ((int)tokenArray.size(), 6);
+}
+
+TEST_F(LexerFixture, ArithmeticOperators) {
+    auto tokenArray = lexer.tokenize("+ - * /");
+    EXPECT_EQ(tokenArray[0].type, TokenType::PLUS);
+    EXPECT_EQ(tokenArray[1].type, TokenType::MINUS);
+    EXPECT_EQ(tokenArray[2].type, TokenType::STAR);
+    EXPECT_EQ(tokenArray[3].type, TokenType::SLASH);
+}
+
+TEST_F(LexerFixture, LogicalAndAssignmentOperators) {
+    auto tokenArray = lexer.tokenize("= !");
+    EXPECT_EQ(tokenArray[0].type, TokenType::EQUAL);
+    EXPECT_EQ(tokenArray[1].type, TokenType::BANG);
+}
+
+TEST_F(LexerFixture, ComparisonOperators) {
+    auto tokenArray = lexer.tokenize("== != <= >=");
+    EXPECT_EQ(tokenArray[0].type, TokenType::EQUAL_EQUAL);
+    EXPECT_EQ(tokenArray[1].type, TokenType::BANG_EQUAL);
+    EXPECT_EQ(tokenArray[2].type, TokenType::LESS_EQUAL);
+    EXPECT_EQ(tokenArray[3].type, TokenType::GREATER_EQUAL);
+}
+
+TEST_F(LexerFixture, SingleVsCompound) {
+    auto tokenArray = lexer.tokenize("= == ! !=");
+    EXPECT_EQ(tokenArray[0].type, TokenType::EQUAL);
+    EXPECT_EQ(tokenArray[1].type, TokenType::EQUAL_EQUAL);
+    EXPECT_EQ(tokenArray[2].type, TokenType::BANG);
+    EXPECT_EQ(tokenArray[3].type, TokenType::BANG_EQUAL);
+}
+
+TEST_F(LexerFixture, LineCommentIgnored) {
+    auto tokenArray = lexer.tokenize("+ // 주석\n-");
+    EXPECT_EQ(tokenArray[0].type, TokenType::PLUS);
+    EXPECT_EQ(tokenArray[1].type, TokenType::MINUS);
+    EXPECT_EQ((int)tokenArray.size(), 3);
+}
+
+TEST_F(LexerFixture, CommentOnly) {
+    EXPECT_EQ((int)lexer.tokenize("// 전체 주석").size(), 1);
+}
+
+TEST_F(LexerFixture, StringLiteral) {
+    auto tokenArray = lexer.tokenize("\"hello\"");
+    EXPECT_EQ(tokenArray[0].type, TokenType::STRING);
+    EXPECT_EQ(std::get<std::string>(tokenArray[0].literal), "hello");
+}
+
+TEST_F(LexerFixture, EmptyString) {
+    EXPECT_EQ(std::get<std::string>(lexer.tokenize("\"\"")[0].literal), "");
+}
+
+TEST_F(LexerFixture, UnterminatedString_Throws) {
+    EXPECT_THROW(lexer.tokenize("\"hello"), std::runtime_error);
+}
+
+TEST_F(LexerFixture, MultilineString_LineIncremented) {
+    auto tokenArray = lexer.tokenize("\"he\nllo\"");
+    EXPECT_EQ(tokenArray[0].type, TokenType::STRING);
+    EXPECT_EQ(tokenArray[1].line, 2);
+}
+
+TEST_F(LexerFixture, IntegerNumber) {
+    auto tokenArray = lexer.tokenize("42");
+    EXPECT_EQ(tokenArray[0].type, TokenType::NUMBER);
+    EXPECT_DOUBLE_EQ(std::get<double>(tokenArray[0].literal), 42.0);
+}
+
+TEST_F(LexerFixture, FloatNumber) {
+    EXPECT_DOUBLE_EQ(std::get<double>(lexer.tokenize("3.14")[0].literal), 3.14);
+}
+
+TEST_F(LexerFixture, ZeroNumber) {
+    EXPECT_DOUBLE_EQ(std::get<double>(lexer.tokenize("0")[0].literal), 0.0);
+}
+
+TEST_F(LexerFixture, Identifier) {
+    auto tokenArray = lexer.tokenize("myVar");
+    EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[0].lexeme, "myVar");
+}
+
+TEST_F(LexerFixture, IdentifierWithUnderscore) {
+    EXPECT_EQ(lexer.tokenize("_count")[0].type, TokenType::IDENTIFIER);
+}
+
+TEST_F(LexerFixture, Keyword_var)   { EXPECT_EQ(lexer.tokenize("var")[0].type,   TokenType::KW_VAR);   }
+TEST_F(LexerFixture, Keyword_print) { EXPECT_EQ(lexer.tokenize("print")[0].type, TokenType::KW_PRINT); }
+TEST_F(LexerFixture, Keyword_if)    { EXPECT_EQ(lexer.tokenize("if")[0].type,    TokenType::KW_IF);    }
+TEST_F(LexerFixture, Keyword_else)  { EXPECT_EQ(lexer.tokenize("else")[0].type,  TokenType::KW_ELSE);  }
+TEST_F(LexerFixture, Keyword_for)   { EXPECT_EQ(lexer.tokenize("for")[0].type,   TokenType::KW_FOR);   }
+TEST_F(LexerFixture, Keyword_true)  { EXPECT_EQ(lexer.tokenize("true")[0].type,  TokenType::KW_TRUE);  }
+TEST_F(LexerFixture, Keyword_false) { EXPECT_EQ(lexer.tokenize("false")[0].type, TokenType::KW_FALSE); }
+
+TEST_F(LexerFixture, IdentifierNotKeyword) {
+    auto tokenArray = lexer.tokenize("variable var");
+    EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[1].type, TokenType::KW_VAR);
+}
+
+TEST_F(LexerFixture, LineNumberTracking) {
+    auto tokenArray = lexer.tokenize("var\nif\nfor");
+    EXPECT_EQ(tokenArray[0].line, 1);
+    EXPECT_EQ(tokenArray[1].line, 2);
+    EXPECT_EQ(tokenArray[2].line, 3);
+}
+
+TEST_F(LexerFixture, WhitespaceIgnored) {
+    auto tokenArray = lexer.tokenize("   +   -   ");
+    EXPECT_EQ(tokenArray[0].type, TokenType::PLUS);
+    EXPECT_EQ(tokenArray[1].type, TokenType::MINUS);
+}
+
+TEST_F(LexerFixture, UnknownChar_At)   { EXPECT_THROW(lexer.tokenize("@"), std::runtime_error); }
+TEST_F(LexerFixture, UnknownChar_Hash) { EXPECT_THROW(lexer.tokenize("#"), std::runtime_error); }
