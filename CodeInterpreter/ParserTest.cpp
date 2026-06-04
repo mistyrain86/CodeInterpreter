@@ -54,8 +54,9 @@ TEST(ParserUnit, Grouping) {
     auto stmts = parse({t(TokenType::LEFT_PAREN,"("),
                         t(TokenType::NUMBER,"5",5.0),
                         t(TokenType::RIGHT_PAREN,")"), semi(), eof()});
-    EXPECT_NE(dynamic_cast<GroupingExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
+    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    EXPECT_NE(dynamic_cast<GroupingExpr*>(es->expression.get()), nullptr);
 }
 
 TEST(ParserUnit, Addition) {
