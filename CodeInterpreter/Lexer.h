@@ -29,4 +29,7 @@ private:
 
     void scanString();
     void advanceToClosingQuote();
+
+    void scanNumber();
+    bool peekNext() const;
 };
