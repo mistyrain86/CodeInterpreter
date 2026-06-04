@@ -40,14 +40,18 @@ TEST(ParserUnit, StringLiteral) {
 }
 TEST(ParserUnit, BoolTrue) {
     auto stmts = parse({t(TokenType::KW_TRUE,"true"), semi(), eof()});
-    auto* lit = dynamic_cast<LiteralExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<bool>(lit->value), true);
 }
 TEST(ParserUnit, BoolFalse) {
     auto stmts = parse({t(TokenType::KW_FALSE,"false"), semi(), eof()});
-    auto* lit = dynamic_cast<LiteralExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<bool>(lit->value), false);
 }
 TEST(ParserUnit, Grouping) {
