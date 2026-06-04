@@ -1,16 +1,11 @@
 #pragma once
 #include <initializer_list>
-#include <stdexcept>
 #include <vector>
 #include "IParser.h"
+#include "ParseError.h"
 #include "Expr.h"
 #include "Stmt.h"
 #include "Token.h"
-
-class ParseError : public std::runtime_error {
-public:
-    explicit ParseError(const std::string& msg) : std::runtime_error(msg) {}
-};
 
 class Parser : public IParser {
 public:
