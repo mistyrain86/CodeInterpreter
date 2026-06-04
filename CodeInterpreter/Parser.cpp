@@ -41,10 +41,39 @@ StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenTy
 return std::make_unique<ExprStmt>(std::move(e)); }
 ExprPtr  Parser::parseExpression() { return parseAssignment(); }
 ExprPtr  Parser::parseAssignment() { return parseEquality(); }
-ExprPtr  Parser::parseEquality()   { return parseComparison(); }
-ExprPtr  Parser::parseComparison() { return parseTerm(); }
-ExprPtr  Parser::parseTerm()       { return parseFactor(); }
-ExprPtr  Parser::parseFactor()     { return parseUnary(); }
+ExprPtr Parser::parseEquality() {
+    ExprPtr e = parseComparison();
+    while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
+        Token op = previous();
+        e = std::make_unique<BinaryExpr>(std::move(e), op, parseComparison());
+    }
+    return e;
+}
+ExprPtr Parser::parseComparison() {
+    ExprPtr e = parseTerm();
+    while (match({TokenType::GREATER, TokenType::GREATER_EQUAL,
+                  TokenType::LESS,    TokenType::LESS_EQUAL})) {
+        Token op = previous();
+        e = std::make_unique<BinaryExpr>(std::move(e), op, parseTerm());
+    }
+    return e;
+}
+ExprPtr Parser::parseTerm() {
+    ExprPtr e = parseFactor();
+    while (match({TokenType::PLUS, TokenType::MINUS})) {
+        Token op = previous();
+        e = std::make_unique<BinaryExpr>(std::move(e), op, parseFactor());
+    }
+    return e;
+}
+ExprPtr Parser::parseFactor() {
+    ExprPtr e = parseUnary();
+    while (match({TokenType::STAR, TokenType::SLASH})) {
+        Token op = previous();
+        e = std::make_unique<BinaryExpr>(std::move(e), op, parseUnary());
+    }
+    return e;
+}
 ExprPtr Parser::parseUnary() {
     if (match({TokenType::BANG, TokenType::MINUS})) {
         Token op = previous();
