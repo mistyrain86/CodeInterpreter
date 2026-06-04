@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include "RuntimeError.h"
 #include "Token.h"
 #include "Value.h"
 
@@ -15,4 +16,5 @@ public:
 private:
     std::unordered_map<std::string, Value> m_values;
     std::shared_ptr<Environment>           m_enclosing;
+    std::string makeUndefinedVarMessage(const Token& name) const;
 };
