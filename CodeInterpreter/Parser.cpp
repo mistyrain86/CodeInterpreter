@@ -37,10 +37,13 @@ StmtPtr  Parser::parsePrintStmt()  { return nullptr; }
 StmtPtr  Parser::parseIfStmt()     { return nullptr; }
 StmtPtr  Parser::parseForStmt()    { return nullptr; }
 StmtPtr  Parser::parseBlock()      { return nullptr; }
-StmtPtr  Parser::parseExprStmt()   { auto e = parseExpression(); consume(TokenType::SEMICOLON, "';'가 필요합니다.");
-return std::make_unique<ExprStmt>(std::move(e)); }
-ExprPtr  Parser::parseExpression() { return parseAssignment(); }
-ExprPtr  Parser::parseAssignment() { return parseEquality(); }
+StmtPtr Parser::parseExprStmt() {
+    auto e = parseExpression();
+    consume(TokenType::SEMICOLON, "';'가 필요합니다.");
+    return std::make_unique<ExprStmt>(std::move(e));
+}
+ExprPtr Parser::parseExpression() { return parseAssignment(); }
+ExprPtr Parser::parseAssignment() { return parseEquality(); }
 ExprPtr Parser::parseEquality() {
     ExprPtr e = parseComparison();
     while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
