@@ -1,4 +1,14 @@
 #include "LangFactory.h"
+#include "Lexer.h"
+#include "Parser.h"
+#include "Checker.h"
+#include "Interpreter.h"
+
+LangFactory::LangFactory()
+    : m_lexer       (std::make_unique<Lexer>())
+    , m_parser      (std::make_unique<Parser>())
+    , m_checker     (std::make_unique<Checker>())
+    , m_interpreter (std::make_unique<Interpreter>()) {}
 
 
 LangFactory::LangFactory(std::unique_ptr<ILexer>       lexer,
