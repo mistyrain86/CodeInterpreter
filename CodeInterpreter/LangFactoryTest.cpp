@@ -115,7 +115,11 @@ TEST_F(RealParserFixture, PrintStmt_Integration) {
         tok(TokenType::SEMICOLON, ";"),
         eofTok()
     }));
-    EXPECT_CALL(*mc, check(_)).Times(1);
+    EXPECT_CALL(*mc, check(_))
+        .WillOnce([](const std::vector<StmtPtr>& stmts) {
+            ASSERT_EQ(stmts.size(), 1u);
+            EXPECT_NE(dynamic_cast<PrintStmt*>(stmts[0].get()), nullptr);
+        });
     EXPECT_CALL(*mi, interpret(_)).Times(1);
 
     factory->run("print 5;");
@@ -130,7 +134,13 @@ TEST_F(RealParserFixture, VarDecl_Integration) {
         tok(TokenType::SEMICOLON, ";"),
         eofTok()
     }));
-    EXPECT_CALL(*mc, check(_)).Times(1);
+    EXPECT_CALL(*mc, check(_))
+        .WillOnce([](const std::vector<StmtPtr>& stmts) {
+            ASSERT_EQ(stmts.size(), 1u);
+            auto* var = dynamic_cast<VarStmt*>(stmts[0].get());
+            ASSERT_NE(var, nullptr);
+            EXPECT_EQ(var->name.lexeme, "x");
+        });
     EXPECT_CALL(*mi, interpret(_)).Times(1);
 
     factory->run("var x = 10;");
