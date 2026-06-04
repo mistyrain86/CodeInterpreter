@@ -60,7 +60,10 @@ void Lexer::scanToken() {
     default : 
             if (std::isdigit((unsigned char)singleChar)) scanNumber();
             else if (std::isalpha((unsigned char)singleChar)) scanIdentifier();
-            else break;
+            else
+                throw std::runtime_error(
+                    "[라인 " + std::to_string(m_line)
+                    + "] 어휘 오류: 인식할 수 없는 문자 '" + std::string(1, singleChar) + "'");
     }
 }
 
