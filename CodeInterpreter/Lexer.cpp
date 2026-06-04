@@ -1,6 +1,13 @@
 ﻿#include "Lexer.h"
 #include <stdexcept>
 
+const std::unordered_map<std::string, TokenType> Lexer::s_keywords = {
+    {"var",   TokenType::KW_VAR},   {"print", TokenType::KW_PRINT},
+    {"if",    TokenType::KW_IF},    {"else",  TokenType::KW_ELSE},
+    {"for",   TokenType::KW_FOR},   {"true",  TokenType::KW_TRUE},
+    {"false", TokenType::KW_FALSE},
+};
+
 std::vector<Token> Lexer::tokenize(const std::string& source) {
     reset(source);
 
@@ -49,8 +56,10 @@ void Lexer::scanToken() {
         break;
     case '\n': m_line++; break;
     case '"' : scanString(); break;
-    default: 
+    case '_' : scanIdentifier(); break;
+    default : 
             if (std::isdigit((unsigned char)singleChar)) scanNumber();
+            else if (std::isalpha((unsigned char)singleChar)) scanIdentifier();
             else break;
     }
 }
@@ -133,4 +142,13 @@ void Lexer::advanceDigits()
 bool Lexer::peekNext() const {
     char nextChar = (m_currentIdx + 1 >= m_source.size()) ? '\0' : m_source[m_currentIdx + 1];
     return std::isdigit((unsigned char)nextChar);
+}
+
+void Lexer::scanIdentifier() {
+    while (std::isalnum((unsigned char)peek()) || peek() == '_')
+        m_currentIdx++;
+
+    std::string text = m_source.substr(m_startIdx, m_currentIdx - m_startIdx);
+    auto it = s_keywords.find(text);
+    addToken(it != s_keywords.end() ? it->second : TokenType::IDENTIFIER);
 }
