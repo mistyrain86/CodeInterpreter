@@ -72,6 +72,7 @@ TEST(ParserUnit, DanglingElse) {
     ASSERT_NE(outer, nullptr);
     EXPECT_EQ(outer->elseBranch, nullptr);  // 바깥 if → else 없음
     auto* inner = dynamic_cast<IfStmt*>(outer->thenBranch.get());
+    ASSERT_NE(inner, nullptr);
     EXPECT_NE(inner->elseBranch, nullptr);  // 안쪽 if → else 있음
 }
 
