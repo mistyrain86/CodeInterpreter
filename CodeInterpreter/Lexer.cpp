@@ -63,15 +63,15 @@ void Lexer::addToken(TokenType type,
 }
 
 bool Lexer::match(char expected) {
-    if (isAtEnd() || checkNextChar(expected))
+    if (isAtEnd() || !isNextChar(expected))
         return false;
     m_currentIdx++;
     return true;
 }
 
-bool Lexer::checkNextChar(char expected)
+bool Lexer::isNextChar(char expected)
 {
-    return m_source[m_currentIdx] != expected;
+    return m_source[m_currentIdx] == expected;
 }
 
 void Lexer::skipLineComment()

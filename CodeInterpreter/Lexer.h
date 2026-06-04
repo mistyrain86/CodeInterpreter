@@ -23,7 +23,7 @@ private:
     void addToken(TokenType type, std::variant<std::monostate, double, std::string> literal);
 
     bool match(char expected);
-    bool checkNextChar(char expected);
+    bool isNextChar(char expected);
     void skipLineComment();
     char peek() const;
 };
