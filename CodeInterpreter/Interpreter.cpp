@@ -39,17 +39,17 @@ Value Interpreter::evaluate(Expr* expr) {
                     return std::get<std::string>(l) + std::get<std::string>(r);
                 throw RuntimeError("[라인 " + std::to_string(line)
                     + "] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
-            case TokenType::MINUS:      checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) - std::get<double>(r);
-            case TokenType::STAR:       checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) * std::get<double>(r);
+            case TokenType::MINUS:      checkNumericPair(l, r, line); return std::get<double>(l) - std::get<double>(r);
+            case TokenType::STAR:       checkNumericPair(l, r, line); return std::get<double>(l) * std::get<double>(r);
             case TokenType::SLASH:
-                checkNumericOperand(l, line); checkNumericOperand(r, line);
+                checkNumericPair(l, r, line);
                 if (std::get<double>(r) == 0.0)
                     throw RuntimeError("[라인 " + std::to_string(line) + "] 런타임 오류: 0으로 나눌 수 없습니다.");
                 return std::get<double>(l) / std::get<double>(r);
-            case TokenType::GREATER:       checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) >  std::get<double>(r);
-            case TokenType::GREATER_EQUAL: checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) >= std::get<double>(r);
-            case TokenType::LESS:          checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) <  std::get<double>(r);
-            case TokenType::LESS_EQUAL:    checkNumericOperand(l, line); checkNumericOperand(r, line); return std::get<double>(l) <= std::get<double>(r);
+            case TokenType::GREATER:       checkNumericPair(l, r, line); return std::get<double>(l) >  std::get<double>(r);
+            case TokenType::GREATER_EQUAL: checkNumericPair(l, r, line); return std::get<double>(l) >= std::get<double>(r);
+            case TokenType::LESS:          checkNumericPair(l, r, line); return std::get<double>(l) <  std::get<double>(r);
+            case TokenType::LESS_EQUAL:    checkNumericPair(l, r, line); return std::get<double>(l) <= std::get<double>(r);
             case TokenType::EQUAL_EQUAL:   return Value{l == r};
             case TokenType::BANG_EQUAL:    return Value{!(l == r)};
             default: break;
@@ -96,6 +96,11 @@ void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
     try { for (const auto& s : stmts) execute(s.get()); }
     catch (...) { m_currentEnv = prev; throw; }
     m_currentEnv = prev;
+}
+
+void Interpreter::checkNumericPair(const Value& l, const Value& r, int line) const {
+    checkNumericOperand(l, line);
+    checkNumericOperand(r, line);
 }
 
 void Interpreter::checkNumericOperand(const Value& v, int line) const {

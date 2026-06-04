@@ -23,4 +23,5 @@ private:
     bool        isTruthy(const Value& val) const;
     std::string stringify(const Value& val) const;
     void        checkNumericOperand(const Value& val, int line) const;
+    void        checkNumericPair(const Value& l, const Value& r, int line) const;
 };
