@@ -6,13 +6,9 @@
 #include "IInterpreter.h"
 #include "Environment.h"
 #include "Expr.h"
+#include "RuntimeError.h"
 #include "Stmt.h"
 #include "Value.h"
-
-class RuntimeError : public std::runtime_error {
-public:
-    explicit RuntimeError(const std::string& msg) : std::runtime_error(msg) {}
-};
 
 class Interpreter : public IInterpreter {
 public:
