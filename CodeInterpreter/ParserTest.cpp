@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "Mocks.h"
+#include "Lexer.h"
 #include "Parser.h"
 #include "LangFactory.h"
 #include "TestUtils.h"
@@ -223,18 +224,48 @@ TEST(ParserUnit, Comparison_Less) {
     EXPECT_EQ(bin->op.type, TokenType::LESS);
 }
 
-// ── Mock 통합 테스트 ─────────────────────────────────────
-TEST(ParserMock, NumberLiteral_PassesThrough) {
-    auto ml = std::make_unique<MockLexer>();
-    EXPECT_CALL(*ml, tokenize(_)).WillOnce(Return(std::vector<Token>{
-        t(TokenType::NUMBER,"5",5.0), semi(), eof()
-    }));
+// ── Real Lexer 통합 테스트 ────────────────────────────────
+// Lexer(실제) + Parser(실제) / Checker·Interpreter는 Mock으로 격리
+TEST(RealLexerParser, NumberLiteral_PassesThrough) {
     auto mc = std::make_unique<MockChecker>();
     EXPECT_CALL(*mc, check(_)).Times(1);
     auto mi = std::make_unique<MockInterpreter>();
     EXPECT_CALL(*mi, interpret(_)).Times(1);
 
-    LangFactory factory(std::move(ml), std::make_unique<Parser>(),
+    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
                         std::move(mc), std::move(mi));
     EXPECT_NO_THROW(factory.run("5;"));
+}
+
+TEST(RealLexerParser, PrintStmt_NoThrow) {
+    auto mc = std::make_unique<MockChecker>();
+    EXPECT_CALL(*mc, check(_)).Times(1);
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+
+    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
+                        std::move(mc), std::move(mi));
+    EXPECT_NO_THROW(factory.run("print 42;"));
+}
+
+TEST(RealLexerParser, VarDecl_NoThrow) {
+    auto mc = std::make_unique<MockChecker>();
+    EXPECT_CALL(*mc, check(_)).Times(1);
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+
+    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
+                        std::move(mc), std::move(mi));
+    EXPECT_NO_THROW(factory.run("var x = 10;"));
+}
+
+TEST(RealLexerParser, ParseError_MissingSemicolon_Throws) {
+    auto mc = std::make_unique<MockChecker>();
+    EXPECT_CALL(*mc, check(_)).Times(0);
+    auto mi = std::make_unique<MockInterpreter>();
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+
+    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
+                        std::move(mc), std::move(mi));
+    EXPECT_THROW(factory.run("print 5"), ParseError);
 }
