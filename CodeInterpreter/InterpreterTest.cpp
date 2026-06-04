@@ -106,15 +106,11 @@ TEST(InterpreterTest, BlockScope_Isolation) {
     s.push_back(printStmt(varRef("x")));
     EXPECT_THROW(interp.interpret(s), std::runtime_error);
 }
-TEST(InterpreterTest, IfTrue) {
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<IfStmt>(litBool(true), printStmt(litStr("yes")), nullptr));
-    EXPECT_EQ(captureOutput([&]{ Interpreter().interpret(s); }), "yes\n");
+TEST_F(InterpreterFixture, IfTrue) {
+    EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
 }
-TEST(InterpreterTest, IfFalse_GoesElse) {
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<IfStmt>(litBool(false), printStmt(litStr("no")), printStmt(litStr("yes"))));
-    EXPECT_EQ(captureOutput([&]{ Interpreter().interpret(s); }), "yes\n");
+TEST_F(InterpreterFixture, IfFalse_GoesElse) {
+    EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(false), printStmt(litStr("no")), printStmt(litStr("yes")))), "yes\n");
 }
 TEST(InterpreterTest, ForLoop_0to2) {
     Interpreter interp;
