@@ -23,6 +23,39 @@ Value Interpreter::evaluate(Expr* expr) {
         }
         if (e->op.type == TokenType::BANG) return !isTruthy(r);
     }
+    if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
+        Value l = evaluate(e->left.get());
+        Value r = evaluate(e->right.get());
+        auto numCheck = [&](const Value& v) {
+            if (!std::holds_alternative<double>(v))
+                throw RuntimeError("[라인 " + std::to_string(e->op.line)
+                    + "] 런타임 오류: 피연산자는 반드시 숫자여야 합니다.");
+        };
+        switch (e->op.type) {
+            case TokenType::PLUS:
+                if (std::holds_alternative<double>(l) && std::holds_alternative<double>(r))
+                    return std::get<double>(l) + std::get<double>(r);
+                if (std::holds_alternative<std::string>(l) && std::holds_alternative<std::string>(r))
+                    return std::get<std::string>(l) + std::get<std::string>(r);
+                throw RuntimeError("[라인 " + std::to_string(e->op.line)
+                    + "] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
+            case TokenType::MINUS:      numCheck(l); numCheck(r); return std::get<double>(l) - std::get<double>(r);
+            case TokenType::STAR:       numCheck(l); numCheck(r); return std::get<double>(l) * std::get<double>(r);
+            case TokenType::SLASH:
+                numCheck(l); numCheck(r);
+                if (std::get<double>(r) == 0.0)
+                    throw RuntimeError("[라인 " + std::to_string(e->op.line)
+                        + "] 런타임 오류: 0으로 나눌 수 없습니다.");
+                return std::get<double>(l) / std::get<double>(r);
+            case TokenType::GREATER:       numCheck(l); numCheck(r); return std::get<double>(l) >  std::get<double>(r);
+            case TokenType::GREATER_EQUAL: numCheck(l); numCheck(r); return std::get<double>(l) >= std::get<double>(r);
+            case TokenType::LESS:          numCheck(l); numCheck(r); return std::get<double>(l) <  std::get<double>(r);
+            case TokenType::LESS_EQUAL:    numCheck(l); numCheck(r); return std::get<double>(l) <= std::get<double>(r);
+            case TokenType::EQUAL_EQUAL:   return Value{l == r};
+            case TokenType::BANG_EQUAL:    return Value{!(l == r)};
+            default: break;
+        }
+    }
     throw RuntimeError("미구현 표현식 타입");
 }
 
