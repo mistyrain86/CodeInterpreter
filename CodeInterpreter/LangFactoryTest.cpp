@@ -132,6 +132,36 @@ TEST_F(RealCheckerFixture, VarDecl_Integration) {
     factory->run("var x = 10;");
 }
 
+TEST_F(RealCheckerFixture, PrintLiteral_CheckerPasses) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::KW_PRINT, "print"),
+        numTok(42.0),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+
+    EXPECT_NO_THROW(factory->run("print 42;"));
+}
+
+TEST_F(RealCheckerFixture, VarDeclAndRef_CheckerPasses) {
+    // var x = 10; print x;
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(10.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::KW_PRINT,  "print"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+
+    EXPECT_NO_THROW(factory->run("var x = 10; print x;"));
+}
+
 TEST_F(RealCheckerFixture, ParseError_RealParser_Propagates) {
     EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{
         numTok(1.0),
