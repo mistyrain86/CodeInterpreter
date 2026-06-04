@@ -79,35 +79,62 @@ TEST(LexerTest, CommentOnly) {
 }
 
 TEST(LexerTest, StringLiteral) {
-    Lexer l;
-    auto t = l.tokenize("\"hello\"");
+    Lexer lexer;
+    auto t = lexer.tokenize("\"hello\"");
     EXPECT_EQ(t[0].type, TokenType::STRING);
     EXPECT_EQ(std::get<std::string>(t[0].literal), "hello");
 }
 
 TEST(LexerTest, EmptyString) {
-    Lexer l;
-    EXPECT_EQ(std::get<std::string>(l.tokenize("\"\"")[0].literal), "");
+    Lexer lexer;
+    EXPECT_EQ(std::get<std::string>(lexer.tokenize("\"\"")[0].literal), "");
 }
 
 TEST(LexerTest, UnterminatedString_Throws) {
-    Lexer l;
-    EXPECT_THROW(l.tokenize("\"hello"), std::runtime_error);
+    Lexer lexer;
+    EXPECT_THROW(lexer.tokenize("\"hello"), std::runtime_error);
 }
 
 TEST(LexerTest, IntegerNumber) {
-    Lexer l;
-    auto t = l.tokenize("42");
-    EXPECT_EQ(t[0].type, TokenType::NUMBER);
-    EXPECT_DOUBLE_EQ(std::get<double>(t[0].literal), 42.0);
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("42");
+    EXPECT_EQ(tokenArray[0].type, TokenType::NUMBER);
+    EXPECT_DOUBLE_EQ(std::get<double>(tokenArray[0].literal), 42.0);
 }
 
 TEST(LexerTest, FloatNumber) {
-    Lexer l;
-    EXPECT_DOUBLE_EQ(std::get<double>(l.tokenize("3.14")[0].literal), 3.14);
+    Lexer lexer;
+    EXPECT_DOUBLE_EQ(std::get<double>(lexer.tokenize("3.14")[0].literal), 3.14);
 }
 
 TEST(LexerTest, ZeroNumber) {
-    Lexer l;
-    EXPECT_DOUBLE_EQ(std::get<double>(l.tokenize("0")[0].literal), 0.0);
+    Lexer lexer;
+    EXPECT_DOUBLE_EQ(std::get<double>(lexer.tokenize("0")[0].literal), 0.0);
+}
+
+TEST(LexerTest, Identifier) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("myVar");
+    EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[0].lexeme, "myVar");
+}
+
+TEST(LexerTest, IdentifierWithUnderscore) {
+    Lexer lexer;
+    EXPECT_EQ(lexer.tokenize("_count")[0].type, TokenType::IDENTIFIER);
+}
+
+TEST(LexerTest, Keyword_var) { Lexer lexer; EXPECT_EQ(lexer.tokenize("var")[0].type, TokenType::KW_VAR); }
+TEST(LexerTest, Keyword_print) { Lexer lexer; EXPECT_EQ(lexer.tokenize("print")[0].type, TokenType::KW_PRINT); }
+TEST(LexerTest, Keyword_if) { Lexer lexer; EXPECT_EQ(lexer.tokenize("if")[0].type, TokenType::KW_IF); }
+TEST(LexerTest, Keyword_else) { Lexer lexer; EXPECT_EQ(lexer.tokenize("else")[0].type, TokenType::KW_ELSE); }
+TEST(LexerTest, Keyword_for) { Lexer lexer; EXPECT_EQ(lexer.tokenize("for")[0].type, TokenType::KW_FOR); }
+TEST(LexerTest, Keyword_true) { Lexer lexer; EXPECT_EQ(lexer.tokenize("true")[0].type, TokenType::KW_TRUE); }
+TEST(LexerTest, Keyword_false) { Lexer lexer; EXPECT_EQ(lexer.tokenize("false")[0].type, TokenType::KW_FALSE); }
+
+TEST(LexerTest, IdentifierNotKeyword) {
+    Lexer lexer;
+    auto tokenArray = lexer.tokenize("variable var");
+    EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[1].type, TokenType::KW_VAR);
 }
