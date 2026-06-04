@@ -123,6 +123,41 @@ TEST_F(InterpreterFixture, IfTrue) {
 TEST_F(InterpreterFixture, IfFalse_GoesElse) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(false), printStmt(litStr("no")), printStmt(litStr("yes")))), "yes\n");
 }
+// 커버리지 보강
+TEST_F(InterpreterFixture, UnaryBang_OnNil) {
+    EXPECT_EQ(run(printStmt(
+        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"),
+            std::make_unique<LiteralExpr>(Value{std::monostate{}})))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, UnaryBang_OnZero) {
+    EXPECT_EQ(run(printStmt(
+        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"), litNum(0.0)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, UnaryBang_OnString) {
+    EXPECT_EQ(run(printStmt(
+        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"), litStr("hello")))),
+        "false\n");
+}
+TEST_F(InterpreterFixture, GroupingExpr_Eval) {
+    EXPECT_EQ(run(printStmt(
+        std::make_unique<GroupingExpr>(bin(litNum(3), TokenType::PLUS, "+", litNum(4))))),
+        "7\n");
+}
+TEST_F(InterpreterFixture, VarDecl_NoInitializer) {
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<VarStmt>(makeIdent("x"), nullptr));
+    s.push_back(printStmt(varRef("x")));
+    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+}
+TEST_F(InterpreterFixture, EqualEqual_SameString) {
+    EXPECT_EQ(run(printStmt(bin(litStr("a"), TokenType::EQUAL_EQUAL, "==", litStr("a")))), "true\n");
+}
+TEST_F(InterpreterFixture, BangEqual_DifferentTypes) {
+    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::BANG_EQUAL, "!=", litStr("1")))), "true\n");
+}
+
 TEST_F(InterpreterFixture, ForLoop_0to2) {
     Token j  = makeIdent("j");
     Token lt = Token{TokenType::LESS,  "<", std::monostate{}, 1};
