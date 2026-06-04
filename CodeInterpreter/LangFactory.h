@@ -8,7 +8,7 @@
 
 class LangFactory {
 public:
-    LangFactory() = default;
+    LangFactory();
     LangFactory(std::unique_ptr<ILexer>       lexer,
                 std::unique_ptr<IParser>      parser,
                 std::unique_ptr<IChecker>     checker,
