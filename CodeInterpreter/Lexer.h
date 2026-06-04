@@ -26,4 +26,11 @@ private:
     bool isNextChar(char expected);
     void skipLineComment();
     char peek() const;
+
+    void scanString();
+    void advanceToClosingQuote();
+
+    void scanNumber();
+    void advanceDigits();
+    bool peekNext() const;
 };
