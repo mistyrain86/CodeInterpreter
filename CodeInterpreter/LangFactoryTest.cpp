@@ -10,6 +10,10 @@ using ::testing::_;
 using ::testing::InSequence;
 using ::testing::Throw;
 
+static auto emptyParse() {
+    return ::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> { return {}; });
+}
+
 class LangFactoryFixture : public ::testing::Test {
 protected:
     MockLexer*       ml;
@@ -39,8 +43,7 @@ TEST_F(LangFactoryFixture, Pipeline_CallsInOrder) {
     InSequence seq;
     EXPECT_CALL(*ml, tokenize("print 5;")).Times(1);
     EXPECT_CALL(*mp, parse(_))
-        .WillOnce(::testing::InvokeWithoutArgs(
-            []() -> std::vector<StmtPtr> { return {}; }));
+        .WillOnce(emptyParse());
     EXPECT_CALL(*mc, check(_)).Times(1);
     EXPECT_CALL(*mi, interpret(_)).Times(1);
 
@@ -60,8 +63,7 @@ TEST_F(LangFactoryFixture, ParseError_StopsBeforeChecker) {
 TEST_F(LangFactoryFixture, CheckerError_StopsBeforeInterpreter) {
     EXPECT_CALL(*ml, tokenize(_)).Times(1);
     EXPECT_CALL(*mp, parse(_))
-        .WillOnce(::testing::InvokeWithoutArgs(
-            []() -> std::vector<StmtPtr> { return {}; }));
+        .WillOnce(emptyParse());
     EXPECT_CALL(*mc, check(_))
         .WillOnce(Throw(CheckError("[라인 1] 의미 오류: 테스트")));
     EXPECT_CALL(*mi, interpret(_)).Times(0);
