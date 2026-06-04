@@ -56,6 +56,21 @@ TEST(ParserUnit, Grouping) {
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
 }
 
+TEST(ParserUnit, MissingSemicolon_Throws) {
+    EXPECT_THROW(parse({t(TokenType::KW_PRINT,"print"),
+                        t(TokenType::NUMBER,"5",5.0), eof()}), ParseError);
+}
+TEST(ParserUnit, MissingCloseParen_Throws) {
+    EXPECT_THROW(parse({t(TokenType::KW_PRINT,"print"),
+                        t(TokenType::LEFT_PAREN,"("),
+                        t(TokenType::NUMBER,"1",1.0), semi(), eof()}), ParseError);
+}
+TEST(ParserUnit, ExpectExpression_Throws) {
+    EXPECT_THROW(parse({t(TokenType::KW_PRINT,"print"),
+                        t(TokenType::STAR,"*"),
+                        t(TokenType::NUMBER,"5",5.0), semi(), eof()}), ParseError);
+}
+
 TEST(ParserUnit, BlockStmt) {
     auto stmts = parse({t(TokenType::LEFT_BRACE,"{"),
                         t(TokenType::KW_PRINT,"print"),t(TokenType::NUMBER,"1",1.0),semi(),
