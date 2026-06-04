@@ -56,6 +56,29 @@ TEST(ParserUnit, Grouping) {
         dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get()), nullptr);
 }
 
+TEST(ParserUnit, BlockStmt) {
+    auto stmts = parse({t(TokenType::LEFT_BRACE,"{"),
+                        t(TokenType::KW_PRINT,"print"),t(TokenType::NUMBER,"1",1.0),semi(),
+                        t(TokenType::RIGHT_BRACE,"}"),eof()});
+    auto* blk = dynamic_cast<BlockStmt*>(stmts[0].get());
+    ASSERT_NE(blk, nullptr);
+    EXPECT_EQ((int)blk->statements.size(), 1);
+}
+TEST(ParserUnit, ForStmt) {
+    auto stmts = parse({
+        t(TokenType::KW_FOR,"for"), t(TokenType::LEFT_PAREN,"("),
+        t(TokenType::KW_VAR,"var"), t(TokenType::IDENTIFIER,"i"),
+        t(TokenType::EQUAL,"="),    t(TokenType::NUMBER,"0",0.0), semi(),
+        t(TokenType::IDENTIFIER,"i"),t(TokenType::LESS,"<"),
+        t(TokenType::NUMBER,"3",3.0),semi(),
+        t(TokenType::IDENTIFIER,"i"),t(TokenType::EQUAL,"="),
+        t(TokenType::IDENTIFIER,"i"),t(TokenType::PLUS,"+"),
+        t(TokenType::NUMBER,"1",1.0),t(TokenType::RIGHT_PAREN,")"),
+        t(TokenType::KW_PRINT,"print"),t(TokenType::IDENTIFIER,"i"),semi(),eof()
+    });
+    EXPECT_NE(dynamic_cast<ForStmt*>(stmts[0].get()), nullptr);
+}
+
 TEST(ParserUnit, DanglingElse) {
     // if(true) if(false) print 1; else print 2;
     // else → 안쪽 if에 결합
