@@ -92,8 +92,8 @@ void Lexer::scanString() {
     advanceToClosingQuote();
 
     m_currentIdx++;
-    std::string lex = m_source.substr(m_startIdx + 1, m_currentIdx - m_startIdx - 2);
-    addToken(TokenType::STRING, std::move(lex));
+    std::string val = m_source.substr(m_startIdx + 1, m_currentIdx - m_startIdx - 2);
+    addToken(TokenType::STRING, std::move(val));
 }
 
 void Lexer::advanceToClosingQuote()
@@ -112,18 +112,22 @@ void Lexer::advanceToClosingQuote()
 }
 
 void Lexer::scanNumber() {
-    while (std::isdigit((unsigned char)peek()))
-        m_currentIdx++;
+    advanceDigits();
 
     if (peek() == '.' && peekNext()) {
         m_currentIdx++;
 
-        while (std::isdigit((unsigned char)peek()))
-            m_currentIdx++;
+        advanceDigits();
     }
 
     double val = std::stod(m_source.substr(m_startIdx, m_currentIdx - m_startIdx));
     addToken(TokenType::NUMBER, val);
+}
+
+void Lexer::advanceDigits()
+{
+    while (std::isdigit((unsigned char)peek()))
+        m_currentIdx++;
 }
 
 bool Lexer::peekNext() const {

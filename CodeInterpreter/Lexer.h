@@ -31,5 +31,6 @@ private:
     void advanceToClosingQuote();
 
     void scanNumber();
+    void advanceDigits();
     bool peekNext() const;
 };
