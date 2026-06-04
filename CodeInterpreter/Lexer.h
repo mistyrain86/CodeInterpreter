@@ -26,4 +26,6 @@ private:
     bool isNextChar(char expected);
     void skipLineComment();
     char peek() const;
+
+    void scanString();
 };
