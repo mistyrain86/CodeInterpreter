@@ -70,3 +70,65 @@ TEST_F(InterpreterFixture, DivByZero_Throws) {
     Interpreter i;
     EXPECT_THROW(i.interpret(s), RuntimeError);
 }
+
+// 변수 & 제어흐름
+TEST(InterpreterTest, VarDeclAndUse) {
+    Interpreter interp;
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("a", litNum(10.0)));
+    s.push_back(printStmt(varRef("a")));
+    EXPECT_EQ(captureOutput([&]{ interp.interpret(s); }), "10\n");
+}
+TEST(InterpreterTest, Reassignment) {
+    Interpreter interp;
+    Token a = makeIdent("a");
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("a", litNum(1.0)));
+    s.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<AssignExpr>(a, litNum(2.0))));
+    s.push_back(printStmt(varRef("a")));
+    EXPECT_EQ(captureOutput([&]{ interp.interpret(s); }), "2\n");
+}
+TEST(InterpreterTest, UndefinedVar_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(printStmt(std::make_unique<VariableExpr>(
+        Token{TokenType::IDENTIFIER, "notDef", std::monostate{}, 3})));
+    Interpreter i;
+    EXPECT_THROW(i.interpret(s), std::runtime_error);
+}
+TEST(InterpreterTest, BlockScope_Isolation) {
+    Interpreter interp;
+    std::vector<StmtPtr> s;
+    std::vector<StmtPtr> inner;
+    inner.push_back(varDecl("x", litStr("inner")));
+    inner.push_back(printStmt(varRef("x")));
+    s.push_back(blockStmt(std::move(inner)));
+    s.push_back(printStmt(varRef("x")));
+    EXPECT_THROW(interp.interpret(s), std::runtime_error);
+}
+TEST(InterpreterTest, IfTrue) {
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<IfStmt>(litBool(true), printStmt(litStr("yes")), nullptr));
+    EXPECT_EQ(captureOutput([&]{ Interpreter().interpret(s); }), "yes\n");
+}
+TEST(InterpreterTest, IfFalse_GoesElse) {
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<IfStmt>(litBool(false), printStmt(litStr("no")), printStmt(litStr("yes"))));
+    EXPECT_EQ(captureOutput([&]{ Interpreter().interpret(s); }), "yes\n");
+}
+TEST(InterpreterTest, ForLoop_0to2) {
+    Interpreter interp;
+    Token j  = makeIdent("j");
+    Token lt = Token{TokenType::LESS,  "<", std::monostate{}, 1};
+    Token pl = Token{TokenType::PLUS,  "+", std::monostate{}, 1};
+    std::vector<StmtPtr> body;
+    body.push_back(printStmt(std::make_unique<VariableExpr>(j)));
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<ForStmt>(
+        varDecl("j", litNum(0.0)),
+        std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), lt, litNum(3.0)),
+        std::make_unique<AssignExpr>(j,
+            std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), pl, litNum(1.0))),
+        blockStmt(std::move(body))));
+    EXPECT_EQ(captureOutput([&]{ interp.interpret(s); }), "0\n1\n2\n");
+}

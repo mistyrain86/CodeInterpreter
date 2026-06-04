@@ -23,6 +23,12 @@ Value Interpreter::evaluate(Expr* expr) {
         }
         if (e->op.type == TokenType::BANG) return !isTruthy(r);
     }
+    if (auto* e = dynamic_cast<VariableExpr*>(expr)) return m_currentEnv->get(e->name);
+    if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
+        Value v = evaluate(e->value.get());
+        m_currentEnv->assign(e->name, v);
+        return v;
+    }
     if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
         Value l = evaluate(e->left.get());
         Value r = evaluate(e->right.get());
@@ -64,6 +70,30 @@ void Interpreter::execute(Stmt* stmt) {
         std::cout << stringify(evaluate(s->expression.get())) << "\n";
     else if (auto* s = dynamic_cast<ExprStmt*>(stmt))
         evaluate(s->expression.get());
+    else if (auto* s = dynamic_cast<VarStmt*>(stmt)) {
+        Value v = s->initializer ? evaluate(s->initializer.get()) : Value{std::monostate{}};
+        m_currentEnv->define(s->name.lexeme, std::move(v));
+    }
+    else if (auto* s = dynamic_cast<BlockStmt*>(stmt))
+        executeBlock(s->statements, std::make_shared<Environment>(m_currentEnv));
+    else if (auto* s = dynamic_cast<IfStmt*>(stmt)) {
+        if (isTruthy(evaluate(s->condition.get()))) execute(s->thenBranch.get());
+        else if (s->elseBranch)                     execute(s->elseBranch.get());
+    }
+    else if (auto* s = dynamic_cast<ForStmt*>(stmt)) {
+        auto loopEnv = std::make_shared<Environment>(m_currentEnv);
+        auto prev    = m_currentEnv;
+        m_currentEnv = loopEnv;
+        try {
+            if (s->initializer) execute(s->initializer.get());
+            while (true) {
+                if (s->condition && !isTruthy(evaluate(s->condition.get()))) break;
+                execute(s->body.get());
+                if (s->increment) evaluate(s->increment.get());
+            }
+        } catch (...) { m_currentEnv = prev; throw; }
+        m_currentEnv = prev;
+    }
 }
 
 void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
