@@ -268,6 +268,36 @@ TEST(ParserTest, CallExpr_NestedCall) {
     EXPECT_NE(dynamic_cast<CallExpr*>(outer->args[0].get()), nullptr);
 }
 
+// ── Ch.2 return 문 테스트 ─────────────────────────────────────
+TEST(ParserTest, ReturnStmt_WithValue) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func f() { return 5; }");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* fn  = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    auto* ret = dynamic_cast<ReturnStmt*>(fn->body[0].get());
+    ASSERT_NE(ret, nullptr);
+    EXPECT_NE(ret->value, nullptr);
+}
+TEST(ParserTest, ReturnStmt_Void) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func f() { return; }");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* fn  = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    auto* ret = dynamic_cast<ReturnStmt*>(fn->body[0].get());
+    ASSERT_NE(ret, nullptr);
+    EXPECT_EQ(ret->value, nullptr);
+}
+TEST(ParserTest, ReturnStmt_Keyword) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func f() { return 42; }");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* fn  = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    auto* ret = dynamic_cast<ReturnStmt*>(fn->body[0].get());
+    ASSERT_NE(ret, nullptr);
+    EXPECT_EQ(ret->keyword.type, TokenType::KW_RETURN);
+    EXPECT_EQ(ret->keyword.lexeme, "return");
+}
+
 TEST(ParserUnit, Addition) {
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
                         t(TokenType::PLUS,"+"),
