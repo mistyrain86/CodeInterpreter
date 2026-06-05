@@ -411,3 +411,9 @@ TEST_F(InterpreterFixture, Array_NonNumericSize_Throws) {
     s.push_back(varDecl("arr", makeCall("Array", std::move(args))));
     EXPECT_THROW(runAll(std::move(s)), RuntimeError);
 }
+
+TEST_F(InterpreterFixture, Array_TooLargeSize_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(1000001.0)));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
