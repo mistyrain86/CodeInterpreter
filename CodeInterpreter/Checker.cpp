@@ -1,7 +1,11 @@
 #include <cassert>
 #include "Checker.h"
 
-void Checker::check(const std::vector<StmtPtr>& stmts) { checkStmts(stmts); }
+void Checker::check(const std::vector<StmtPtr>& stmts) {
+    beginScope();       // 전역 스코프 생성 → 전역 변수도 추적 대상
+    checkStmts(stmts);
+    endScope();
+}
 
 void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
     for (const auto& s : stmts) s->accept(*this);
@@ -45,8 +49,33 @@ void Checker::visitExprStmt(ExprStmt& s) {
 }
 
 // ── Ch.2 함수 스텁 (C가 구현) ─────────────────────────────────────
-void Checker::visitFunctionStmt(FunctionStmt&) { /* TODO: C 구현 */ }
-void Checker::visitReturnStmt  (ReturnStmt&)   { /* TODO: C 구현 */ }
+void Checker::visitFunctionStmt(FunctionStmt& s) {     // 파라미터 이름 중복 검사
+    std::unordered_set<std::string> seen;
+    for (const auto& param : s.params) {
+        if (seen.count(param.lexeme))
+            throw CheckError("[라인 " + std::to_string(param.line)
+                + "] 의미 오류: 파라미터 이름이 중복됩니다. ('"
+                + param.lexeme + "')");
+        seen.insert(param.lexeme);
+    }
+    // 함수 본문 스코프 검사
+    m_functionDepth++;
+    beginScope();
+    for (const auto& param : s.params) {
+        declare(param);
+        define(param);
+    }
+    checkStmts(s.body);
+    endScope();
+    m_functionDepth--;
+}
+
+void Checker::visitReturnStmt(ReturnStmt& s) {
+    if (m_functionDepth == 0)
+        throw CheckError("[라인 " + std::to_string(s.keyword.line)
+            + "] 의미 오류: 함수 외부에서 return을 사용할 수 없습니다.");
+    if (s.value) checkExpr(s.value.get());
+}
 
 // ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
 
@@ -92,8 +121,7 @@ void Checker::beginScope() { m_scopes.emplace_back(); }
 void Checker::endScope()   { m_scopes.pop_back(); }
 
 void Checker::declare(const Token& name) {
-    if (m_scopes.empty()) return;
-    auto& scope = m_scopes.back();
+    auto& scope = m_scopes.back();      // 전역 포함 모든 스코프 검사
     if (scope.count(name.lexeme))
         throw CheckError("[라인 " + std::to_string(name.line)
             + "] 의미 오류: 이미 이 스코프에 같은 이름의 변수가 있습니다. ('"
@@ -102,7 +130,7 @@ void Checker::declare(const Token& name) {
 }
 
 void Checker::define(const Token& name) {
-    if (!m_scopes.empty()) m_scopes.back()[name.lexeme] = true;
+    m_scopes.back()[name.lexeme] = true;
 }
 
 void Checker::resolveVar(const std::string& name, int line) {
@@ -116,4 +144,6 @@ void Checker::resolveVar(const std::string& name, int line) {
             return;
         }
     }
+    throw CheckError("[라인 " + std::to_string(line)
+        + "] 의미 오류: 선언되지 않은 변수입니다. ('" + name + "')");
 }

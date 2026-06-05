@@ -55,7 +55,7 @@ Value Interpreter::evaluate(Expr& expr) {
 }
 
 void Interpreter::execute(Stmt& stmt) {
-    if (m_stmtHook) m_stmtHook(stmt);  // Ch.5 디버거 훅
+    if (m_stmtHook) m_stmtHook(stmt);
     stmt.accept(*this);
 }
 
@@ -142,12 +142,25 @@ Value Interpreter::visitBinary(BinaryExpr& e) {
     throw RuntimeError(UNIMPLEMENTED_BINARY);
 }
 
+std::optional<int> Interpreter::lookupBinding(const Expr* expr) const {
+    if (!m_bindings) return std::nullopt;
+    auto it = m_bindings->find(expr);
+    if (it == m_bindings->end()) return std::nullopt;
+    return it->second;
+}
+
 Value Interpreter::visitVariable(VariableExpr& e) {
+    if (auto dist = lookupBinding(&e))
+        return m_currentEnv->getAt(*dist, e.name.lexeme);
     return m_currentEnv->get(e.name);
 }
 
 Value Interpreter::visitAssign(AssignExpr& e) {
     Value v = evaluate(*e.value);
+    if (auto dist = lookupBinding(&e)) {
+        m_currentEnv->assignAt(*dist, e.name.lexeme, v);
+        return v;
+    }
     m_currentEnv->assign(e.name, v);
     return v;
 }
@@ -208,7 +221,6 @@ bool Interpreter::isTruthy(const Value& v) const {
     return true;
 }
 
-// ── Ch.2 함수 스텁 (D가 구현) ─────────────────────────────────────
 void Interpreter::visitFunctionStmt(FunctionStmt& s) {
     auto fn = std::make_shared<LangFunction>(s, m_currentEnv);
     m_currentEnv->define(s.name.lexeme, Value{fn});

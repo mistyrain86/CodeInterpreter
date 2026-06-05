@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <variant>
 #include "ILexer.h"
 #include "Token.h"
 
@@ -21,24 +22,26 @@ private:
 
     void reset(const std::string& source);
     bool isAtEnd() const;
+
     void scanToken();
+    bool isWhitespace(char c) const;
+    bool isDigit(char c) const;
+    bool isAlphaOrUnderscore(char c) const;
+    bool scanPunctuatorAndOperator(char singleChar);
+    void scanString();
+    void scanNumber();
+    void scanIdentifier();
+
+    char advance();
+    void advanceDigits();
+    void skipLineComment();
+
     void addToken(TokenType type);
     void addToken(TokenType type, std::variant<std::monostate, double, std::string> literal);
 
     bool match(char expected);
-    bool isNextChar(char expected);
-    void skipLineComment();
     char peek() const;
-
-    void scanString();
-    void advanceToClosingQuote();
-
-    void scanNumber();
-    void advanceDigits();
     bool peekNext() const;
-
-    void scanIdentifier();
-    void advanceIdentifierChars();
 
     void runtimeErrorUnexpectedChar(char singleChar);
 };
