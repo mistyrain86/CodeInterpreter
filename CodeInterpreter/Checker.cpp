@@ -2,7 +2,11 @@
 #include "Checker.h"
 
 void Checker::check(const std::vector<StmtPtr>& stmts) {
-    beginScope();       // 전역 스코프 생성 → 전역 변수도 추적 대상
+    beginScope();
+    // 내장 함수 등록
+    Token arrayBuiltin{TokenType::IDENTIFIER, "Array", std::monostate{}, 0};
+    declare(arrayBuiltin);
+    define(arrayBuiltin);
     checkStmts(stmts);
     endScope();
 }
@@ -49,7 +53,12 @@ void Checker::visitExprStmt(ExprStmt& s) {
 }
 
 // ── Ch.2 함수 스텁 (C가 구현) ─────────────────────────────────────
-void Checker::visitFunctionStmt(FunctionStmt& s) {     // 파라미터 이름 중복 검사
+void Checker::visitFunctionStmt(FunctionStmt& s) {
+    // 함수 이름을 외부 스코프에 등록 (호출 위치에서 resolveVar 가능)
+    declare(s.name);
+    define(s.name);
+
+    // 파라미터 이름 중복 검사
     std::unordered_set<std::string> seen;
     for (const auto& param : s.params) {
         if (seen.count(param.lexeme))
