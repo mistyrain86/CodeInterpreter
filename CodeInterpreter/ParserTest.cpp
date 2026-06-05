@@ -298,6 +298,54 @@ TEST(ParserTest, ReturnStmt_Keyword) {
     EXPECT_EQ(ret->keyword.lexeme, "return");
 }
 
+// ── Ch.3 배열 인덱스 테스트 ───────────────────────────────────
+TEST(ParserTest, IndexGetExpr) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("arr[0];");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    EXPECT_NE(dynamic_cast<IndexGetExpr*>(es->expression.get()), nullptr);
+}
+TEST(ParserTest, IndexGetExpr_WithVar) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("arr[i];");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    auto* idx = dynamic_cast<IndexGetExpr*>(es->expression.get());
+    ASSERT_NE(idx, nullptr);
+    EXPECT_NE(dynamic_cast<VariableExpr*>(idx->index.get()), nullptr);
+}
+TEST(ParserTest, IndexSetExpr) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("arr[0] = 5;");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    EXPECT_NE(dynamic_cast<IndexSetExpr*>(es->expression.get()), nullptr);
+}
+TEST(ParserTest, IndexSetExpr_WithExpr) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("arr[0] = 1 + 2;");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
+    auto* set = dynamic_cast<IndexSetExpr*>(es->expression.get());
+    ASSERT_NE(set, nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(set->value.get()), nullptr);
+}
+
+// ── Ch.2/3 에러 케이스 테스트 ────────────────────────────────
+TEST(ParserTest, FunctionDecl_MissingName_Throws) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func () { }");
+    EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
+}
+TEST(ParserTest, CallExpr_MissingCloseParen_Throws) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("f(1, 2;");
+    EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
+}
+
 TEST(ParserUnit, Addition) {
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
                         t(TokenType::PLUS,"+"),
