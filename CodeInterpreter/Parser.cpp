@@ -167,7 +167,34 @@ ExprPtr Parser::parseUnary() {
         Token op = previous();
         return std::make_unique<UnaryExpr>(op, parseUnary());
     }
-    return parsePrimary();
+    return parseCall();
+}
+ExprPtr Parser::parseCall() {
+    ExprPtr expr = parsePrimary();
+    while (true) {
+        if (match({TokenType::LEFT_PAREN})) {
+            expr = finishCall(std::move(expr));
+        } else if (match({TokenType::LEFT_BRACKET})) {
+            Token   bracket = previous();
+            ExprPtr index   = parseExpression();
+            consume(TokenType::RIGHT_BRACKET, "인덱스 뒤에 ']'가 필요합니다.");
+            expr = std::make_unique<IndexGetExpr>(
+                std::move(expr), std::move(bracket), std::move(index));
+        } else {
+            break;
+        }
+    }
+    return expr;
+}
+ExprPtr Parser::finishCall(ExprPtr callee) {
+    std::vector<ExprPtr> args;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do { args.push_back(parseExpression()); }
+        while (match({TokenType::COMMA}));
+    }
+    Token paren = consume(TokenType::RIGHT_PAREN, "인자 목록 뒤에 ')'가 필요합니다.");
+    return std::make_unique<CallExpr>(
+        std::move(callee), std::move(paren), std::move(args));
 }
 ExprPtr Parser::parsePrimary() {
     if (match({TokenType::KW_FALSE}))
