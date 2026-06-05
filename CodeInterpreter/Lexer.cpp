@@ -5,7 +5,8 @@ const std::unordered_map<std::string, TokenType> Lexer::s_keywords = {
     {"var",   TokenType::KW_VAR},   {"print", TokenType::KW_PRINT},
     {"if",    TokenType::KW_IF},    {"else",  TokenType::KW_ELSE},
     {"for",   TokenType::KW_FOR},   {"true",  TokenType::KW_TRUE},
-    {"false", TokenType::KW_FALSE},
+    {"false", TokenType::KW_FALSE}, {"func",   TokenType::KW_FUNC},
+    {"return", TokenType::KW_RETURN},
 };
 
 std::vector<Token> Lexer::tokenize(const std::string& source) {
@@ -37,6 +38,7 @@ void Lexer::scanToken() {
     case '{': addToken(TokenType::LEFT_BRACE);  break;
     case '}': addToken(TokenType::RIGHT_BRACE); break;
     case ';': addToken(TokenType::SEMICOLON);   break;
+    case ',': addToken(TokenType::COMMA);       break;
     case '+': addToken(TokenType::PLUS);        break;
     case '-': addToken(TokenType::MINUS);       break;
     case '*': addToken(TokenType::STAR);        break;
