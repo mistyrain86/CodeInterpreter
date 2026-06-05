@@ -1,6 +1,7 @@
 ﻿#include "Lexer.h"
-#include <stdexcept>
+#include <algorithm>
 #include <cctype>
+#include <stdexcept>
 
 const std::unordered_map<std::string, TokenType> Lexer::s_keywords = {
     {"var",    TokenType::KW_VAR},
@@ -48,6 +49,22 @@ void Lexer::scanToken() {
     if (singleChar == '"') { scanString(); return; }
     if (isDigit(singleChar)) { scanNumber(); return; }
     if (isAlphaOrUnderscore(singleChar)) { scanIdentifier(); return; }
+
+    // 유니코드 en dash(–, U+2013) / em dash(—, U+2014) → MINUS로 처리
+    if ((unsigned char)singleChar == 0xE2 && m_currentIdx + 1 < m_source.size() &&
+        (unsigned char)m_source[m_currentIdx] == 0x80) {
+        unsigned char third = (unsigned char)m_source[m_currentIdx + 1];
+        if (third == 0x93 || third == 0x94) {           // en/em dash → MINUS
+            m_currentIdx += 2;
+            addToken(TokenType::MINUS);
+            return;
+        }
+        if (third == 0x9C) {                             // " (U+201C) → 문자열 시작
+            m_currentIdx += 2;
+            scanCurlyQuoteString();
+            return;
+        }
+    }
 
     runtimeErrorUnexpectedChar(singleChar);
 }
@@ -111,6 +128,27 @@ void Lexer::scanString() {
     addToken(TokenType::STRING, std::move(val));
 }
 
+// 여는 Curly Quote(", 3바이트)를 소비한 직후 호출
+// 닫는 Curly Quote(", U+201D: 0xE2 0x80 0x9D)까지 스캔
+void Lexer::scanCurlyQuoteString() {
+    std::size_t contentStart = m_currentIdx;
+    while (!isAtEnd()) {
+        if (peek() == '\n') m_line++;
+        if ((unsigned char)m_source[m_currentIdx]     == 0xE2 &&
+            m_currentIdx + 2 < m_source.size()                &&
+            (unsigned char)m_source[m_currentIdx + 1] == 0x80 &&
+            (unsigned char)m_source[m_currentIdx + 2] == 0x9D) {
+            std::string val = m_source.substr(contentStart, m_currentIdx - contentStart);
+            m_currentIdx += 3;
+            addToken(TokenType::STRING, std::move(val));
+            return;
+        }
+        m_currentIdx++;
+    }
+    throw std::runtime_error("[라인 " + std::to_string(m_line)
+        + "] 어휘 오류: 문자열이 닫히지 않았습니다.");
+}
+
 void Lexer::scanNumber() {
     advanceDigits();
 
@@ -129,7 +167,10 @@ void Lexer::scanIdentifier() {
     }
 
     std::string text = m_source.substr(m_startIdx, m_currentIdx - m_startIdx);
-    auto it = s_keywords.find(text);
+    std::string lower = text;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    auto it = s_keywords.find(lower);
 
     addToken(it != s_keywords.end() ? it->second : TokenType::IDENTIFIER);
 }

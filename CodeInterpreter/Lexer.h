@@ -29,6 +29,7 @@ private:
     bool isAlphaOrUnderscore(char c) const;
     bool scanPunctuatorAndOperator(char singleChar);
     void scanString();
+    void scanCurlyQuoteString();
     void scanNumber();
     void scanIdentifier();
 
