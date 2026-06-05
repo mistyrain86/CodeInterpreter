@@ -258,7 +258,7 @@ TEST(CheckerUnit, CallExprWithArgs_NoThrow) {
 
 // checkExpr L106: IndexGetExpr → arr[0]
 TEST(CheckerUnit, IndexGetExpr_NoThrow) {
-    Token bracket = Token{ TokenType::LEFT_PAREN, "[", std::monostate{}, 1 };
+    Token bracket = Token{ TokenType::LEFT_BRACKET, "[", std::monostate{}, 1 };
     std::vector<StmtPtr> stmts;
     stmts.push_back(varDecl("arr", litNum(1.0)));
     stmts.push_back(std::make_unique<ExprStmt>(
