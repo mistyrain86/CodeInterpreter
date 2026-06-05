@@ -202,14 +202,15 @@ Value Interpreter::visitCallExpr(CallExpr& e) {
 
     auto fn = std::get<std::shared_ptr<ICallable>>(callee);
 
-    std::vector<Value> args;
-    for (auto& arg : e.args) args.push_back(evaluate(*arg));
-
-    if (static_cast<int>(args.size()) != fn->arity())
+    // arity 먼저 검사 — 불필요한 인자 평가 방지
+    if (static_cast<int>(e.args.size()) != fn->arity())
         throw RuntimeError("[라인 " + std::to_string(e.paren.line)
             + "] 런타임 오류: 인자 개수 불일치. 기대: "
             + std::to_string(fn->arity())
-            + ", 실제: " + std::to_string(args.size()));
+            + ", 실제: " + std::to_string(e.args.size()));
+
+    std::vector<Value> args;
+    for (auto& arg : e.args) args.push_back(evaluate(*arg));
 
     return fn->call(*this, args);
 }
