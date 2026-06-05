@@ -22,8 +22,6 @@ void Environment::assign(const Token& name, Value value) {
     throw RuntimeError(makeUndefinedVarMessage(name));
 }
 
-// ── Ch.4 정적 바인딩 ──────────────────────────────────────────────
-
 Value Environment::getAt(int distance, const std::string& name) const {
     const Environment* env = this;
     for (int i = 0; i < distance; i++) env = env->m_enclosing.get();
@@ -35,8 +33,6 @@ void Environment::assignAt(int distance, const std::string& name, Value value) {
     for (int i = 0; i < distance; i++) env = env->m_enclosing.get();
     env->m_values[name] = std::move(value);
 }
-
-// ── Ch.5 디버거 inspect ────────────────────────────────────────────
 
 void Environment::printAll(int depth) const {
     if (m_enclosing) m_enclosing->printAll(depth + 1);

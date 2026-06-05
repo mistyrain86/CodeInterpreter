@@ -21,7 +21,6 @@ public:
 
     void run(const std::string& source);
 
-    // Ch.5 디버거 접근용
     IInterpreter* getInterpreter() const { return m_interpreter.get(); }
 
 private:
