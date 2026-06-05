@@ -66,7 +66,12 @@ void Checker::visitFunctionStmt(FunctionStmt& s) {     // 파라미터 이름 �
     m_functionDepth--;
 }
 
-void Checker::visitReturnStmt  (ReturnStmt&)   { /* TODO: C 구현 */ }
+void Checker::visitReturnStmt(ReturnStmt& s) {
+    if (m_functionDepth == 0)
+        throw CheckError("[라인 " + std::to_string(s.keyword.line)
+            + "] 의미 오류: 함수 외부에서 return을 사용할 수 없습니다.");
+    if (s.value) checkExpr(s.value.get());
+}
 
 // ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
 
