@@ -389,6 +389,15 @@ TEST_F(InterpreterFixture, Array_OutOfBounds_Throws) {
     EXPECT_THROW(runAll(std::move(s)), RuntimeError);
 }
 
+TEST_F(InterpreterFixture, Array_NegativeIndex_Throws) {
+    Token minus = Token{TokenType::MINUS, "-", std::monostate{}, 1};
+    auto negIdx = std::make_unique<UnaryExpr>(minus, litNum(1.0));
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(3.0)));
+    s.push_back(printStmt(indexGet(varRef("arr"), std::move(negIdx))));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
+
 TEST_F(InterpreterFixture, Array_NonNumericIndex_Throws) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("arr", arrayCreate(3.0)));
