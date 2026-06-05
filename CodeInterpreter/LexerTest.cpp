@@ -188,4 +188,5 @@ TEST_F(LexerFixture, ArrayAccess) {
     EXPECT_EQ(tokenArray[1].type, TokenType::LEFT_BRACKET);
     EXPECT_EQ(tokenArray[2].type, TokenType::NUMBER);
     EXPECT_EQ(tokenArray[3].type, TokenType::RIGHT_BRACKET);
+    EXPECT_DOUBLE_EQ(std::get<double>(tokenArray[2].literal), 0.0);
 }
