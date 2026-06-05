@@ -364,3 +364,18 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# ── CodeInterpreter 프로젝트 빌드 산출물 ──────────────────────
+# 실행 파일 및 링크 산출물
+*.exe
+*.ilk
+*.iobj
+*.ipdb
+
+# Visual Studio 빌드 중간 폴더
+[Dd]ebug/
+[Rr]elease/
+x64/
+Win32/
+
+# VS 내부 생성 중첩 빌드 폴더
+CodeInterpreter/CodeInterpreter/
