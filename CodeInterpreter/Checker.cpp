@@ -44,6 +44,10 @@ void Checker::visitExprStmt(ExprStmt& s) {
     checkExpr(s.expression.get());
 }
 
+// ── Ch.2 함수 스텁 (C가 구현) ─────────────────────────────────────
+void Checker::visitFunctionStmt(FunctionStmt&) { /* TODO: C 구현 */ }
+void Checker::visitReturnStmt  (ReturnStmt&)   { /* TODO: C 구현 */ }
+
 // ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
 
 void Checker::checkExpr(Expr* expr) {
@@ -63,6 +67,21 @@ void Checker::checkExpr(Expr* expr) {
     else if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
         checkExpr(e->value.get());
         resolveVar(e->name.lexeme, e->name.line);
+    }
+    // Ch.2: 함수 호출 — 인자 표현식 재귀 검사
+    else if (auto* e = dynamic_cast<CallExpr*>(expr)) {
+        checkExpr(e->callee.get());
+        for (auto& arg : e->args) checkExpr(arg.get());
+    }
+    // Ch.3: 배열 인덱스
+    else if (auto* e = dynamic_cast<IndexGetExpr*>(expr)) {
+        checkExpr(e->object.get());
+        checkExpr(e->index.get());
+    }
+    else if (auto* e = dynamic_cast<IndexSetExpr*>(expr)) {
+        checkExpr(e->object.get());
+        checkExpr(e->index.get());
+        checkExpr(e->value.get());
     }
     // LiteralExpr: 검사 없음
 }
