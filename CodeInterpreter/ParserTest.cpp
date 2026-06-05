@@ -345,6 +345,16 @@ TEST(ParserTest, CallExpr_MissingCloseParen_Throws) {
     auto tokens = lexer.tokenize("f(1, 2;");
     EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
 }
+TEST(ParserTest, IndexExpr_MissingCloseBracket_Throws) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("arr[0;");
+    EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
+}
+TEST(ParserTest, IndexExpr_EmptyIndex_Throws) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("arr[];");
+    EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
+}
 
 TEST(ParserUnit, Addition) {
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
