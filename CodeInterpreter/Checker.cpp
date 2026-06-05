@@ -4,40 +4,51 @@
 void Checker::check(const std::vector<StmtPtr>& stmts) { checkStmts(stmts); }
 
 void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
-    for (const auto& s : stmts) checkStmt(s.get());
+    for (const auto& s : stmts) s->accept(*this);
 }
 
-void Checker::checkStmt(Stmt* stmt) {
-    if (auto* s = dynamic_cast<VarStmt*>(stmt)) {
-        declare(s->name);
-        if (s->initializer) checkExpr(s->initializer.get());
-        define(s->name);
-    }
-    else if (auto* s = dynamic_cast<BlockStmt*>(stmt)) {
-        beginScope();
-        checkStmts(s->statements);
-        endScope();
-    }
-    else if (auto* s = dynamic_cast<IfStmt*>(stmt)) {
-        checkExpr(s->condition.get());
-        checkStmt(s->thenBranch.get());
-        if (s->elseBranch) checkStmt(s->elseBranch.get());
-    }
-    else if (auto* s = dynamic_cast<ForStmt*>(stmt)) {
-        beginScope();
-        if (s->initializer) checkStmt(s->initializer.get());
-        if (s->condition)   checkExpr(s->condition.get());
-        if (s->increment)   checkExpr(s->increment.get());
-        if (s->body)        checkStmt(s->body.get());
-        endScope();
-    }
-    else if (auto* s = dynamic_cast<PrintStmt*>(stmt)) {
-        checkExpr(s->expression.get());
-    }
-    else if (auto* s = dynamic_cast<ExprStmt*>(stmt)) {
-        checkExpr(s->expression.get());
-    }
+// ── StmtVisitor 구현 ───────────────────────────────────────────────
+
+void Checker::visitVarStmt(VarStmt& s) {
+    declare(s.name);
+    if (s.initializer) checkExpr(s.initializer.get());
+    define(s.name);
 }
+
+void Checker::visitBlockStmt(BlockStmt& s) {
+    beginScope();
+    checkStmts(s.statements);
+    endScope();
+}
+
+void Checker::visitIfStmt(IfStmt& s) {
+    checkExpr(s.condition.get());
+    s.thenBranch->accept(*this);
+    if (s.elseBranch) s.elseBranch->accept(*this);
+}
+
+void Checker::visitForStmt(ForStmt& s) {
+    beginScope();
+    if (s.initializer) s.initializer->accept(*this);
+    if (s.condition)   checkExpr(s.condition.get());
+    if (s.increment)   checkExpr(s.increment.get());
+    if (s.body)        s.body->accept(*this);
+    endScope();
+}
+
+void Checker::visitPrintStmt(PrintStmt& s) {
+    checkExpr(s.expression.get());
+}
+
+void Checker::visitExprStmt(ExprStmt& s) {
+    checkExpr(s.expression.get());
+}
+
+// ── Ch.2 함수 스텁 (C가 구현) ─────────────────────────────────────
+void Checker::visitFunctionStmt(FunctionStmt&) { /* TODO: C 구현 */ }
+void Checker::visitReturnStmt  (ReturnStmt&)   { /* TODO: C 구현 */ }
+
+// ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
 
 void Checker::checkExpr(Expr* expr) {
     assert(expr != nullptr);
@@ -57,14 +68,31 @@ void Checker::checkExpr(Expr* expr) {
         checkExpr(e->value.get());
         resolveVar(e->name.lexeme, e->name.line);
     }
+    // Ch.2: 함수 호출 — 인자 표현식 재귀 검사
+    else if (auto* e = dynamic_cast<CallExpr*>(expr)) {
+        checkExpr(e->callee.get());
+        for (auto& arg : e->args) checkExpr(arg.get());
+    }
+    // Ch.3: 배열 인덱스
+    else if (auto* e = dynamic_cast<IndexGetExpr*>(expr)) {
+        checkExpr(e->object.get());
+        checkExpr(e->index.get());
+    }
+    else if (auto* e = dynamic_cast<IndexSetExpr*>(expr)) {
+        checkExpr(e->object.get());
+        checkExpr(e->index.get());
+        checkExpr(e->value.get());
+    }
     // LiteralExpr: 검사 없음
 }
 
+// ── 스코프 관리 ────────────────────────────────────────────────────
+
 void Checker::beginScope() { m_scopes.emplace_back(); }
-void Checker::endScope() { m_scopes.pop_back(); }
+void Checker::endScope()   { m_scopes.pop_back(); }
 
 void Checker::declare(const Token& name) {
-    if (m_scopes.empty()) return;           // ← 전역은 검사 안 함
+    if (m_scopes.empty()) return;
     auto& scope = m_scopes.back();
     if (scope.count(name.lexeme))
         throw CheckError("[라인 " + std::to_string(name.line)

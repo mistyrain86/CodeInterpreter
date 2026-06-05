@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "Lexer.h"
 
 class LexerFixture : public ::testing::Test {
@@ -145,3 +145,48 @@ TEST_F(LexerFixture, WhitespaceIgnored) {
 
 TEST_F(LexerFixture, UnknownChar_At)   { EXPECT_THROW(lexer.tokenize("@"), std::runtime_error); }
 TEST_F(LexerFixture, UnknownChar_Hash) { EXPECT_THROW(lexer.tokenize("#"), std::runtime_error); }
+
+TEST_F(LexerFixture, FuncKeyword) {
+    auto tokenArray = lexer.tokenize("func");
+    EXPECT_EQ(tokenArray[0].type, TokenType::KW_FUNC);
+}
+
+TEST_F(LexerFixture, ReturnKeyword) {
+    auto tokenArray = lexer.tokenize("return");
+    EXPECT_EQ(tokenArray[0].type, TokenType::KW_RETURN);
+}
+
+TEST_F(LexerFixture, Comma) {
+    auto tokenArray = lexer.tokenize(",");
+    EXPECT_EQ(tokenArray[0].type, TokenType::COMMA);
+}
+
+TEST_F(LexerFixture, FuncSignature) {
+    auto tokenArray = lexer.tokenize("func add(a, b)");
+    EXPECT_EQ(tokenArray[0].type, TokenType::KW_FUNC);
+    EXPECT_EQ(tokenArray[1].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[2].type, TokenType::LEFT_PAREN);
+    EXPECT_EQ(tokenArray[3].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[4].type, TokenType::COMMA);
+    EXPECT_EQ(tokenArray[5].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[6].type, TokenType::RIGHT_PAREN);
+}
+
+TEST_F(LexerFixture, LeftBracket) {
+    auto tokenArray = lexer.tokenize("[");
+    EXPECT_EQ(tokenArray[0].type, TokenType::LEFT_BRACKET);
+}
+
+TEST_F(LexerFixture, RightBracket) {
+    auto tokenArray = lexer.tokenize("]");
+    EXPECT_EQ(tokenArray[0].type, TokenType::RIGHT_BRACKET);
+}
+
+TEST_F(LexerFixture, ArrayAccess) {
+    auto tokenArray = lexer.tokenize("arr[0]");
+    EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[1].type, TokenType::LEFT_BRACKET);
+    EXPECT_EQ(tokenArray[2].type, TokenType::NUMBER);
+    EXPECT_EQ(tokenArray[3].type, TokenType::RIGHT_BRACKET);
+    EXPECT_DOUBLE_EQ(std::get<double>(tokenArray[2].literal), 0.0);
+}
