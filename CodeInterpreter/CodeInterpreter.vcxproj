@@ -195,6 +195,7 @@
     <ClCompile Include="EnvironmentTest.cpp" />
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="InterpreterTest.cpp" />
+    <ClCompile Include="IntegrationTest.cpp" />
     <ClCompile Include="LangFactory.cpp" />
     <ClCompile Include="Lexer.cpp" />
     <ClCompile Include="Parser.cpp" />
