@@ -374,11 +374,10 @@ TEST_F(InterpreterFixture, Array_DynamicIndex) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("arr", arrayCreate(3.0)));
     s.push_back(varDecl("i", litNum(2.0)));
-    s.push_back(std::make_unique<ExprStmt>(indexSet(
-        varRef("arr"),
-        std::make_unique<BinaryExpr>(
-            std::make_unique<VariableExpr>(iToken), minus, litNum(1.0)),
-        litNum(7.0))));
+    auto dynamicIdx = std::make_unique<BinaryExpr>(
+        std::make_unique<VariableExpr>(iToken), minus, litNum(1.0));
+    s.push_back(std::make_unique<ExprStmt>(
+        indexSet(varRef("arr"), std::move(dynamicIdx), litNum(7.0))));
     s.push_back(printStmt(indexGet(varRef("arr"), litNum(1.0))));
     EXPECT_EQ(runAll(std::move(s)), "7\n");
 }
