@@ -122,8 +122,10 @@ ExprPtr Parser::parseAssignment() {
     ExprPtr expr = parseEquality();
     if (match({TokenType::EQUAL})) {
         ExprPtr value = parseAssignment();
+        // 변수 대입: a = v
         if (auto* v = dynamic_cast<VariableExpr*>(expr.get()))
             return std::make_unique<AssignExpr>(v->name, std::move(value));
+        // 배열 원소 대입: arr[i] = v
         if (auto* idx = dynamic_cast<IndexGetExpr*>(expr.get()))
             return std::make_unique<IndexSetExpr>(
                 std::move(idx->object),
