@@ -22,6 +22,14 @@ void Environment::assign(const Token& name, Value value) {
     throw RuntimeError(makeUndefinedVarMessage(name));
 }
 
+void Environment::assignOrDefine(const Token& name, Value value) {
+    auto it = m_values.find(name.lexeme);
+    if (it != m_values.end()) { it->second = std::move(value); return; }
+    if (m_enclosing) { m_enclosing->assignOrDefine(name, std::move(value)); return; }
+    // 전역 스코프까지 탐색 후 없으면 전역에 암묵적 선언
+    m_values[name.lexeme] = std::move(value);
+}
+
 Value Environment::getAt(int distance, const std::string& name) const {
     const Environment* env = this;
     for (int i = 0; i < distance; i++) env = env->m_enclosing.get();
