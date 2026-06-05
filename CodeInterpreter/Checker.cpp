@@ -45,7 +45,27 @@ void Checker::visitExprStmt(ExprStmt& s) {
 }
 
 // ── Ch.2 함수 스텁 (C가 구현) ─────────────────────────────────────
-void Checker::visitFunctionStmt(FunctionStmt&) { /* TODO: C 구현 */ }
+void Checker::visitFunctionStmt(FunctionStmt& s) {     // 파라미터 이름 중복 검사
+    std::unordered_set<std::string> seen;
+    for (const auto& param : s.params) {
+        if (seen.count(param.lexeme))
+            throw CheckError("[라인 " + std::to_string(param.line)
+                + "] 의미 오류: 파라미터 이름이 중복됩니다. ('"
+                + param.lexeme + "')");
+        seen.insert(param.lexeme);
+    }
+    // 함수 본문 스코프 검사
+    m_functionDepth++;
+    beginScope();
+    for (const auto& param : s.params) {
+        declare(param);
+        define(param);
+    }
+    checkStmts(s.body);
+    endScope();
+    m_functionDepth--;
+}
+
 void Checker::visitReturnStmt  (ReturnStmt&)   { /* TODO: C 구현 */ }
 
 // ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
