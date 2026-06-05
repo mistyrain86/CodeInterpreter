@@ -8,13 +8,19 @@
 struct Stmt {
     virtual ~Stmt() = default;
     virtual void accept(StmtVisitor& v) = 0;
+    virtual int  getLine() const { return 0; }  // 디버거용 줄 번호
 };
 using StmtPtr = std::unique_ptr<Stmt>;
 
 struct ExprStmt : Stmt {
+    Token   keyword;            // 표현식의 첫 토큰 (줄 번호용)
     ExprPtr expression;
-    explicit ExprStmt(ExprPtr e) : expression(std::move(e)) {}
+    ExprStmt(Token kw, ExprPtr e) : keyword(std::move(kw)), expression(std::move(e)) {}
+    explicit ExprStmt(ExprPtr e)
+        : keyword(Token{TokenType::SEMICOLON, "", std::monostate{}, 0})
+        , expression(std::move(e)) {}
     void accept(StmtVisitor& v) override { v.visitExprStmt(*this); }
+    int  getLine() const override { return keyword.line; }
 };
 
 struct PrintStmt : Stmt {
@@ -29,6 +35,7 @@ struct VarStmt : Stmt {
     VarStmt(Token n, ExprPtr i)
         : name(std::move(n)), initializer(std::move(i)) {}
     void accept(StmtVisitor& v) override { v.visitVarStmt(*this); }
+    int  getLine() const override { return name.line; }
 };
 
 struct BlockStmt : Stmt {
@@ -59,4 +66,26 @@ struct ForStmt : Stmt {
         , increment(std::move(inc))
         , body(std::move(b)) {}
     void accept(StmtVisitor& v) override { v.visitForStmt(*this); }
+};
+
+// ── Chapter 2: 함수 선언 / return ─────────────────────────────────
+struct FunctionStmt : Stmt {
+    Token                name;
+    std::vector<Token>   params;
+    std::vector<StmtPtr> body;
+    FunctionStmt(Token name, std::vector<Token> params, std::vector<StmtPtr> body)
+        : name(std::move(name))
+        , params(std::move(params))
+        , body(std::move(body)) {}
+    void accept(StmtVisitor& v) override { v.visitFunctionStmt(*this); }
+    int  getLine() const override { return name.line; }
+};
+
+struct ReturnStmt : Stmt {
+    Token   keyword;
+    ExprPtr value;    // nullptr 이면 return; (nil 반환)
+    ReturnStmt(Token keyword, ExprPtr value)
+        : keyword(std::move(keyword)), value(std::move(value)) {}
+    void accept(StmtVisitor& v) override { v.visitReturnStmt(*this); }
+    int  getLine() const override { return keyword.line; }
 };
