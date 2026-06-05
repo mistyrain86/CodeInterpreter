@@ -474,8 +474,7 @@ protected:
         m_result = m_folder.optimize(std::move(stmts));
         auto* ps  = dynamic_cast<PrintStmt*>(m_result[0].get());
         auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
-        EXPECT_NE(lit, nullptr);
-        if (!lit) return 0.0;
+        ASSERT_NE(lit, nullptr);
         return std::get<double>(lit->value);
     }
 
