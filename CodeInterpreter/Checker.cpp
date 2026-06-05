@@ -1,7 +1,11 @@
 #include <cassert>
 #include "Checker.h"
 
-void Checker::check(const std::vector<StmtPtr>& stmts) { checkStmts(stmts); }
+void Checker::check(const std::vector<StmtPtr>& stmts) {
+    beginScope();       // 전역 스코프 생성 → 전역 변수도 추적 대상
+    checkStmts(stmts);
+    endScope();
+}
 
 void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
     for (const auto& s : stmts) s->accept(*this);
@@ -117,8 +121,7 @@ void Checker::beginScope() { m_scopes.emplace_back(); }
 void Checker::endScope()   { m_scopes.pop_back(); }
 
 void Checker::declare(const Token& name) {
-    if (m_scopes.empty()) return;
-    auto& scope = m_scopes.back();
+    auto& scope = m_scopes.back();      // 전역 포함 모든 스코프 검사
     if (scope.count(name.lexeme))
         throw CheckError("[라인 " + std::to_string(name.line)
             + "] 의미 오류: 이미 이 스코프에 같은 이름의 변수가 있습니다. ('"
@@ -141,4 +144,6 @@ void Checker::resolveVar(const std::string& name, int line) {
             return;
         }
     }
+    throw CheckError("[라인 " + std::to_string(line)
+        + "] 의미 오류: 선언되지 않은 변수입니다. ('" + name + "')");
 }

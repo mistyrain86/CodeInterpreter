@@ -70,12 +70,30 @@ TEST(CheckerUnit, NestedBlock_Shadowing_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// var a = 1.0; var a = 2.0; → 전역 중복 선언 (현재 전역 스코프 미추적)
-TEST(CheckerUnit, DuplicateGlobal_NoThrow) {
+// var a = 1.0; var a = 2.0; → 전역 중복 선언 → CheckError
+TEST(CheckerUnit, DuplicateGlobal_Throws) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(varDecl("a", litNum(1.0)));
     stmts.push_back(varDecl("a", litNum(2.0)));
-    EXPECT_NO_THROW(Checker().check(stmts));
+    EXPECT_THROW(Checker().check(stmts), CheckError);
+}
+
+// var a = 1.0; print x; → 미선언 변수 참조 → CheckError
+TEST(CheckerUnit, UndeclaredVar_Throws) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("a", litNum(1.0)));
+    stmts.push_back(printStmt(std::make_unique<VariableExpr>(makeIdent("x", 2))));
+    EXPECT_THROW(Checker().check(stmts), CheckError);
+}
+
+// print missing; → 에러 메시지에 변수명 포함
+TEST(CheckerUnit, UndeclaredVar_ErrorContainsName) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(std::make_unique<VariableExpr>(makeIdent("missing", 1))));
+    try { Checker().check(stmts); FAIL(); }
+    catch (const CheckError& e) {
+        EXPECT_NE(std::string(e.what()).find("missing"), std::string::npos);
+    }
 }
 
 // { var a = a; } → 자기 참조 초기화 → CheckError
