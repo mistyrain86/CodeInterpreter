@@ -1,6 +1,7 @@
 ﻿#include "Lexer.h"
-#include <stdexcept>
+#include <algorithm>
 #include <cctype>
+#include <stdexcept>
 
 const std::unordered_map<std::string, TokenType> Lexer::s_keywords = {
     {"var",    TokenType::KW_VAR},
@@ -129,7 +130,10 @@ void Lexer::scanIdentifier() {
     }
 
     std::string text = m_source.substr(m_startIdx, m_currentIdx - m_startIdx);
-    auto it = s_keywords.find(text);
+    std::string lower = text;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    auto it = s_keywords.find(lower);
 
     addToken(it != s_keywords.end() ? it->second : TokenType::IDENTIFIER);
 }
