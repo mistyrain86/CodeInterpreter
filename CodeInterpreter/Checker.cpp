@@ -104,7 +104,12 @@ void Checker::checkExpr(Expr* expr) {
     }
     else if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
         checkExpr(e->value.get());
-        resolveVar(e->name.lexeme, e->name.line);
+        // 스코프 체인에 없으면 전역에 암묵적 선언 (미선언 변수 할당 허용)
+        bool found = false;
+        for (int i = (int)m_scopes.size() - 1; i >= 0; i--) {
+            if (m_scopes[i].count(e->name.lexeme)) { found = true; break; }
+        }
+        if (!found) m_scopes.front()[e->name.lexeme] = true;
     }
     // Ch.2: 함수 호출 — 인자 표현식 재귀 검사
     else if (auto* e = dynamic_cast<CallExpr*>(expr)) {

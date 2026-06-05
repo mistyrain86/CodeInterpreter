@@ -161,7 +161,7 @@ Value Interpreter::visitAssign(AssignExpr& e) {
         m_currentEnv->assignAt(*dist, e.name.lexeme, v);
         return v;
     }
-    m_currentEnv->assign(e.name, v);
+    m_currentEnv->assignOrDefine(e.name, v);
     return v;
 }
 
