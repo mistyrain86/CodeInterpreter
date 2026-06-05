@@ -23,6 +23,8 @@ private:
     StmtPtr  parseForStmt();
     StmtPtr  parseBlock();
     StmtPtr  parseExprStmt();
+    StmtPtr  parseFunctionStmt();
+    StmtPtr  parseReturnStmt();
 
     ExprPtr  parseExpression();
     ExprPtr  parseAssignment();
@@ -31,6 +33,8 @@ private:
     ExprPtr  parseTerm();
     ExprPtr  parseFactor();
     ExprPtr  parseUnary();
+    ExprPtr  parseCall();
+    ExprPtr  finishCall(ExprPtr callee);
     ExprPtr  parsePrimary();
 
     bool         isAtEnd() const;
