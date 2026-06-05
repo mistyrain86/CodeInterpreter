@@ -173,19 +173,19 @@ TEST_F(LexerFixture, FuncSignature) {
 }
 
 TEST_F(LexerFixture, LeftBracket) {
-    auto tokens = lexer.tokenize("[");
-    EXPECT_EQ(tokens[0].type, TokenType::LEFT_BRACKET);
+    auto tokenArray = lexer.tokenize("[");
+    EXPECT_EQ(tokenArray[0].type, TokenType::LEFT_BRACKET);
 }
 
 TEST_F(LexerFixture, RightBracket) {
-    auto tokens = lexer.tokenize("]");
-    EXPECT_EQ(tokens[0].type, TokenType::RIGHT_BRACKET);
+    auto tokenArray = lexer.tokenize("]");
+    EXPECT_EQ(tokenArray[0].type, TokenType::RIGHT_BRACKET);
 }
 
 TEST_F(LexerFixture, ArrayAccess) {
-    auto tokens = lexer.tokenize("arr[0]");
-    EXPECT_EQ(tokens[0].type, TokenType::IDENTIFIER);
-    EXPECT_EQ(tokens[1].type, TokenType::LEFT_BRACKET);
-    EXPECT_EQ(tokens[2].type, TokenType::NUMBER);
-    EXPECT_EQ(tokens[3].type, TokenType::RIGHT_BRACKET);
+    auto tokenArray = lexer.tokenize("arr[0]");
+    EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[1].type, TokenType::LEFT_BRACKET);
+    EXPECT_EQ(tokenArray[2].type, TokenType::NUMBER);
+    EXPECT_EQ(tokenArray[3].type, TokenType::RIGHT_BRACKET);
 }
