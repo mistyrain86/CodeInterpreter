@@ -1,5 +1,8 @@
 #include "Interpreter.h"
+#include "ArrayBuiltin.h"
 #include "ICallable.h"
+#include "LangFunction.h"
+#include "ReturnSignal.h"
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -8,6 +11,24 @@ namespace {
 static constexpr auto UNIMPLEMENTED_EXPR   = "미구현 표현식 타입";
 static constexpr auto UNIMPLEMENTED_UNARY  = "미구현 단항 연산자";
 static constexpr auto UNIMPLEMENTED_BINARY = "미구현 이항 연산자";
+
+// 배열 타입/범위 검증 후 {배열 포인터, 인덱스} 반환
+std::pair<std::vector<Value>*, int> resolveArrayAccess(
+        const Value& obj, const Value& idx, int line) {
+    if (!std::holds_alternative<ArrayType>(obj))
+        throw RuntimeError("[라인 " + std::to_string(line)
+            + "] 런타임 오류: 인덱스 접근은 배열만 지원합니다.");
+    if (!std::holds_alternative<double>(idx))
+        throw RuntimeError("[라인 " + std::to_string(line)
+            + "] 런타임 오류: 인덱스는 반드시 숫자여야 합니다.");
+    auto* arr = std::get<ArrayType>(obj).get();
+    int   i   = static_cast<int>(std::get<double>(idx));
+    if (i < 0 || i >= static_cast<int>(arr->size()))
+        throw RuntimeError("[라인 " + std::to_string(line)
+            + "] 런타임 오류: 인덱스 범위를 벗어났습니다. ("
+            + std::to_string(i) + ")");
+    return {arr, i};
+}
 
 struct ScopeGuard {
     std::shared_ptr<Environment>& ref;
@@ -19,7 +40,9 @@ struct ScopeGuard {
 }
 
 Interpreter::Interpreter()
-    : m_currentEnv(std::make_shared<Environment>()) {}
+    : m_currentEnv(std::make_shared<Environment>()) {
+    m_currentEnv->define("Array", Value{std::make_shared<ArrayBuiltin>()});
+}
 
 // ── 공개 진입점 ────────────────────────────────────────────────────
 
@@ -186,22 +209,52 @@ bool Interpreter::isTruthy(const Value& v) const {
 }
 
 // ── Ch.2 함수 스텁 (D가 구현) ─────────────────────────────────────
-void Interpreter::visitFunctionStmt(FunctionStmt&) {
-    throw RuntimeError("미구현: 함수 선언 (visitFunctionStmt)");
-}
-Value Interpreter::visitCallExpr(CallExpr&) {
-    throw RuntimeError("미구현: 함수 호출 (visitCallExpr)");
-}
-void Interpreter::visitReturnStmt(ReturnStmt&) {
-    throw RuntimeError("미구현: return 문 (visitReturnStmt)");
+void Interpreter::visitFunctionStmt(FunctionStmt& s) {
+    auto fn = std::make_shared<LangFunction>(s, m_currentEnv);
+    m_currentEnv->define(s.name.lexeme, Value{fn});
 }
 
-// ── Ch.3 배열 스텁 (D가 구현) ─────────────────────────────────────
-Value Interpreter::visitIndexGetExpr(IndexGetExpr&) {
-    throw RuntimeError("미구현: 배열 읽기 (visitIndexGetExpr)");
+Value Interpreter::visitCallExpr(CallExpr& e) {
+    Value callee = evaluate(*e.callee);
+
+    if (!std::holds_alternative<std::shared_ptr<ICallable>>(callee))
+        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
+            + "] 런타임 오류: 함수가 아닌 대상을 호출했습니다.");
+
+    auto fn = std::get<std::shared_ptr<ICallable>>(callee);
+
+    // arity 먼저 검사 — 불필요한 인자 평가 방지
+    if (static_cast<int>(e.args.size()) != fn->arity())
+        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
+            + "] 런타임 오류: 인자 개수 불일치. 기대: "
+            + std::to_string(fn->arity())
+            + ", 실제: " + std::to_string(e.args.size()));
+
+    std::vector<Value> args;
+    for (auto& arg : e.args) args.push_back(evaluate(*arg));
+
+    return fn->call(*this, args);
 }
-Value Interpreter::visitIndexSetExpr(IndexSetExpr&) {
-    throw RuntimeError("미구현: 배열 쓰기 (visitIndexSetExpr)");
+
+void Interpreter::visitReturnStmt(ReturnStmt& s) {
+    Value val = s.value ? evaluate(*s.value) : Value{std::monostate{}};
+    throw ReturnSignal(std::move(val));
+}
+
+Value Interpreter::visitIndexGetExpr(IndexGetExpr& e) {
+    Value obj = evaluate(*e.object);
+    Value idx = evaluate(*e.index);
+    auto [arr, i] = resolveArrayAccess(obj, idx, e.bracket.line);
+    return (*arr)[i];
+}
+
+Value Interpreter::visitIndexSetExpr(IndexSetExpr& e) {
+    Value obj = evaluate(*e.object);
+    Value idx = evaluate(*e.index);
+    Value val = evaluate(*e.value);
+    auto [arr, i] = resolveArrayAccess(obj, idx, e.bracket.line);
+    (*arr)[i] = val;
+    return val;
 }
 
 std::string Interpreter::stringify(const Value& v) const {
