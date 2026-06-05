@@ -1,22 +1,35 @@
 #include "Parser.h"
 
+// Command 맵 초기화 — 토큰 타입 → 문장 파서 함수 등록
+void Parser::initDispatch() {
+    using T = TokenType;
+    // Ch.2: 함수 선언 / return
+    m_stmtDispatch[static_cast<int>(T::KW_FUNC)]    = [this] { return parseFunctionStmt(); };
+    m_stmtDispatch[static_cast<int>(T::KW_RETURN)]  = [this] { return parseReturnStmt();   };
+    // Ch.1: 기존 문장
+    m_stmtDispatch[static_cast<int>(T::KW_VAR)]     = [this] { return parseVarDecl();      };
+    m_stmtDispatch[static_cast<int>(T::KW_PRINT)]   = [this] { return parsePrintStmt();    };
+    m_stmtDispatch[static_cast<int>(T::KW_IF)]      = [this] { return parseIfStmt();       };
+    m_stmtDispatch[static_cast<int>(T::KW_FOR)]     = [this] { return parseForStmt();      };
+    m_stmtDispatch[static_cast<int>(T::LEFT_BRACE)] = [this] { return parseBlock();        };
+}
+
 std::vector<StmtPtr> Parser::parse(std::vector<Token> tokens) {
     m_stream.load(std::move(tokens));   // TokenStream(Adapter)에 위임
+    initDispatch();                     // Command 맵 초기화
     std::vector<StmtPtr> stmts;
     while (!isAtEnd()) stmts.push_back(parseStatement());
     return stmts;
 }
 
+// Command 패턴: 토큰 타입으로 파서 함수를 조회해 디스패치
+// 새 문장 타입 추가 시 parseStatement() 수정 없이 initDispatch()에만 등록 (OCP)
 StmtPtr Parser::parseStatement() {
-    // Ch.2: 함수 선언 / return
-    if (match({TokenType::KW_FUNC}))    return parseFunctionStmt();
-    if (match({TokenType::KW_RETURN}))  return parseReturnStmt();
-    // Ch.1: 기존 문장
-    if (match({TokenType::KW_VAR}))     return parseVarDecl();
-    if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
-    if (match({TokenType::KW_IF}))      return parseIfStmt();
-    if (match({TokenType::KW_FOR}))     return parseForStmt();
-    if (match({TokenType::LEFT_BRACE})) return parseBlock();
+    auto it = m_stmtDispatch.find(static_cast<int>(peek().type));
+    if (it != m_stmtDispatch.end()) {
+        advance();              // 디스패치 토큰 소비
+        return it->second();    // 등록된 파서 Command 실행
+    }
     return parseExprStmt();
 }
 StmtPtr Parser::parseFunctionStmt() {
