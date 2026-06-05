@@ -3,13 +3,14 @@
 #include "Parser.h"
 #include "Checker.h"
 #include "Interpreter.h"
+#include "Resolver.h"
+#include "ConstantFolder.h"
 
 LangFactory::LangFactory()
     : m_lexer       (std::make_unique<Lexer>())
     , m_parser      (std::make_unique<Parser>())
     , m_checker     (std::make_unique<Checker>())
     , m_interpreter (std::make_unique<Interpreter>()) {}
-
 
 LangFactory::LangFactory(std::unique_ptr<ILexer>       lexer,
                          std::unique_ptr<IParser>      parser,
@@ -20,9 +21,24 @@ LangFactory::LangFactory(std::unique_ptr<ILexer>       lexer,
     , m_checker(std::move(checker))
     , m_interpreter(std::move(interpreter)) {}
 
+void LangFactory::setOptimizer(std::unique_ptr<IOptimizer> optimizer) {
+    m_optimizer = std::move(optimizer);
+}
+
 void LangFactory::run(const std::string& source) {
     auto tokens = m_lexer->tokenize(source);
     auto stmts  = m_parser->parse(std::move(tokens));
+
+    // Ch.4: 상수 폴딩 (IOptimizer)
+    if (m_optimizer)
+        stmts = m_optimizer->optimize(std::move(stmts));
+
+    // Ch.4: 정적 바인딩 (Resolver → Interpreter)
+    Resolver resolver;
+    BindingMap bindings = resolver.resolve(stmts);
+    if (auto* interp = dynamic_cast<Interpreter*>(m_interpreter.get()))
+        interp->setBindings(&bindings);
+
     m_checker->check(stmts);
     m_interpreter->interpret(stmts);
 }
