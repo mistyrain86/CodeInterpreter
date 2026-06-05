@@ -1,92 +1,89 @@
+﻿#define NOMINMAX
 #include <iostream>
-#include <sstream>
 #include <string>
-#include "LangFactory.h"
-#include "ParseError.h"
-#include "CheckError.h"
-#include "RuntimeError.h"
+#include <limits>
+#include "Shell.h"
+
 #ifdef _WIN32
 #include <windows.h>
-#include <io.h>
-#define IS_INTERACTIVE() (_isatty(_fileno(stdin)))
-#else
-#include <unistd.h>
-#define IS_INTERACTIVE() (isatty(fileno(stdin)))
 #endif
 
 #if !_DEBUG
-
-static void runSource(const std::string& source) {
-    LangFactory factory;
-    try {
-        factory.run(source);
-    } catch (const ParseError& e) {
-        std::cerr << "[구문 오류] " << e.what() << '\n';
-    } catch (const CheckError& e) {
-        std::cerr << "[의미 오류] " << e.what() << '\n';
-    } catch (const RuntimeError& e) {
-        std::cerr << "[런타임 오류] " << e.what() << '\n';
-    } catch (const std::runtime_error& e) {
-        std::cerr << "[오류] " << e.what() << '\n';
-    }
-}
-
 int main() {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
 
-    if (IS_INTERACTIVE()) {
-        std::cout << "CodeFab Interpreter\n";
-        std::cout << "여러 줄 입력 후 빈 줄을 입력하면 실행됩니다. 종료: Ctrl+Z (Windows) / Ctrl+D (Linux)\n";
+    Shell shell;
 
-        std::string line;
-        std::ostringstream oss;
+    while (true) {
+        std::cout << "=================================\n";
+        std::cout << "       Factory 모드 선택         \n";
+        std::cout << "=================================\n";
+        std::cout << " 1. REPL 모드\n";
+        std::cout << " 2. 파일 실행 모드 (run)\n";
+        std::cout << " 3. 디버그 모드 (debug)\n";
+        std::cout << " 4. 종료\n";
+        std::cout << "=================================\n";
+        std::cout << "원하는 모드의 번호를 입력하세요: ";
 
-        while (true) {
-            std::cout << (oss.str().empty() ? ">>> " : "... ");
-            std::cout.flush();
+        int choice;
+        std::cin >> choice;
 
-            if (!std::getline(std::cin, line)) {
-                if (!oss.str().empty()) runSource(oss.str());
-                break;
-            }
+        if (std::cin.fail()) {
+            std::cout << "\n❌ [오류] 숫자가 아닌 잘못된 문자가 입력되었습니다. 다시 시도하세요.\n\n";
 
-            if (line.empty()) {
-                if (!oss.str().empty()) {
-                    runSource(oss.str());
-                    oss.str("");
-                    oss.clear();
-                }
-            } else {
-                oss << line << '\n';
-            }
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            continue;
         }
-    } else {
-        // 파이프 / 파일 입력 모드
-        std::ostringstream oss;
-        std::string line;
-        while (std::getline(std::cin, line))
-            oss << line << '\n';
 
-        LangFactory factory;
-        try {
-            factory.run(oss.str());
-        } catch (const ParseError& e) {
-            std::cerr << "[구문 오류] " << e.what() << '\n';
-            return 1;
-        } catch (const CheckError& e) {
-            std::cerr << "[의미 오류] " << e.what() << '\n';
-            return 2;
-        } catch (const RuntimeError& e) {
-            std::cerr << "[런타임 오류] " << e.what() << '\n';
-            return 3;
-        } catch (const std::runtime_error& e) {
-            std::cerr << "[오류] " << e.what() << '\n';
-            return 4;
+        std::string filename;
+        bool isExit = false;
+
+        switch (choice) {
+        case 1:
+            std::cout << "\nREPL 모드를 시작합니다...\n";
+            shell.runRepl();
+            break;
+
+        case 2:
+            std::cout << "\n❌ 아직 미구현된 기능입니다.\n\n";
+            break;
+
+            std::cout << "실행할 파일명을 입력하세요 (예: test.txt): ";
+            std::cin >> filename;
+            std::cout << filename << " 파일을 실행합니다...\n\n";
+            shell.runFile(filename);
+            break;
+
+        case 3:
+            std::cout << "\n❌ 아직 미구현된 기능입니다.\n\n";
+            break;
+
+            std::cout << "디버그할 파일명을 입력하세요 (예: test.txt): ";
+            std::cin >> filename;
+            std::cout << filename << " 파일의 디버깅을 시작합니다...\n\n";
+            shell.runDebug(filename);
+            break;
+
+        case 4:
+            std::cout << "\n프로그램을 종료합니다.\n";
+            isExit = true;
+            break;
+
+        default:
+            std::cout << "\n❌ [오류] 1부터 4 사이의 숫자만 입력할 수 있습니다.\n\n";
+            break;
+        }
+
+        if (isExit) {
+            break;
         }
     }
+
     return 0;
 }
 #endif
