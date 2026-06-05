@@ -130,7 +130,7 @@ void Checker::declare(const Token& name) {
 }
 
 void Checker::define(const Token& name) {
-    if (!m_scopes.empty()) m_scopes.back()[name.lexeme] = true;
+    m_scopes.back()[name.lexeme] = true;
 }
 
 void Checker::resolveVar(const std::string& name, int line) {

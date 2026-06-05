@@ -159,6 +159,127 @@ TEST(CheckerUnit, IfBranch_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
+// ── 커버리지 보강 TC ──────────────────────────────────────────────
+
+// visitVarStmt L18 FALSE: 초기화 식 없는 변수 선언
+TEST(CheckerUnit, VarNoInitializer_NoThrow) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<VarStmt>(makeIdent("a", 1), nullptr));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// visitIfStmt L31 TRUE: else 분기 존재
+TEST(CheckerUnit, IfElseBranch_NoThrow) {
+    std::vector<StmtPtr> thenB, elseB;
+    thenB.push_back(varDecl("x", litNum(1.0)));
+    elseB.push_back(varDecl("y", litNum(2.0)));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<IfStmt>(
+        litBool(true), blockStmt(std::move(thenB)), blockStmt(std::move(elseB))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// visitForStmt L36-39 FALSE: initializer·condition·increment·body 모두 null
+TEST(CheckerUnit, ForAllNullFields_NoThrow) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<ForStmt>(nullptr, nullptr, nullptr, nullptr));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// visitExprStmt L47: 단독 표현식 구문
+TEST(CheckerUnit, ExprStmt_NoThrow) {
+    Token plus = Token{ TokenType::PLUS, "+", std::monostate{}, 1 };
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<BinaryExpr>(litNum(1.0), plus, litNum(2.0))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// visitFunctionStmt L54: 파라미터 없는 함수 → for 루프 body 미실행
+TEST(CheckerUnit, FunctionNoParams_NoThrow) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("f", 1), std::vector<Token>{}, std::vector<StmtPtr>{}));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// visitReturnStmt L77 FALSE: 반환값 없는 return (return;)
+TEST(CheckerUnit, ReturnNoValue_InFunction_NoThrow) {
+    std::vector<StmtPtr> body;
+    body.push_back(std::make_unique<ReturnStmt>(makeIdent("return", 2), nullptr));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("f", 1), std::vector<Token>{}, std::move(body)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// checkExpr L87: GroupingExpr → (1.0)
+TEST(CheckerUnit, GroupingExpr_NoThrow) {
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<GroupingExpr>(litNum(1.0))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// checkExpr L90: UnaryExpr → -1.0
+TEST(CheckerUnit, UnaryExpr_NoThrow) {
+    Token minus = Token{ TokenType::MINUS, "-", std::monostate{}, 1 };
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<UnaryExpr>(minus, litNum(1.0))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// checkExpr L101: CallExpr args 없음 → for 루프 body 미실행
+TEST(CheckerUnit, CallExprNoArgs_NoThrow) {
+    Token paren = Token{ TokenType::RIGHT_PAREN, ")", std::monostate{}, 1 };
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("foo", litNum(1.0)));
+    stmts.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<CallExpr>(
+            std::make_unique<VariableExpr>(makeIdent("foo")),
+            paren, std::vector<ExprPtr>{})));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// checkExpr L103: CallExpr args 있음 → for 루프 body 실행
+TEST(CheckerUnit, CallExprWithArgs_NoThrow) {
+    Token paren = Token{ TokenType::RIGHT_PAREN, ")", std::monostate{}, 1 };
+    std::vector<ExprPtr> args;
+    args.push_back(litNum(42.0));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("foo", litNum(1.0)));
+    stmts.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<CallExpr>(
+            std::make_unique<VariableExpr>(makeIdent("foo")),
+            paren, std::move(args))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// checkExpr L106: IndexGetExpr → arr[0]
+TEST(CheckerUnit, IndexGetExpr_NoThrow) {
+    Token bracket = Token{ TokenType::LEFT_PAREN, "[", std::monostate{}, 1 };
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("arr", litNum(1.0)));
+    stmts.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<IndexGetExpr>(
+            std::make_unique<VariableExpr>(makeIdent("arr")),
+            bracket, litNum(0.0))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
+// checkExpr L110: IndexSetExpr → arr[0] = 99.0
+TEST(CheckerUnit, IndexSetExpr_NoThrow) {
+    Token bracket = Token{ TokenType::LEFT_PAREN, "[", std::monostate{}, 1 };
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("arr", litNum(1.0)));
+    stmts.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<IndexSetExpr>(
+            std::make_unique<VariableExpr>(makeIdent("arr")),
+            bracket, litNum(0.0), litNum(99.0))));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}
+
 // ── CheckerMock: Mock Lexer·Parser 통합 테스트 ───────────────────
 
 // MockParser → { var a = 1; var a = 2; } → CheckError, Interpreter 미호출
