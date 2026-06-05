@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <unordered_map>
 #include <vector>
 #include "IParser.h"
 #include "TokenStream.h"   // Adapter: 토큰 커서 관리 위임
@@ -13,6 +14,11 @@ public:
 
 private:
     TokenStream m_stream;  // vector<Token> → 커서 인터페이스 적응
+
+    // Command 패턴: 토큰 타입 → 파서 함수 매핑
+    using StmtParserFn = std::function<StmtPtr()>;
+    std::unordered_map<int, StmtParserFn> m_stmtDispatch;
+    void initDispatch();
 
     // ── 문장 파서 ──────────────────────────────────────────────
     StmtPtr  parseStatement();
