@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -64,4 +65,5 @@ private:
     StmtHook                     m_stmtHook;
     void        checkNumericOperand(const Value& val, int line) const;
     void        checkNumericPair(const Value& l, const Value& r, int line) const;
+    std::optional<int> lookupBinding(const Expr* expr) const;
 };
