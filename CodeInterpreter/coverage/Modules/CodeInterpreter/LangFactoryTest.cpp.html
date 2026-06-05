@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+        <meta charset="utf-8"/>
+	    <title>LangFactoryTest.cpp</title>
+	    <link href="../../third-party/google-code-prettify/prettify-CppCoverage.css" type="text/css" rel="stylesheet" />
+	    <script type="text/javascript" src="../../third-party/google-code-prettify/prettify.js"></script>
+	</head>
+    <body onload="prettyPrint()">
+        <h4></h4>
+        <pre class="prettyprint lang-cpp linenums">
+#include &lt;gtest/gtest.h&gt;
+#include &lt;gmock/gmock.h&gt;
+#include "Mocks.h"
+#include "LangFactory.h"
+#include "ParseError.h"
+#include "CheckError.h"
+#include "Parser.h"
+#include "Checker.h"
+#include "TestUtils.h"
+
+using ::testing::_;
+using ::testing::InSequence;
+using ::testing::Throw;
+
+// í í° ìíì¤ í¬í¼
+<span style = "background-color:#dfd">static Token tok(TokenType t, std::string lex, int line = 1) {
+    return Token{t, std::move(lex), std::monostate{}, line};
+}
+static Token numTok(double v, int line = 1) {
+    return Token{TokenType::NUMBER, std::to_string(v), v, line};
+}
+static Token eofTok() {
+    return Token{TokenType::END_OF_FILE, "", std::monostate{}, 1};
+}</span>
+
+<span style = "background-color:#dfd">static auto emptyParse() {
+    return ::testing::InvokeWithoutArgs([]() -&gt; std::vector&lt;StmtPtr&gt; { return {}; });
+}</span>
+
+class LangFactoryFixture : public ::testing::Test {
+protected:
+    MockLexer*       ml = nullptr;
+    MockParser*      mp = nullptr;
+    MockChecker*     mc = nullptr;
+    MockInterpreter* mi = nullptr;
+    std::unique_ptr&lt;LangFactory&gt; factory;
+
+<span style = "background-color:#dfd">    void SetUp() override {
+        auto lexer       = std::make_unique&lt;MockLexer&gt;();
+        auto parser      = std::make_unique&lt;MockParser&gt;();
+        auto checker     = std::make_unique&lt;MockChecker&gt;();
+        auto interpreter = std::make_unique&lt;MockInterpreter&gt;();</span>
+
+<span style = "background-color:#dfd">        ml = lexer.get();
+        mp = parser.get();
+        mc = checker.get();
+        mi = interpreter.get();</span>
+
+<span style = "background-color:#dfd">        factory = std::make_unique&lt;LangFactory&gt;(</span>
+            std::move(lexer), std::move(parser),
+            std::move(checker), std::move(interpreter));
+<span style = "background-color:#dfd">    }</span>
+};
+
+<span style = "background-color:#dfd">TEST_F(LangFactoryFixture, Pipeline_CallsInOrder) {
+    InSequence seq;
+    EXPECT_CALL(*ml, tokenize("print 5;")).Times(1);
+    EXPECT_CALL(*mp, parse(_))</span>
+        .WillOnce(emptyParse());
+<span style = "background-color:#dfd">    EXPECT_CALL(*mc, check(_)).Times(1);
+    EXPECT_CALL(*mi, interpret(_)).Times(1);</span>
+
+<span style = "background-color:#dfd">    factory-&gt;run("print 5;");
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(LangFactoryFixture, ParseError_StopsBeforeChecker) {
+    EXPECT_CALL(*ml, tokenize(_)).Times(1);
+    EXPECT_CALL(*mp, parse(_))</span>
+        .WillOnce(Throw(ParseError("[ë¼ì¸ 1] êµ¬ë¬¸ ì¤ë¥: íì¤í¸")));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mc, check(_)).Times(0);
+    EXPECT_CALL(*mi, interpret(_)).Times(0);</span>
+
+<span style = "background-color:#dfd">    EXPECT_THROW(factory-&gt;run(""), ParseError);
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(LangFactoryFixture, CheckerError_StopsBeforeInterpreter) {
+    EXPECT_CALL(*ml, tokenize(_)).Times(1);
+    EXPECT_CALL(*mp, parse(_))</span>
+        .WillOnce(emptyParse());
+<span style = "background-color:#dfd">    EXPECT_CALL(*mc, check(_))</span>
+        .WillOnce(Throw(CheckError("[ë¼ì¸ 1] ìë¯¸ ì¤ë¥: íì¤í¸")));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(0);</span>
+
+<span style = "background-color:#dfd">    EXPECT_THROW(factory-&gt;run(""), CheckError);
+}</span>
+
+// ââ Real Parser + Real Checker íµí© í½ì¤ì² âââââââââââââââââââââââ
+class RealCheckerFixture : public ::testing::Test {
+protected:
+    MockLexer*       ml = nullptr;
+    MockInterpreter* mi = nullptr;
+    std::unique_ptr&lt;LangFactory&gt; factory;
+
+<span style = "background-color:#dfd">    void SetUp() override {
+        auto lexer       = std::make_unique&lt;MockLexer&gt;();
+        auto interpreter = std::make_unique&lt;MockInterpreter&gt;();</span>
+
+<span style = "background-color:#dfd">        ml = lexer.get();
+        mi = interpreter.get();</span>
+
+<span style = "background-color:#dfd">        factory = std::make_unique&lt;LangFactory&gt;(</span>
+            std::move(lexer),
+            std::make_unique&lt;Parser&gt;(),
+            std::make_unique&lt;Checker&gt;(),
+            std::move(interpreter));
+<span style = "background-color:#dfd">    }</span>
+};
+
+<span style = "background-color:#dfd">TEST_F(RealCheckerFixture, PrintStmt_Integration) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{</span>
+        tok(TokenType::KW_PRINT, "print"),
+        numTok(5.0),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(1);</span>
+
+<span style = "background-color:#dfd">    factory-&gt;run("print 5;");
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(RealCheckerFixture, VarDecl_Integration) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{</span>
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(10.0),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(1);</span>
+
+<span style = "background-color:#dfd">    factory-&gt;run("var x = 10;");
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(RealCheckerFixture, PrintLiteral_CheckerPasses) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{</span>
+        tok(TokenType::KW_PRINT, "print"),
+        numTok(42.0),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(1);</span>
+
+<span style = "background-color:#dfd">    EXPECT_NO_THROW(factory-&gt;run("print 42;"));
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(RealCheckerFixture, VarDeclAndRef_CheckerPasses) {</span>
+    // var x = 10; print x;
+<span style = "background-color:#dfd">    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{</span>
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(10.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::KW_PRINT,  "print"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::SEMICOLON, ";"),
+        eofTok()
+    }));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(1);</span>
+
+<span style = "background-color:#dfd">    EXPECT_NO_THROW(factory-&gt;run("var x = 10; print x;"));
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(RealCheckerFixture, ParseError_RealParser_Propagates) {
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{</span>
+        numTok(1.0),
+        numTok(2.0),
+        eofTok()
+    }));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(0);</span>
+
+<span style = "background-color:#dfd">    EXPECT_THROW(factory-&gt;run(""), ParseError);
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(RealCheckerFixture, DuplicateVar_InBlock_Throws) {</span>
+    // { var x = 1; var x = 2; }
+<span style = "background-color:#dfd">    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{</span>
+        tok(TokenType::LEFT_BRACE, "{"),
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(1.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        numTok(2.0),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::RIGHT_BRACE, "}"),
+        eofTok()
+    }));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(0);</span>
+
+<span style = "background-color:#dfd">    EXPECT_THROW(factory-&gt;run(""), CheckError);
+}</span>
+
+<span style = "background-color:#dfd">TEST_F(RealCheckerFixture, SelfReference_InBlock_Throws) {</span>
+    // { var x = x; }
+<span style = "background-color:#dfd">    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{</span>
+        tok(TokenType::LEFT_BRACE, "{"),
+        tok(TokenType::KW_VAR,    "var"),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::EQUAL,     "="),
+        tok(TokenType::IDENTIFIER,"x"),
+        tok(TokenType::SEMICOLON, ";"),
+        tok(TokenType::RIGHT_BRACE, "}"),
+        eofTok()
+    }));
+<span style = "background-color:#dfd">    EXPECT_CALL(*mi, interpret(_)).Times(0);</span>
+
+<span style = "background-color:#dfd">    EXPECT_THROW(factory-&gt;run(""), CheckError);
+}</span></pre>
+        <hr />
+        <table width="100%">
+            <thead>
+                <tr>
+                    <th align="center">
+                        <small>Generated by</small>
+                        <a href="https://github.com/OpenCppCoverage/OpenCppCoverage/releases">
+                            <strong>OpenCppCoverage (Version: 0.9.9.0)</strong>
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+        </table>
+    </body>
+</html>

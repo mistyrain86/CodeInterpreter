@@ -1,0 +1,254 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+        <meta charset="utf-8"/>
+	    <title>CheckerTest.cpp</title>
+	    <link href="../../third-party/google-code-prettify/prettify-CppCoverage.css" type="text/css" rel="stylesheet" />
+	    <script type="text/javascript" src="../../third-party/google-code-prettify/prettify.js"></script>
+	</head>
+    <body onload="prettyPrint()">
+        <h4></h4>
+        <pre class="prettyprint lang-cpp linenums">
+#include &lt;gtest/gtest.h&gt;
+#include &lt;gmock/gmock.h&gt;
+#include "Mocks.h"
+#include "Checker.h"
+#include "LangFactory.h"
+#include "TestUtils.h"
+
+using ::testing::_;
+
+// ë¬¸ì¥ì´ 0ê°ì¸ íë¡ê·¸ë¨ì Checkerì ëê²¼ì ë ìì¸ê° ë°ìíì§ ììì¼ í¨
+<span style = "background-color:#dfd">TEST(CheckerUnit, EmptyProgram_NoThrow) {
+    EXPECT_NO_THROW(Checker().check({}));
+}</span>
+
+//ì ì­ ì¤ì½íìì ë³ì íëë¥¼ ì ì¸í  ë ìì¸ê° ë°ìíì§ ììì¼ í¨
+<span style = "background-color:#dfd">TEST(CheckerUnit, GlobalVarDecl_NoThrow) {
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(varDecl("a", litNum(10.0)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+//{
+//    var a = "hi";   // line 1
+//    var a = 3.0;    // line 2  â ê°ì ë¸ë¡ ììì ì¬ì ì¸
+//}
+//ê°ì ë¸ë¡(ë¡ì»¬ ì¤ì½í) ììì ëì¼í ì´ë¦ì¼ë¡ ë ë² ì ì¸íë©´ CheckErrorê° throw
+
+<span style = "background-color:#dfd">TEST(CheckerUnit, DuplicateLocalVar_Throws) {
+    std::vector&lt;StmtPtr&gt; block;
+    block.push_back(varDecl("a", litStr("hi"), 1));
+    block.push_back(varDecl("a", litNum(3.0), 2));
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(blockStmt(std::move(block)));
+    EXPECT_THROW(Checker().check(stmts), CheckError);
+}</span>
+
+//{
+//    var myVar = 1.0;   // line 1
+//    var myVar = 2.0;   // line 2  â ì¤ë³µ
+//}
+//ê²ì¦: TC 3ê³¼ ëì¼í ìëë¦¬ì¤ì§ë§, throwë CheckErrorì ë©ìì§ì ë³ìëª "myVar"ê° í¬í¨ëì´ ìì´ì¼ í¨
+<span style = "background-color:#dfd">TEST(CheckerUnit, DuplicateLocal_ErrorContainsName) {
+    std::vector&lt;StmtPtr&gt; block;
+    block.push_back(varDecl("myVar", litNum(1.0), 1));
+    block.push_back(varDecl("myVar", litNum(2.0), 2));
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(blockStmt(std::move(block)));
+    try { Checker().check(stmts); FAIL() &lt;&lt; "Expected CheckError was not thrown for duplicate local variable.";</span>
+    }
+<span style = "background-color:#dfd">    catch (const CheckError&amp; e) {
+        EXPECT_NE(std::string(e.what()).find("myVar"), std::string::npos);
+    }
+}</span>
+
+//var x = 1.0;     // ì¸ë¶(ì ì­) ì¤ì½í
+//{
+//    var x = 2.0; // ë´ë¶(ë¸ë¡) ì¤ì½í â ìëì
+//}
+//ê²ì¦: ë¤ë¥¸ ì¤ì½íìì ê°ì ì´ë¦ì ì¬ì©íë ê²(ìëì)ì ìë¬ê° ìëì´ì¼ í¨
+
+<span style = "background-color:#dfd">TEST(CheckerUnit, SameName_DifferentScope_NoThrow) {
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(varDecl("x", litNum(1.0)));
+    std::vector&lt;StmtPtr&gt; inner;
+    inner.push_back(varDecl("x", litNum(2.0)));
+    stmts.push_back(blockStmt(std::move(inner)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+// {
+//     var x = 1;  â ì¸ë¶ ë¡ì»¬ ì¤ì½í
+//     {
+//         var x = 2;  â ë´ë¶ ë¡ì»¬ ì¤ì½í (ì§ì§ ìëì)
+//     }
+// }
+// ê²ì¦: ì¤ì²©ë ë ë¸ë¡ ì¤ì½í ì¬ì´ì ìëìì ìë¬ê° ìëì´ì¼ í¨
+<span style = "background-color:#dfd">TEST(CheckerUnit, NestedBlock_Shadowing_NoThrow) {
+    std::vector&lt;StmtPtr&gt; inner;
+    inner.push_back(varDecl("x", litNum(2.0)));</span>
+
+<span style = "background-color:#dfd">    std::vector&lt;StmtPtr&gt; outer;
+    outer.push_back(varDecl("x", litNum(1.0)));
+    outer.push_back(blockStmt(std::move(inner)));</span>
+
+<span style = "background-color:#dfd">    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(blockStmt(std::move(outer)));</span>
+
+<span style = "background-color:#dfd">    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+//var a = 1.0;   // ì ì­ ì¤ì½í
+//var a = 2.0;   // ì ì­ ì¤ì½íìì ì¬ì ì¸
+//
+//ê²ì¦: ì ì­ ì¤ì½íìì ê°ì ì´ë¦ì´ ë ë² ì ì¸ëì´ë ìì¸ê° ë°ìíì§ ììì¼ íë¤
+
+<span style = "background-color:#dfd">TEST(CheckerUnit, DuplicateGlobal_NoThrow) {
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(varDecl("a", litNum(1.0)));
+    stmts.push_back(varDecl("a", litNum(2.0)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+//{
+//    var a = a;   // ìê¸° ìì ì ì´ê¸°í ììì ì°¸ì¡°
+//}
+//aë ì ì¸ì ëì§ë§ ìì§ ê°ì´ ì í´ì§ì§ ìì ìíë¼ ì¤ë¥ ì²ë¦¬
+
+<span style = "background-color:#dfd">TEST(CheckerUnit, SelfReferenceInInit_Throws) {
+    Token a = makeIdent("a", 1);
+    std::vector&lt;StmtPtr&gt; block;
+    block.push_back(std::make_unique&lt;VarStmt&gt;(</span>
+        a, std::make_unique&lt;VariableExpr&gt;(a)));  // var a = a
+<span style = "background-color:#dfd">    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(blockStmt(std::move(block)));
+    EXPECT_THROW(Checker().check(stmts), CheckError);
+}</span>
+
+//{
+//    var a = 5.0;       // aê° ë¨¼ì  ìì í ì ìë¨
+//    var b = a + 1.0;   // ì´ë¯¸ ì ìë aë¥¼ ì°¸ì¡° â ì ì
+//}
+// ì ì ëì íì¸
+
+<span style = "background-color:#dfd">TEST(CheckerUnit, ValidInit_NoThrow) {
+    Token a = makeIdent("a", 1);
+    Token b = makeIdent("b", 2);
+    Token plus = Token{ TokenType::PLUS, "+", std::monostate{}, 2 };
+    std::vector&lt;StmtPtr&gt; block;
+    block.push_back(varDecl("a", litNum(5.0), 1));
+    block.push_back(std::make_unique&lt;VarStmt&gt;(b,</span>
+        std::make_unique&lt;BinaryExpr&gt;(
+            std::make_unique&lt;VariableExpr&gt;(a), plus, litNum(1.0))));
+<span style = "background-color:#dfd">    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(blockStmt(std::move(block)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+
+// ââ ë¨ì íì¤í¸ ââââââââââââââââââââââââââââââââââââââ
+//var a = 1.0;       â ì ì­ ì¤ì½í ì ì¸
+//{
+//    print(a);      â ë´ë¶ ë¸ë¡ìì ì ì­ ë³ì ì°¸ì¡°
+//}
+<span style = "background-color:#dfd">TEST(CheckerUnit, NestedScope_OuterAccessible) {
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(varDecl("a", litNum(1.0)));
+    std::vector&lt;StmtPtr&gt; inner;
+    inner.push_back(printStmt(std::make_unique&lt;VariableExpr&gt;(makeIdent("a"))));
+    stmts.push_back(blockStmt(std::move(inner)));
+    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+//for (var i = 0; i &lt; 3; i = i + 1) {
+//    print(i);      â ë£¨í ë³ì ië¥¼ ë³¸ë¬¸ìì ì°¸ì¡°
+//}
+<span style = "background-color:#dfd">TEST(CheckerUnit, ForLoopVar_InBody_NoThrow) {
+    Token i = makeIdent("i");
+    Token lt = Token{ TokenType::LESS, "&lt;", std::monostate{}, 1 };
+    Token pl = Token{ TokenType::PLUS, "+", std::monostate{}, 1 };
+    std::vector&lt;StmtPtr&gt; body;
+    body.push_back(printStmt(std::make_unique&lt;VariableExpr&gt;(i)));
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(std::make_unique&lt;ForStmt&gt;(</span>
+        varDecl("i", litNum(0.0)),
+        std::make_unique&lt;BinaryExpr&gt;(std::make_unique&lt;VariableExpr&gt;(i), lt, litNum(3.0)),
+        std::make_unique&lt;AssignExpr&gt;(i,
+            std::make_unique&lt;BinaryExpr&gt;(std::make_unique&lt;VariableExpr&gt;(i), pl, litNum(1.0))),
+        blockStmt(std::move(body))));
+<span style = "background-color:#dfd">    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+//if (true) {
+//    var x = 1.0;   â then ë¸ëì¹ ììì ë³ì ì ì¸
+//}
+<span style = "background-color:#dfd">TEST(CheckerUnit, IfBranch_NoThrow) {
+    std::vector&lt;StmtPtr&gt; thenB;
+    thenB.push_back(varDecl("x", litNum(1.0)));
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(std::make_unique&lt;IfStmt&gt;(</span>
+        litBool(true), blockStmt(std::move(thenB)), nullptr));
+<span style = "background-color:#dfd">    EXPECT_NO_THROW(Checker().check(stmts));
+}</span>
+
+// ââ Mock íµí© íì¤í¸ ââââââââââââââââââââââââââââââââââ
+//{
+//    var a = 1.0;   â line 1
+//    var a = 2.0;   â line 2  (ì¤ë³µ!)
+//}
+<span style = "background-color:#dfd">TEST(CheckerMock, DuplicateVar_MockParser_Throws) {
+    auto ml = std::make_unique&lt;MockLexer&gt;();
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{}));
+    auto mp = std::make_unique&lt;MockParser&gt;();
+    EXPECT_CALL(*mp, parse(_))
+        .WillOnce(::testing::InvokeWithoutArgs([]() -&gt; std::vector&lt;StmtPtr&gt; {
+        std::vector&lt;StmtPtr&gt; block;
+        block.push_back(varDecl("a", litNum(1.0), 1));
+        block.push_back(varDecl("a", litNum(2.0), 2));
+        std::vector&lt;StmtPtr&gt; stmts;
+        stmts.push_back(blockStmt(std::move(block)));
+        return stmts;
+            }));
+    auto mi = std::make_unique&lt;MockInterpreter&gt;();
+    EXPECT_CALL(*mi, interpret(_)).Times(0);
+    LangFactory factory(std::move(ml), std::move(mp),</span>
+        std::make_unique&lt;Checker&gt;(), std::move(mi));
+<span style = "background-color:#dfd">    EXPECT_THROW(factory.run(""), CheckError);
+}</span>
+
+//MockLexer  â[](ë¹ í í°)
+//MockParser â  var a = 10.0; AST ì§ì  ë°í
+//Checker    â  íµê³¼(ìë¬ ìì)
+//MockInterpreter  â Times(1) : ì íí í ë² í¸ì¶ëì´ì¼ í¨
+<span style = "background-color:#dfd">TEST(CheckerMock, ValidCode_MockParser_NoThrow) {
+    auto ml = std::make_unique&lt;MockLexer&gt;();
+    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector&lt;Token&gt;{}));
+    auto mp = std::make_unique&lt;MockParser&gt;();
+    EXPECT_CALL(*mp, parse(_))
+        .WillOnce(::testing::InvokeWithoutArgs([]() -&gt; std::vector&lt;StmtPtr&gt; {
+        std::vector&lt;StmtPtr&gt; stmts;
+        stmts.push_back(varDecl("a", litNum(10.0)));
+        return stmts;
+            }));
+    auto mi = std::make_unique&lt;MockInterpreter&gt;();
+    EXPECT_CALL(*mi, interpret(_)).Times(1);
+    LangFactory factory(std::move(ml), std::move(mp),</span>
+        std::make_unique&lt;Checker&gt;(), std::move(mi));
+<span style = "background-color:#dfd">    EXPECT_NO_THROW(factory.run(""));
+}</span></pre>
+        <hr />
+        <table width="100%">
+            <thead>
+                <tr>
+                    <th align="center">
+                        <small>Generated by</small>
+                        <a href="https://github.com/OpenCppCoverage/OpenCppCoverage/releases">
+                            <strong>OpenCppCoverage (Version: 0.9.9.0)</strong>
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+        </table>
+    </body>
+</html>

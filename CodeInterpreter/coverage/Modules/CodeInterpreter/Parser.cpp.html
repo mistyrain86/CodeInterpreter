@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+        <meta charset="utf-8"/>
+	    <title>Parser.cpp</title>
+	    <link href="../../third-party/google-code-prettify/prettify-CppCoverage.css" type="text/css" rel="stylesheet" />
+	    <script type="text/javascript" src="../../third-party/google-code-prettify/prettify.js"></script>
+	</head>
+    <body onload="prettyPrint()">
+        <h4></h4>
+        <pre class="prettyprint lang-cpp linenums">
+#include "Parser.h"
+
+<span style = "background-color:#dfd">std::vector&lt;StmtPtr&gt; Parser::parse(std::vector&lt;Token&gt; tokens) {
+    m_tokens  = std::move(tokens);
+    m_current = 0;
+    std::vector&lt;StmtPtr&gt; stmts;
+    while (!isAtEnd()) stmts.push_back(parseStatement());
+    return stmts;
+}</span>
+
+// ââ í í° í¬í¼ âââââââââââââââââââââââââââââââââââââââââââââ
+<span style = "background-color:#dfd">bool         Parser::isAtEnd() const  { return peek().type == TokenType::END_OF_FILE; }
+const Token&amp; Parser::peek() const     { return m_tokens[m_current]; }
+const Token&amp; Parser::previous() const { return m_tokens[m_current - 1]; }
+const Token&amp; Parser::advance()        { if (!isAtEnd()) m_current++; return previous(); }
+bool         Parser::check(TokenType t) const { return !isAtEnd() &amp;&amp; peek().type == t; }</span>
+
+<span style = "background-color:#dfd">bool Parser::match(std::initializer_list&lt;TokenType&gt; types) {
+    for (auto t : types) { if (check(t)) { advance(); return true; } }
+    return false;
+}
+const Token&amp; Parser::consume(TokenType t, const std::string&amp; msg) {
+    if (check(t)) return advance();
+    throw error(peek(), msg);
+}
+ParseError Parser::error(const Token&amp; tok, const std::string&amp; msg) const {
+    std::string loc = (tok.type == TokenType::END_OF_FILE)</span>
+        ? " (íì¼ ë)" : " ('" + tok.lexeme + "' ê·¼ì²)";
+<span style = "background-color:#dfd">    return ParseError("[ë¼ì¸ " + std::to_string(tok.line)</span>
+                      + "] êµ¬ë¬¸ ì¤ë¥: " + msg + loc);
+<span style = "background-color:#dfd">}</span>
+
+<span style = "background-color:#dfd">StmtPtr Parser::parseStatement() {
+    if (match({TokenType::KW_VAR}))     return parseVarDecl();
+    if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
+    if (match({TokenType::KW_IF}))      return parseIfStmt();
+    if (match({TokenType::KW_FOR}))     return parseForStmt();
+    if (match({TokenType::LEFT_BRACE})) return parseBlock();
+    return parseExprStmt();
+}
+StmtPtr Parser::parseVarDecl() {
+    Token name = consume(TokenType::IDENTIFIER, "ë³ì ì´ë¦ì´ íìí©ëë¤.");
+    ExprPtr init;
+    if (match({TokenType::EQUAL})) init = parseExpression();
+    consume(TokenType::SEMICOLON, "ë³ì ì ì¸ ë¤ì ';'ê° íìí©ëë¤.");
+    return std::make_unique&lt;VarStmt&gt;(std::move(name), std::move(init));
+}
+StmtPtr Parser::parsePrintStmt() {
+    ExprPtr val = parseExpression();
+    consume(TokenType::SEMICOLON, "ê° ì¶ë ¥ ë¤ì ';'ê° íìí©ëë¤.");
+    return std::make_unique&lt;PrintStmt&gt;(std::move(val));
+}</span>
+<span style = "background-color:#fdd">StmtPtr Parser::parseIfStmt() {
+    consume(TokenType::LEFT_PAREN,  "if ë¤ì '('ê° íìí©ëë¤.");
+    ExprPtr cond = parseExpression();
+    consume(TokenType::RIGHT_PAREN, "ì¡°ê±´ì ë¤ì ')'ê° íìí©ëë¤.");
+    StmtPtr thenB = parseStatement();
+    StmtPtr elseB;
+    if (match({TokenType::KW_ELSE})) elseB = parseStatement(); // Greedy ë§¤ì¹­
+    return std::make_unique&lt;IfStmt&gt;(std::move(cond), std::move(thenB), std::move(elseB));
+}
+StmtPtr Parser::parseForStmt() {
+    consume(TokenType::LEFT_PAREN, "for ë¤ì '('ê° íìí©ëë¤.");
+    StmtPtr init;
+    if      (match({TokenType::SEMICOLON})) { /* empty */ }
+    else if (match({TokenType::KW_VAR}))    init = parseVarDecl();
+    else                                    init = parseExprStmt();
+    ExprPtr cond;
+    if (!check(TokenType::SEMICOLON)) cond = parseExpression();
+    consume(TokenType::SEMICOLON, "for ì¡°ê±´ì ë¤ì ';'ê° íìí©ëë¤.");
+    ExprPtr incr;
+    if (!check(TokenType::RIGHT_PAREN)) incr = parseExpression();
+    consume(TokenType::RIGHT_PAREN, "for ì¦ê°ì ë¤ì ')'ê° íìí©ëë¤.");
+    return std::make_unique&lt;ForStmt&gt;(std::move(init), std::move(cond),</span>
+                                     std::move(incr), parseStatement());
+<span style = "background-color:#fdd">}</span>
+<span style = "background-color:#dfd">StmtPtr Parser::parseBlock() {
+    std::vector&lt;StmtPtr&gt; stmts;
+    while (!check(TokenType::RIGHT_BRACE) &amp;&amp; !isAtEnd())
+        stmts.push_back(parseStatement());
+    consume(TokenType::RIGHT_BRACE, "ë¸ë¡ ë¤ì '}'ê° íìí©ëë¤.");
+    return std::make_unique&lt;BlockStmt&gt;(std::move(stmts));
+}
+StmtPtr Parser::parseExprStmt() {
+    auto e = parseExpression();
+    consume(TokenType::SEMICOLON, "';'ê° íìí©ëë¤.");</span>
+<span style = "background-color:#fdd">    return std::make_unique&lt;ExprStmt&gt;(std::move(e));
+}</span>
+<span style = "background-color:#dfd">ExprPtr Parser::parseExpression() { return parseAssignment(); }
+ExprPtr Parser::parseAssignment() {
+    ExprPtr expr = parseEquality();
+    if (match({TokenType::EQUAL})) {</span>
+<span style = "background-color:#fdd">        Token eq = previous();
+        ExprPtr val = parseAssignment();
+        if (auto* v = dynamic_cast&lt;VariableExpr*&gt;(expr.get()))
+            return std::make_unique&lt;AssignExpr&gt;(v-&gt;name, std::move(val));
+        throw error(eq, "ìëª»ë í ë¹ ëììëë¤.");
+    }</span>
+<span style = "background-color:#dfd">    return expr;
+}
+ExprPtr Parser::parseEquality() {
+    ExprPtr e = parseComparison();
+    while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {</span>
+<span style = "background-color:#fdd">        Token op = previous();
+        e = std::make_unique&lt;BinaryExpr&gt;(std::move(e), op, parseComparison());
+    }</span>
+<span style = "background-color:#dfd">    return e;
+}
+ExprPtr Parser::parseComparison() {
+    ExprPtr e = parseTerm();
+    while (match({TokenType::GREATER, TokenType::GREATER_EQUAL,</span>
+                  TokenType::LESS,    TokenType::LESS_EQUAL})) {
+<span style = "background-color:#fdd">        Token op = previous();
+        e = std::make_unique&lt;BinaryExpr&gt;(std::move(e), op, parseTerm());
+    }</span>
+<span style = "background-color:#dfd">    return e;
+}
+ExprPtr Parser::parseTerm() {
+    ExprPtr e = parseFactor();
+    while (match({TokenType::PLUS, TokenType::MINUS})) {</span>
+<span style = "background-color:#fdd">        Token op = previous();
+        e = std::make_unique&lt;BinaryExpr&gt;(std::move(e), op, parseFactor());
+    }</span>
+<span style = "background-color:#dfd">    return e;
+}
+ExprPtr Parser::parseFactor() {
+    ExprPtr e = parseUnary();
+    while (match({TokenType::STAR, TokenType::SLASH})) {</span>
+<span style = "background-color:#fdd">        Token op = previous();
+        e = std::make_unique&lt;BinaryExpr&gt;(std::move(e), op, parseUnary());
+    }</span>
+<span style = "background-color:#dfd">    return e;
+}
+ExprPtr Parser::parseUnary() {
+    if (match({TokenType::BANG, TokenType::MINUS})) {</span>
+<span style = "background-color:#fdd">        Token op = previous();
+        return std::make_unique&lt;UnaryExpr&gt;(op, parseUnary());</span>
+    }
+<span style = "background-color:#dfd">    return parsePrimary();
+}
+ExprPtr Parser::parsePrimary() {
+    if (match({TokenType::KW_FALSE}))</span>
+<span style = "background-color:#fdd">        return std::make_unique&lt;LiteralExpr&gt;(Value{false});</span>
+<span style = "background-color:#dfd">    if (match({TokenType::KW_TRUE}))</span>
+<span style = "background-color:#fdd">        return std::make_unique&lt;LiteralExpr&gt;(Value{true});</span>
+<span style = "background-color:#dfd">    if (match({TokenType::NUMBER}))
+        return std::make_unique&lt;LiteralExpr&gt;(</span>
+            Value{std::get&lt;double&gt;(previous().literal)});
+<span style = "background-color:#dfd">    if (match({TokenType::STRING}))</span>
+<span style = "background-color:#fdd">        return std::make_unique&lt;LiteralExpr&gt;(</span>
+            Value{std::get&lt;std::string&gt;(previous().literal)});
+<span style = "background-color:#dfd">    if (match({TokenType::IDENTIFIER}))
+        return std::make_unique&lt;VariableExpr&gt;(previous());</span>
+<span style = "background-color:#fdd">    if (match({TokenType::LEFT_PAREN})) {
+        ExprPtr e = parseExpression();
+        consume(TokenType::RIGHT_PAREN, "ííì ë¤ì ')'ê° íìí©ëë¤.");
+        return std::make_unique&lt;GroupingExpr&gt;(std::move(e));</span>
+    }
+<span style = "background-color:#fdd">    throw error(peek(), "ííìì´ íìí©ëë¤.");</span>
+<span style = "background-color:#dfd">}</span></pre>
+        <hr />
+        <table width="100%">
+            <thead>
+                <tr>
+                    <th align="center">
+                        <small>Generated by</small>
+                        <a href="https://github.com/OpenCppCoverage/OpenCppCoverage/releases">
+                            <strong>OpenCppCoverage (Version: 0.9.9.0)</strong>
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+        </table>
+    </body>
+</html>

@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+        <meta charset="utf-8"/>
+	    <title>InterpreterTest.cpp</title>
+	    <link href="../../third-party/google-code-prettify/prettify-CppCoverage.css" type="text/css" rel="stylesheet" />
+	    <script type="text/javascript" src="../../third-party/google-code-prettify/prettify.js"></script>
+	</head>
+    <body onload="prettyPrint()">
+        <h4></h4>
+        <pre class="prettyprint lang-cpp linenums">
+#include &lt;gtest/gtest.h&gt;
+#include "Interpreter.h"
+#include "TestUtils.h"
+
+<span style = "background-color:#dfd">static Token opTok(TokenType t, std::string lex, int line = 1) {
+    return Token{t, std::move(lex), std::monostate{}, line};
+}
+static ExprPtr bin(ExprPtr l, TokenType op, std::string lex, ExprPtr r) {
+    return std::make_unique&lt;BinaryExpr&gt;(</span>
+        std::move(l), Token{op, std::move(lex), std::monostate{}, 1}, std::move(r));
+<span style = "background-color:#dfd">}</span>
+
+class InterpreterFixture : public ::testing::Test {
+protected:
+    Interpreter m_interp;
+
+<span style = "background-color:#dfd">    std::string run(StmtPtr stmt) {
+        std::vector&lt;StmtPtr&gt; stmts;
+        stmts.push_back(std::move(stmt));
+        return captureOutput([&amp;]{ Interpreter().interpret(stmts); });
+    }
+    std::string runAll(std::vector&lt;StmtPtr&gt; stmts) {
+        return captureOutput([&amp;]{ m_interp.interpret(stmts); });
+    }</span>
+};
+
+<span style = "background-color:#dfd">TEST_F(InterpreterFixture, PrintInteger)   { EXPECT_EQ(run(printStmt(litNum(5.0))),       "5\n");     }
+TEST_F(InterpreterFixture, PrintFloat)     { EXPECT_EQ(run(printStmt(litNum(3.14))),      "3.14\n");  }
+TEST_F(InterpreterFixture, PrintIntFormat) { EXPECT_EQ(run(printStmt(litNum(5.0))),       "5\n");     }
+TEST_F(InterpreterFixture, PrintString)    { EXPECT_EQ(run(printStmt(litStr("hello"))),   "hello\n"); }
+TEST_F(InterpreterFixture, PrintBoolTrue)  { EXPECT_EQ(run(printStmt(litBool(true))),     "true\n");  }
+TEST_F(InterpreterFixture, PrintBoolFalse) { EXPECT_EQ(run(printStmt(litBool(false))),    "false\n"); }</span>
+
+<span style = "background-color:#dfd">TEST_F(InterpreterFixture, UnaryMinus) {
+    EXPECT_EQ(run(printStmt(</span>
+        std::make_unique&lt;UnaryExpr&gt;(opTok(TokenType::MINUS, "-"), litNum(3.0)))),
+        "-3\n");
+<span style = "background-color:#dfd">}
+TEST_F(InterpreterFixture, UnaryBang_True) {
+    EXPECT_EQ(run(printStmt(</span>
+        std::make_unique&lt;UnaryExpr&gt;(opTok(TokenType::BANG, "!"), litBool(true)))),
+        "false\n");
+<span style = "background-color:#dfd">}
+TEST_F(InterpreterFixture, UnaryMinus_OnString_Throws) {
+    std::vector&lt;StmtPtr&gt; stmts;
+    stmts.push_back(std::make_unique&lt;ExprStmt&gt;(</span>
+        std::make_unique&lt;UnaryExpr&gt;(opTok(TokenType::MINUS, "-"), litStr("oops"))));
+<span style = "background-color:#dfd">    Interpreter interp;
+    EXPECT_THROW(interp.interpret(stmts), RuntimeError);
+}</span>
+
+// ì´í­ ì°ì°
+<span style = "background-color:#dfd">TEST_F(InterpreterFixture, Add)   { EXPECT_EQ(run(printStmt(bin(litNum(3),  TokenType::PLUS,  "+", litNum(4)))),  "7\n");  }
+TEST_F(InterpreterFixture, Sub)   { EXPECT_EQ(run(printStmt(bin(litNum(10), TokenType::MINUS, "-", litNum(3)))),  "7\n");  }
+TEST_F(InterpreterFixture, Mul)   { EXPECT_EQ(run(printStmt(bin(litNum(3),  TokenType::STAR,  "*", litNum(4)))),  "12\n"); }
+TEST_F(InterpreterFixture, Div)   { EXPECT_EQ(run(printStmt(bin(litNum(8),  TokenType::SLASH, "/", litNum(2)))),  "4\n");  }
+TEST_F(InterpreterFixture, StrConcat) {
+    EXPECT_EQ(run(printStmt(bin(litStr("Hi"), TokenType::PLUS, "+", litStr("!")))), "Hi!\n");
+}
+TEST_F(InterpreterFixture, CmpLess_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::LESS,          "&lt;",  litNum(2)))), "true\n");
+}
+TEST_F(InterpreterFixture, CmpLessEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(2), TokenType::LESS_EQUAL,    "&lt;=", litNum(2)))), "true\n");
+}
+TEST_F(InterpreterFixture, CmpGreater_False) {
+    EXPECT_EQ(run(printStmt(bin(litNum(3), TokenType::GREATER,       "&gt;",  litNum(5)))), "false\n");
+}
+TEST_F(InterpreterFixture, CmpGreaterEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(5), TokenType::GREATER_EQUAL, "&gt;=", litNum(5)))), "true\n");
+}
+TEST_F(InterpreterFixture, CmpEqualEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(3), TokenType::EQUAL_EQUAL,   "==", litNum(3)))), "true\n");
+}
+TEST_F(InterpreterFixture, CmpBangEqual_True) {
+    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::BANG_EQUAL,    "!=", litNum(2)))), "true\n");
+}
+TEST_F(InterpreterFixture, TypeMismatch_Throws) {
+    std::vector&lt;StmtPtr&gt; s;
+    s.push_back(std::make_unique&lt;ExprStmt&gt;(bin(litNum(1), TokenType::PLUS, "+", litStr("HI"))));
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}
+TEST_F(InterpreterFixture, DivByZero_Throws) {
+    std::vector&lt;StmtPtr&gt; s;
+    s.push_back(std::make_unique&lt;ExprStmt&gt;(bin(litNum(1), TokenType::SLASH, "/", litNum(0))));
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}</span>
+
+// ë³ì &amp; ì ì´íë¦
+<span style = "background-color:#dfd">TEST_F(InterpreterFixture, VarDeclAndUse) {
+    std::vector&lt;StmtPtr&gt; s;
+    s.push_back(varDecl("a", litNum(10.0)));
+    s.push_back(printStmt(varRef("a")));
+    EXPECT_EQ(runAll(std::move(s)), "10\n");
+}
+TEST_F(InterpreterFixture, Reassignment) {
+    Token a = makeIdent("a");
+    std::vector&lt;StmtPtr&gt; s;
+    s.push_back(varDecl("a", litNum(1.0)));
+    s.push_back(std::make_unique&lt;ExprStmt&gt;(</span>
+        std::make_unique&lt;AssignExpr&gt;(a, litNum(2.0))));
+<span style = "background-color:#dfd">    s.push_back(printStmt(varRef("a")));
+    EXPECT_EQ(runAll(std::move(s)), "2\n");
+}
+TEST_F(InterpreterFixture, UndefinedVar_Throws) {
+    std::vector&lt;StmtPtr&gt; s;
+    s.push_back(printStmt(std::make_unique&lt;VariableExpr&gt;(</span>
+        Token{TokenType::IDENTIFIER, "notDef", std::monostate{}, 3})));
+<span style = "background-color:#dfd">    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}
+TEST_F(InterpreterFixture, BlockScope_Isolation) {
+    std::vector&lt;StmtPtr&gt; s;
+    std::vector&lt;StmtPtr&gt; inner;
+    inner.push_back(varDecl("x", litStr("inner")));
+    inner.push_back(printStmt(varRef("x")));
+    s.push_back(blockStmt(std::move(inner)));
+    s.push_back(printStmt(varRef("x")));
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}
+TEST_F(InterpreterFixture, IfTrue) {
+    EXPECT_EQ(run(std::make_unique&lt;IfStmt&gt;(litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
+}
+TEST_F(InterpreterFixture, IfFalse_GoesElse) {
+    EXPECT_EQ(run(std::make_unique&lt;IfStmt&gt;(litBool(false), printStmt(litStr("no")), printStmt(litStr("yes")))), "yes\n");
+}
+TEST_F(InterpreterFixture, ForLoop_0to2) {
+    Token j  = makeIdent("j");
+    Token lt = Token{TokenType::LESS,  "&lt;", std::monostate{}, 1};
+    Token pl = Token{TokenType::PLUS,  "+", std::monostate{}, 1};
+    std::vector&lt;StmtPtr&gt; body;
+    body.push_back(printStmt(std::make_unique&lt;VariableExpr&gt;(j)));
+    std::vector&lt;StmtPtr&gt; s;
+    s.push_back(std::make_unique&lt;ForStmt&gt;(</span>
+        varDecl("j", litNum(0.0)),
+        std::make_unique&lt;BinaryExpr&gt;(std::make_unique&lt;VariableExpr&gt;(j), lt, litNum(3.0)),
+        std::make_unique&lt;AssignExpr&gt;(j,
+            std::make_unique&lt;BinaryExpr&gt;(std::make_unique&lt;VariableExpr&gt;(j), pl, litNum(1.0))),
+        blockStmt(std::move(body))));
+<span style = "background-color:#dfd">    EXPECT_EQ(runAll(std::move(s)), "0\n1\n2\n");
+}</span></pre>
+        <hr />
+        <table width="100%">
+            <thead>
+                <tr>
+                    <th align="center">
+                        <small>Generated by</small>
+                        <a href="https://github.com/OpenCppCoverage/OpenCppCoverage/releases">
+                            <strong>OpenCppCoverage (Version: 0.9.9.0)</strong>
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+        </table>
+    </body>
+</html>
