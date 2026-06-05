@@ -31,12 +31,43 @@ ParseError Parser::error(const Token& tok, const std::string& msg) const {
 }
 
 StmtPtr Parser::parseStatement() {
+    // Ch.2: 함수 선언 / return
+    if (match({TokenType::KW_FUNC}))    return parseFunctionStmt();
+    if (match({TokenType::KW_RETURN}))  return parseReturnStmt();
+    // Ch.1: 기존 문장
     if (match({TokenType::KW_VAR}))     return parseVarDecl();
     if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
     if (match({TokenType::KW_IF}))      return parseIfStmt();
     if (match({TokenType::KW_FOR}))     return parseForStmt();
     if (match({TokenType::LEFT_BRACE})) return parseBlock();
     return parseExprStmt();
+}
+StmtPtr Parser::parseFunctionStmt() {
+    Token name = consume(TokenType::IDENTIFIER, "함수 이름이 필요합니다.");
+    consume(TokenType::LEFT_PAREN, "함수 이름 뒤에 '('가 필요합니다.");
+    std::vector<Token> params;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            params.push_back(
+                consume(TokenType::IDENTIFIER, "파라미터 이름이 필요합니다."));
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_PAREN, "파라미터 목록 뒤에 ')'가 필요합니다.");
+    consume(TokenType::LEFT_BRACE,  "함수 본문 앞에 '{'가 필요합니다.");
+    std::vector<StmtPtr> body;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd())
+        body.push_back(parseStatement());
+    consume(TokenType::RIGHT_BRACE, "함수 본문 뒤에 '}'가 필요합니다.");
+    return std::make_unique<FunctionStmt>(
+        std::move(name), std::move(params), std::move(body));
+}
+StmtPtr Parser::parseReturnStmt() {
+    Token   keyword = previous();
+    ExprPtr value;  // unique_ptr 기본값 = nullptr
+    if (!check(TokenType::SEMICOLON))
+        value = parseExpression();
+    consume(TokenType::SEMICOLON, "return 뒤에 ';'가 필요합니다.");
+    return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
 }
 StmtPtr Parser::parseVarDecl() {
     Token name = consume(TokenType::IDENTIFIER, "변수 이름이 필요합니다.");
@@ -90,10 +121,18 @@ ExprPtr Parser::parseExpression() { return parseAssignment(); }
 ExprPtr Parser::parseAssignment() {
     ExprPtr expr = parseEquality();
     if (match({TokenType::EQUAL})) {
-        Token eq = previous();
-        ExprPtr val = parseAssignment();
+        Token   eq    = previous();  // '=' 토큰 즉시 캡처 — 에러 위치 보고용
+        ExprPtr value = parseAssignment();
+        // 변수 대입: a = v
         if (auto* v = dynamic_cast<VariableExpr*>(expr.get()))
-            return std::make_unique<AssignExpr>(v->name, std::move(val));
+            return std::make_unique<AssignExpr>(v->name, std::move(value));
+        // 배열 원소 대입: arr[i] = v
+        if (auto* idx = dynamic_cast<IndexGetExpr*>(expr.get()))
+            return std::make_unique<IndexSetExpr>(
+                std::move(idx->object),
+                idx->bracket,
+                std::move(idx->index),
+                std::move(value));
         throw error(eq, "잘못된 할당 대상입니다.");
     }
     return expr;
@@ -136,7 +175,35 @@ ExprPtr Parser::parseUnary() {
         Token op = previous();
         return std::make_unique<UnaryExpr>(op, parseUnary());
     }
-    return parsePrimary();
+    return parseCall();
+}
+ExprPtr Parser::parseCall() {
+    ExprPtr expr = parsePrimary();
+    // 후위 연산자 체인: f(args)[idx] 형태를 좌결합으로 처리
+    while (true) {
+        if (match({TokenType::LEFT_PAREN})) {          // 함수 호출
+            expr = finishCall(std::move(expr));
+        } else if (match({TokenType::LEFT_BRACKET})) { // 배열 인덱스
+            Token   bracket = previous();
+            ExprPtr index   = parseExpression();
+            consume(TokenType::RIGHT_BRACKET, "인덱스 뒤에 ']'가 필요합니다.");
+            expr = std::make_unique<IndexGetExpr>(
+                std::move(expr), std::move(bracket), std::move(index));
+        } else {
+            break;
+        }
+    }
+    return expr;
+}
+ExprPtr Parser::finishCall(ExprPtr callee) {
+    std::vector<ExprPtr> args;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do { args.push_back(parseExpression()); }
+        while (match({TokenType::COMMA}));
+    }
+    Token paren = consume(TokenType::RIGHT_PAREN, "인자 목록 뒤에 ')'가 필요합니다.");
+    return std::make_unique<CallExpr>(
+        std::move(callee), std::move(paren), std::move(args));
 }
 ExprPtr Parser::parsePrimary() {
     if (match({TokenType::KW_FALSE}))
