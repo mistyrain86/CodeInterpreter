@@ -115,6 +115,14 @@ Value Interpreter::visitBinary(BinaryExpr& e) {
                     + "] 런타임 오류: 0으로 나눌 수 없습니다.");
             return dl / dr;
         }
+        case TokenType::PERCENT: {
+            checkNumericPair(l, r, line);
+            const double dl = std::get<double>(l), dr = std::get<double>(r);
+            if (dr == 0.0)
+                throw RuntimeError("[라인 " + std::to_string(line)
+                    + "] 런타임 오류: 0으로 나눌 수 없습니다.");
+            return std::fmod(dl, dr);
+        }
         case TokenType::GREATER: {
             checkNumericPair(l, r, line);
             const double dl = std::get<double>(l), dr = std::get<double>(r);
