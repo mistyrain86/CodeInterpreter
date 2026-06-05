@@ -157,17 +157,17 @@ TEST_F(LexerFixture, ReturnKeyword) {
 }
 
 TEST_F(LexerFixture, Comma) {
-    auto tokens = lexer.tokenize(",");
-    EXPECT_EQ(tokens[0].type, TokenType::COMMA);
+    auto tokenArray = lexer.tokenize(",");
+    EXPECT_EQ(tokenArray[0].type, TokenType::COMMA);
 }
 
 TEST_F(LexerFixture, FuncSignature) {
-    auto tokens = lexer.tokenize("func add(a, b)");
-    EXPECT_EQ(tokens[0].type, TokenType::KW_FUNC);
-    EXPECT_EQ(tokens[1].type, TokenType::IDENTIFIER);
-    EXPECT_EQ(tokens[2].type, TokenType::LEFT_PAREN);
-    EXPECT_EQ(tokens[3].type, TokenType::IDENTIFIER);
-    EXPECT_EQ(tokens[4].type, TokenType::COMMA);
-    EXPECT_EQ(tokens[5].type, TokenType::IDENTIFIER);
-    EXPECT_EQ(tokens[6].type, TokenType::RIGHT_PAREN);
+    auto tokenArray = lexer.tokenize("func add(a, b)");
+    EXPECT_EQ(tokenArray[0].type, TokenType::KW_FUNC);
+    EXPECT_EQ(tokenArray[1].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[2].type, TokenType::LEFT_PAREN);
+    EXPECT_EQ(tokenArray[3].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[4].type, TokenType::COMMA);
+    EXPECT_EQ(tokenArray[5].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[6].type, TokenType::RIGHT_PAREN);
 }
