@@ -326,3 +326,102 @@ TEST_F(InterpreterFixture, Function_ArityMismatch_Throws) {
 
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
+
+// ── Ch.3 Array 테스트 ────────────────────────────────────────────
+
+static Token bracketTok(int line = 1) {
+    return Token{TokenType::LEFT_BRACKET, "[", std::monostate{}, line};
+}
+
+static ExprPtr arrayCreate(double size) {
+    std::vector<ExprPtr> args;
+    args.push_back(litNum(size));
+    return makeCall("Array", std::move(args));
+}
+
+static ExprPtr indexGet(ExprPtr obj, ExprPtr idx) {
+    return std::make_unique<IndexGetExpr>(
+        std::move(obj), bracketTok(), std::move(idx));
+}
+
+static ExprPtr indexSet(ExprPtr obj, ExprPtr idx, ExprPtr val) {
+    return std::make_unique<IndexSetExpr>(
+        std::move(obj), bracketTok(), std::move(idx), std::move(val));
+}
+
+TEST_F(InterpreterFixture, Array_Create_And_Print) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(3.0)));
+    s.push_back(printStmt(indexGet(varRef("arr"), litNum(0.0))));
+    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+}
+
+TEST_F(InterpreterFixture, Array_Write_And_Read) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(3.0)));
+    s.push_back(std::make_unique<ExprStmt>(
+        indexSet(varRef("arr"), litNum(0.0), litNum(10.0))));
+    s.push_back(std::make_unique<ExprStmt>(
+        indexSet(varRef("arr"), litNum(1.0), litNum(20.0))));
+    s.push_back(printStmt(indexGet(varRef("arr"), litNum(0.0))));
+    s.push_back(printStmt(indexGet(varRef("arr"), litNum(1.0))));
+    EXPECT_EQ(runAll(std::move(s)), "10\n20\n");
+}
+
+TEST_F(InterpreterFixture, Array_DynamicIndex) {
+    Token iToken = makeIdent("i");
+    Token minus  = Token{TokenType::MINUS, "-", std::monostate{}, 1};
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(3.0)));
+    s.push_back(varDecl("i", litNum(2.0)));
+    auto dynamicIdx = std::make_unique<BinaryExpr>(
+        std::make_unique<VariableExpr>(iToken), minus, litNum(1.0));
+    s.push_back(std::make_unique<ExprStmt>(
+        indexSet(varRef("arr"), std::move(dynamicIdx), litNum(7.0))));
+    s.push_back(printStmt(indexGet(varRef("arr"), litNum(1.0))));
+    EXPECT_EQ(runAll(std::move(s)), "7\n");
+}
+
+TEST_F(InterpreterFixture, Array_OutOfBounds_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(2.0)));
+    s.push_back(printStmt(indexGet(varRef("arr"), litNum(5.0))));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
+
+TEST_F(InterpreterFixture, Array_NegativeIndex_Throws) {
+    Token minus = Token{TokenType::MINUS, "-", std::monostate{}, 1};
+    auto negIdx = std::make_unique<UnaryExpr>(minus, litNum(1.0));
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(3.0)));
+    s.push_back(printStmt(indexGet(varRef("arr"), std::move(negIdx))));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
+
+TEST_F(InterpreterFixture, Array_NonNumericIndex_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(3.0)));
+    s.push_back(printStmt(indexGet(varRef("arr"), litStr("hello"))));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
+
+TEST_F(InterpreterFixture, Array_NonArrayTarget_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("x", litNum(10.0)));
+    s.push_back(printStmt(indexGet(varRef("x"), litNum(0.0))));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
+
+TEST_F(InterpreterFixture, Array_NonNumericSize_Throws) {
+    std::vector<StmtPtr> s;
+    std::vector<ExprPtr> args;
+    args.push_back(litStr("hi"));
+    s.push_back(varDecl("arr", makeCall("Array", std::move(args))));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
+
+TEST_F(InterpreterFixture, Array_TooLargeSize_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(1000001.0)));
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+}
