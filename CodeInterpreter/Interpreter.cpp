@@ -1,4 +1,5 @@
 #include "Interpreter.h"
+#include "ArrayBuiltin.h"
 #include "ICallable.h"
 #include "LangFunction.h"
 #include "ReturnSignal.h"
@@ -21,7 +22,9 @@ struct ScopeGuard {
 }
 
 Interpreter::Interpreter()
-    : m_currentEnv(std::make_shared<Environment>()) {}
+    : m_currentEnv(std::make_shared<Environment>()) {
+    m_currentEnv->define("Array", Value{std::make_shared<ArrayBuiltin>()});
+}
 
 // ── 공개 진입점 ────────────────────────────────────────────────────
 
@@ -221,11 +224,46 @@ void Interpreter::visitReturnStmt(ReturnStmt& s) {
 }
 
 // ── Ch.3 배열 스텁 (D가 구현) ─────────────────────────────────────
-Value Interpreter::visitIndexGetExpr(IndexGetExpr&) {
-    throw RuntimeError("미구현: 배열 읽기 (visitIndexGetExpr)");
+Value Interpreter::visitIndexGetExpr(IndexGetExpr& e) {
+    Value obj = evaluate(*e.object);
+    Value idx = evaluate(*e.index);
+
+    if (!std::holds_alternative<ArrayType>(obj))
+        throw RuntimeError("[라인 " + std::to_string(e.bracket.line)
+            + "] 런타임 오류: 인덱스 접근은 배열만 지원합니다.");
+    if (!std::holds_alternative<double>(idx))
+        throw RuntimeError("[라인 " + std::to_string(e.bracket.line)
+            + "] 런타임 오류: 인덱스는 반드시 숫자여야 합니다.");
+
+    auto& arr = *std::get<ArrayType>(obj);
+    int   i   = static_cast<int>(std::get<double>(idx));
+    if (i < 0 || i >= static_cast<int>(arr.size()))
+        throw RuntimeError("[라인 " + std::to_string(e.bracket.line)
+            + "] 런타임 오류: 인덱스 범위를 벗어났습니다. ("
+            + std::to_string(i) + ")");
+    return arr[i];
 }
-Value Interpreter::visitIndexSetExpr(IndexSetExpr&) {
-    throw RuntimeError("미구현: 배열 쓰기 (visitIndexSetExpr)");
+
+Value Interpreter::visitIndexSetExpr(IndexSetExpr& e) {
+    Value obj = evaluate(*e.object);
+    Value idx = evaluate(*e.index);
+    Value val = evaluate(*e.value);
+
+    if (!std::holds_alternative<ArrayType>(obj))
+        throw RuntimeError("[라인 " + std::to_string(e.bracket.line)
+            + "] 런타임 오류: 인덱스 접근은 배열만 지원합니다.");
+    if (!std::holds_alternative<double>(idx))
+        throw RuntimeError("[라인 " + std::to_string(e.bracket.line)
+            + "] 런타임 오류: 인덱스는 반드시 숫자여야 합니다.");
+
+    auto& arr = *std::get<ArrayType>(obj);
+    int   i   = static_cast<int>(std::get<double>(idx));
+    if (i < 0 || i >= static_cast<int>(arr.size()))
+        throw RuntimeError("[라인 " + std::to_string(e.bracket.line)
+            + "] 런타임 오류: 인덱스 범위를 벗어났습니다. ("
+            + std::to_string(i) + ")");
+    arr[i] = val;
+    return val;
 }
 
 std::string Interpreter::stringify(const Value& v) const {
