@@ -37,15 +37,17 @@ bool Lexer::isAtEnd() const { return m_currentIdx >= m_source.size(); }
 void Lexer::scanToken() {
     char singleChar = m_source[m_currentIdx++];
     switch (singleChar) {
-    case '(': addToken(TokenType::LEFT_PAREN);  break;
-    case ')': addToken(TokenType::RIGHT_PAREN); break;
-    case '{': addToken(TokenType::LEFT_BRACE);  break;
-    case '}': addToken(TokenType::RIGHT_BRACE); break;
-    case ';': addToken(TokenType::SEMICOLON);   break;
-    case ',': addToken(TokenType::COMMA);       break;
-    case '+': addToken(TokenType::PLUS);        break;
-    case '-': addToken(TokenType::MINUS);       break;
-    case '*': addToken(TokenType::STAR);        break;
+    case '(': addToken(TokenType::LEFT_PAREN);    break;
+    case ')': addToken(TokenType::RIGHT_PAREN);   break;
+    case '{': addToken(TokenType::LEFT_BRACE);    break;
+    case '}': addToken(TokenType::RIGHT_BRACE);   break;
+    case '[': addToken(TokenType::LEFT_BRACKET);  break;
+    case ']': addToken(TokenType::RIGHT_BRACKET); break;
+    case ';': addToken(TokenType::SEMICOLON);     break;
+    case ',': addToken(TokenType::COMMA);         break;
+    case '+': addToken(TokenType::PLUS);          break;
+    case '-': addToken(TokenType::MINUS);         break;
+    case '*': addToken(TokenType::STAR);          break;
     case '/': 
             if (match('/'))
                 skipLineComment();
