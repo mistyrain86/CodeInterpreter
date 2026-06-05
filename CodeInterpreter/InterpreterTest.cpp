@@ -425,3 +425,36 @@ TEST_F(InterpreterFixture, Array_TooLargeSize_Throws) {
     s.push_back(varDecl("arr", arrayCreate(1000001.0)));
     EXPECT_THROW(runAll(std::move(s)), RuntimeError);
 }
+
+TEST_F(InterpreterFixture, StaticBinding_Variable_SameResult) {
+    auto varExpr = std::make_unique<VariableExpr>(makeIdent("x"));
+    const VariableExpr* varPtr = varExpr.get();
+
+    Interpreter::BindingMap bindings;
+    bindings[varPtr] = 0;
+    m_interp.setBindings(&bindings);
+
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("x", litNum(10.0)));
+    s.push_back(printStmt(std::move(varExpr)));
+    EXPECT_EQ(runAll(std::move(s)), "10\n");
+
+    m_interp.setBindings(nullptr);
+}
+
+TEST_F(InterpreterFixture, StaticBinding_Assign_SameResult) {
+    auto assignExpr = std::make_unique<AssignExpr>(makeIdent("x"), litNum(99.0));
+    const AssignExpr* assignPtr = assignExpr.get();
+
+    Interpreter::BindingMap bindings;
+    bindings[assignPtr] = 0;
+    m_interp.setBindings(&bindings);
+
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("x", litNum(1.0)));
+    s.push_back(std::make_unique<ExprStmt>(std::move(assignExpr)));
+    s.push_back(printStmt(varRef("x")));
+    EXPECT_EQ(runAll(std::move(s)), "99\n");
+
+    m_interp.setBindings(nullptr);
+}

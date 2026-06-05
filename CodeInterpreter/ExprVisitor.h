@@ -8,9 +8,9 @@ struct UnaryExpr;
 struct BinaryExpr;
 struct VariableExpr;
 struct AssignExpr;
-struct CallExpr;       // Ch.2
-struct IndexGetExpr;   // Ch.3
-struct IndexSetExpr;   // Ch.3
+struct CallExpr;
+struct IndexGetExpr;
+struct IndexSetExpr;
 
 struct ExprVisitor {
     virtual ~ExprVisitor() = default;
@@ -20,7 +20,7 @@ struct ExprVisitor {
     virtual Value visitBinary      (BinaryExpr&)    = 0;
     virtual Value visitVariable    (VariableExpr&)  = 0;
     virtual Value visitAssign      (AssignExpr&)    = 0;
-    virtual Value visitCallExpr    (CallExpr&)      = 0;  // Ch.2
-    virtual Value visitIndexGetExpr(IndexGetExpr&)  = 0;  // Ch.3
-    virtual Value visitIndexSetExpr(IndexSetExpr&)  = 0;  // Ch.3
+    virtual Value visitCallExpr    (CallExpr&)      = 0;
+    virtual Value visitIndexGetExpr(IndexGetExpr&)  = 0;
+    virtual Value visitIndexSetExpr(IndexSetExpr&)  = 0;
 };
