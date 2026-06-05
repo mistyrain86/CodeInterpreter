@@ -62,8 +62,8 @@ StmtPtr Parser::parseFunctionStmt() {
         std::move(name), std::move(params), std::move(body));
 }
 StmtPtr Parser::parseReturnStmt() {
-    Token keyword = previous();
-    ExprPtr value = nullptr;
+    Token   keyword = previous();
+    ExprPtr value;  // unique_ptr 기본값 = nullptr
     if (!check(TokenType::SEMICOLON))
         value = parseExpression();
     consume(TokenType::SEMICOLON, "return 뒤에 ';'가 필요합니다.");
