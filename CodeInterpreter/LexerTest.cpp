@@ -171,3 +171,22 @@ TEST_F(LexerFixture, FuncSignature) {
     EXPECT_EQ(tokenArray[5].type, TokenType::IDENTIFIER);
     EXPECT_EQ(tokenArray[6].type, TokenType::RIGHT_PAREN);
 }
+
+TEST_F(LexerFixture, LeftBracket) {
+    auto tokenArray = lexer.tokenize("[");
+    EXPECT_EQ(tokenArray[0].type, TokenType::LEFT_BRACKET);
+}
+
+TEST_F(LexerFixture, RightBracket) {
+    auto tokenArray = lexer.tokenize("]");
+    EXPECT_EQ(tokenArray[0].type, TokenType::RIGHT_BRACKET);
+}
+
+TEST_F(LexerFixture, ArrayAccess) {
+    auto tokenArray = lexer.tokenize("arr[0]");
+    EXPECT_EQ(tokenArray[0].type, TokenType::IDENTIFIER);
+    EXPECT_EQ(tokenArray[1].type, TokenType::LEFT_BRACKET);
+    EXPECT_EQ(tokenArray[2].type, TokenType::NUMBER);
+    EXPECT_EQ(tokenArray[3].type, TokenType::RIGHT_BRACKET);
+    EXPECT_DOUBLE_EQ(std::get<double>(tokenArray[2].literal), 0.0);
+}
