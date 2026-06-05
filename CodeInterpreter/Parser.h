@@ -16,6 +16,7 @@ private:
     std::vector<Token> m_tokens;
     int                m_current = 0;
 
+    // ── 문장 파서 ──────────────────────────────────────────────
     StmtPtr  parseStatement();
     StmtPtr  parseVarDecl();
     StmtPtr  parsePrintStmt();
@@ -23,7 +24,10 @@ private:
     StmtPtr  parseForStmt();
     StmtPtr  parseBlock();
     StmtPtr  parseExprStmt();
+    StmtPtr  parseFunctionStmt();  // Ch.2
+    StmtPtr  parseReturnStmt();    // Ch.2
 
+    // ── 표현식 파서 ────────────────────────────────────────────
     ExprPtr  parseExpression();
     ExprPtr  parseAssignment();
     ExprPtr  parseEquality();
@@ -31,8 +35,11 @@ private:
     ExprPtr  parseTerm();
     ExprPtr  parseFactor();
     ExprPtr  parseUnary();
+    ExprPtr  parseCall();           // Ch.2/3
+    ExprPtr  finishCall(ExprPtr callee);
     ExprPtr  parsePrimary();
 
+    // ── 토큰 유틸리티 ──────────────────────────────────────────
     bool         isAtEnd() const;
     const Token& peek() const;
     const Token& previous() const;
