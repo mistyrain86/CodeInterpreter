@@ -1,33 +1,10 @@
 #include "Parser.h"
 
 std::vector<StmtPtr> Parser::parse(std::vector<Token> tokens) {
-    m_tokens  = std::move(tokens);
-    m_current = 0;
+    m_stream.load(std::move(tokens));   // TokenStream(Adapter)에 위임
     std::vector<StmtPtr> stmts;
     while (!isAtEnd()) stmts.push_back(parseStatement());
     return stmts;
-}
-
-// ── 토큰 헬퍼 ─────────────────────────────────────────────
-bool         Parser::isAtEnd() const  { return peek().type == TokenType::END_OF_FILE; }
-const Token& Parser::peek() const     { return m_tokens[m_current]; }
-const Token& Parser::previous() const { return m_tokens[m_current - 1]; }
-const Token& Parser::advance()        { if (!isAtEnd()) m_current++; return previous(); }
-bool         Parser::check(TokenType t) const { return !isAtEnd() && peek().type == t; }
-
-bool Parser::match(std::initializer_list<TokenType> types) {
-    for (auto t : types) { if (check(t)) { advance(); return true; } }
-    return false;
-}
-const Token& Parser::consume(TokenType t, const std::string& msg) {
-    if (check(t)) return advance();
-    throw error(peek(), msg);
-}
-ParseError Parser::error(const Token& tok, const std::string& msg) const {
-    std::string loc = (tok.type == TokenType::END_OF_FILE)
-        ? " (파일 끝)" : " ('" + tok.lexeme + "' 근처)";
-    return ParseError("[라인 " + std::to_string(tok.line)
-                      + "] 구문 오류: " + msg + loc);
 }
 
 StmtPtr Parser::parseStatement() {

@@ -1,12 +1,10 @@
 #pragma once
 #include <functional>
-#include <initializer_list>
 #include <vector>
 #include "IParser.h"
-#include "ParseError.h"
+#include "TokenStream.h"   // Adapter: 토큰 커서 관리 위임
 #include "Expr.h"
 #include "Stmt.h"
-#include "Token.h"
 
 class Parser : public IParser {
 public:
@@ -14,8 +12,7 @@ public:
     std::vector<StmtPtr> parse(std::vector<Token> tokens) override;
 
 private:
-    std::vector<Token> m_tokens;
-    int                m_current = 0;
+    TokenStream m_stream;  // vector<Token> → 커서 인터페이스 적응
 
     // ── 문장 파서 ──────────────────────────────────────────────
     StmtPtr  parseStatement();
@@ -42,13 +39,13 @@ private:
     ExprPtr  parseBinaryLeft(std::initializer_list<TokenType> ops,
                               std::function<ExprPtr()>         next);
 
-    // ── 토큰 유틸리티 ──────────────────────────────────────────
-    bool         isAtEnd() const;
-    const Token& peek() const;
-    const Token& previous() const;
-    const Token& advance();
-    bool         check(TokenType t) const;
-    bool         match(std::initializer_list<TokenType> types);
-    const Token& consume(TokenType t, const std::string& msg);
-    ParseError   error(const Token& tok, const std::string& msg) const;
+    // ── TokenStream 위임 래퍼 ─────────────────────────────────
+    bool         isAtEnd()                const { return m_stream.isAtEnd(); }
+    const Token& peek()                   const { return m_stream.peek(); }
+    const Token& previous()               const { return m_stream.previous(); }
+    const Token& advance()                      { return m_stream.advance(); }
+    bool         check(TokenType t)       const { return m_stream.check(t); }
+    bool         match(std::initializer_list<TokenType> types) { return m_stream.match(types); }
+    const Token& consume(TokenType t, const std::string& msg)  { return m_stream.consume(t, msg); }
+    ParseError   error(const Token& tok,  const std::string& msg) const { return m_stream.error(tok, msg); }
 };
