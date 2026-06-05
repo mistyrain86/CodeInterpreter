@@ -7,8 +7,8 @@ struct VarStmt;
 struct BlockStmt;
 struct IfStmt;
 struct ForStmt;
-struct FunctionStmt;  // Ch.2
-struct ReturnStmt;    // Ch.2
+struct FunctionStmt;
+struct ReturnStmt;
 
 struct StmtVisitor {
     virtual ~StmtVisitor() = default;
@@ -18,6 +18,6 @@ struct StmtVisitor {
     virtual void visitBlockStmt   (BlockStmt&)    = 0;
     virtual void visitIfStmt      (IfStmt&)       = 0;
     virtual void visitForStmt     (ForStmt&)      = 0;
-    virtual void visitFunctionStmt(FunctionStmt&) = 0;  // Ch.2
-    virtual void visitReturnStmt  (ReturnStmt&)   = 0;  // Ch.2
+    virtual void visitFunctionStmt(FunctionStmt&) = 0;
+    virtual void visitReturnStmt  (ReturnStmt&)   = 0;
 };

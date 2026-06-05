@@ -55,7 +55,7 @@ Value Interpreter::evaluate(Expr& expr) {
 }
 
 void Interpreter::execute(Stmt& stmt) {
-    if (m_stmtHook) m_stmtHook(stmt);  // Ch.5 디버거 훅
+    if (m_stmtHook) m_stmtHook(stmt);
     stmt.accept(*this);
 }
 
@@ -220,7 +220,6 @@ bool Interpreter::isTruthy(const Value& v) const {
     return true;
 }
 
-// ── Ch.2 함수 스텁 (D가 구현) ─────────────────────────────────────
 void Interpreter::visitFunctionStmt(FunctionStmt& s) {
     auto fn = std::make_shared<LangFunction>(s, m_currentEnv);
     m_currentEnv->define(s.name.lexeme, Value{fn});
