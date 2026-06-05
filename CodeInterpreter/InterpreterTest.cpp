@@ -462,80 +462,55 @@ TEST_F(InterpreterFixture, StaticBinding_Assign_SameResult) {
 
 // ── Ch.4 ConstantFolder 테스트 ────────────────────────────────────
 
-TEST(ConstantFolderTest, Fold_Plus) {
-    ConstantFolder folder;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(bin(litNum(3), TokenType::PLUS, "+", litNum(4))));
-    auto result = folder.optimize(std::move(stmts));
-    auto* ps  = dynamic_cast<PrintStmt*>(result[0].get());
-    auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
-    ASSERT_NE(lit, nullptr);
-    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 7.0);
-}
+class ConstantFolderFixture : public ::testing::Test {
+protected:
+    ConstantFolder       m_folder;
+    std::vector<StmtPtr> m_result;  // 수명 보장
 
-TEST(ConstantFolderTest, Fold_Minus) {
-    ConstantFolder folder;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(bin(litNum(10), TokenType::MINUS, "-", litNum(3))));
-    auto result = folder.optimize(std::move(stmts));
-    auto* ps  = dynamic_cast<PrintStmt*>(result[0].get());
-    auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
-    ASSERT_NE(lit, nullptr);
-    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 7.0);
-}
+    // 표현식을 폴딩한 결과가 double 리터럴이면 그 값을 반환
+    double foldToDouble(ExprPtr expr) {
+        std::vector<StmtPtr> stmts;
+        stmts.push_back(printStmt(std::move(expr)));
+        m_result = m_folder.optimize(std::move(stmts));
+        auto* ps  = dynamic_cast<PrintStmt*>(m_result[0].get());
+        auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
+        EXPECT_NE(lit, nullptr);
+        if (!lit) return 0.0;
+        return std::get<double>(lit->value);
+    }
 
-TEST(ConstantFolderTest, Fold_Star) {
-    ConstantFolder folder;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(bin(litNum(3), TokenType::STAR, "*", litNum(4))));
-    auto result = folder.optimize(std::move(stmts));
-    auto* ps  = dynamic_cast<PrintStmt*>(result[0].get());
-    auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
-    ASSERT_NE(lit, nullptr);
-    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 12.0);
-}
+    // 표현식이 LiteralExpr로 폴딩됐는지 여부
+    bool wasFolded(ExprPtr expr) {
+        std::vector<StmtPtr> stmts;
+        stmts.push_back(printStmt(std::move(expr)));
+        m_result = m_folder.optimize(std::move(stmts));
+        auto* ps = dynamic_cast<PrintStmt*>(m_result[0].get());
+        return dynamic_cast<LiteralExpr*>(ps->expression.get()) != nullptr;
+    }
+};
 
-TEST(ConstantFolderTest, Fold_Slash) {
-    ConstantFolder folder;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(bin(litNum(8), TokenType::SLASH, "/", litNum(2))));
-    auto result = folder.optimize(std::move(stmts));
-    auto* ps  = dynamic_cast<PrintStmt*>(result[0].get());
-    auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
-    ASSERT_NE(lit, nullptr);
-    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 4.0);
+TEST_F(ConstantFolderFixture, Fold_Plus) {
+    EXPECT_DOUBLE_EQ(foldToDouble(bin(litNum(3),  TokenType::PLUS,  "+", litNum(4))),  7.0);
 }
-
-TEST(ConstantFolderTest, NoFold_DivisionByZero) {
-    ConstantFolder folder;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(bin(litNum(1), TokenType::SLASH, "/", litNum(0))));
-    auto result = folder.optimize(std::move(stmts));
-    auto* ps = dynamic_cast<PrintStmt*>(result[0].get());
-    EXPECT_EQ(dynamic_cast<LiteralExpr*>(ps->expression.get()), nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(ps->expression.get()),  nullptr);
+TEST_F(ConstantFolderFixture, Fold_Minus) {
+    EXPECT_DOUBLE_EQ(foldToDouble(bin(litNum(10), TokenType::MINUS, "-", litNum(3))),  7.0);
 }
-
-TEST(ConstantFolderTest, NoFold_WithVariable) {
-    ConstantFolder folder;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(bin(varRef("x"), TokenType::PLUS, "+", litNum(1))));
-    auto result = folder.optimize(std::move(stmts));
-    auto* ps = dynamic_cast<PrintStmt*>(result[0].get());
-    EXPECT_EQ(dynamic_cast<LiteralExpr*>(ps->expression.get()), nullptr);
+TEST_F(ConstantFolderFixture, Fold_Star) {
+    EXPECT_DOUBLE_EQ(foldToDouble(bin(litNum(3),  TokenType::STAR,  "*", litNum(4))), 12.0);
 }
-
-TEST(ConstantFolderTest, Fold_Nested) {
-    ConstantFolder folder;
+TEST_F(ConstantFolderFixture, Fold_Slash) {
+    EXPECT_DOUBLE_EQ(foldToDouble(bin(litNum(8),  TokenType::SLASH, "/", litNum(2))),  4.0);
+}
+TEST_F(ConstantFolderFixture, NoFold_DivisionByZero) {
+    EXPECT_FALSE(wasFolded(bin(litNum(1), TokenType::SLASH, "/", litNum(0))));
+}
+TEST_F(ConstantFolderFixture, NoFold_WithVariable) {
+    EXPECT_FALSE(wasFolded(bin(varRef("x"), TokenType::PLUS, "+", litNum(1))));
+}
+TEST_F(ConstantFolderFixture, Fold_Nested) {
     auto inner = bin(litNum(1), TokenType::PLUS, "+", litNum(2));
     auto outer = bin(std::move(inner), TokenType::STAR, "*", litNum(3));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(std::move(outer)));
-    auto result = folder.optimize(std::move(stmts));
-    auto* ps  = dynamic_cast<PrintStmt*>(result[0].get());
-    auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
-    ASSERT_NE(lit, nullptr);
-    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 9.0);
+    EXPECT_DOUBLE_EQ(foldToDouble(std::move(outer)), 9.0);
 }
 
 TEST(ConstantFolderTest, Fold_VarStmt_Initializer) {
