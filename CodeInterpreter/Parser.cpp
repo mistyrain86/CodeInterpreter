@@ -171,10 +171,11 @@ ExprPtr Parser::parseUnary() {
 }
 ExprPtr Parser::parseCall() {
     ExprPtr expr = parsePrimary();
+    // 후위 연산자 체인: f(args)[idx] 형태를 좌결합으로 처리
     while (true) {
-        if (match({TokenType::LEFT_PAREN})) {
+        if (match({TokenType::LEFT_PAREN})) {          // 함수 호출
             expr = finishCall(std::move(expr));
-        } else if (match({TokenType::LEFT_BRACKET})) {
+        } else if (match({TokenType::LEFT_BRACKET})) { // 배열 인덱스
             Token   bracket = previous();
             ExprPtr index   = parseExpression();
             consume(TokenType::RIGHT_BRACKET, "인덱스 뒤에 ']'가 필요합니다.");
