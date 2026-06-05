@@ -61,6 +61,14 @@ StmtPtr Parser::parseFunctionStmt() {
     return std::make_unique<FunctionStmt>(
         std::move(name), std::move(params), std::move(body));
 }
+StmtPtr Parser::parseReturnStmt() {
+    Token keyword = previous();
+    ExprPtr value = nullptr;
+    if (!check(TokenType::SEMICOLON))
+        value = parseExpression();
+    consume(TokenType::SEMICOLON, "return 뒤에 ';'가 필요합니다.");
+    return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
+}
 StmtPtr Parser::parseVarDecl() {
     Token name = consume(TokenType::IDENTIFIER, "변수 이름이 필요합니다.");
     ExprPtr init;
