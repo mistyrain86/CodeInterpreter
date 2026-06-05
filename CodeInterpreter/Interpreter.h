@@ -28,9 +28,9 @@ public:
     Value visitBinary      (BinaryExpr&)    override;
     Value visitVariable    (VariableExpr&)  override;
     Value visitAssign      (AssignExpr&)    override;
-    Value visitCallExpr    (CallExpr&)      override;  // Ch.2 — D 구현
-    Value visitIndexGetExpr(IndexGetExpr&)  override;  // Ch.3 — D 구현
-    Value visitIndexSetExpr(IndexSetExpr&)  override;  // Ch.3 — D 구현
+    Value visitCallExpr    (CallExpr&)      override;
+    Value visitIndexGetExpr(IndexGetExpr&)  override;
+    Value visitIndexSetExpr(IndexSetExpr&)  override;
 
     // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
@@ -39,8 +39,8 @@ public:
     void visitBlockStmt   (BlockStmt&)    override;
     void visitIfStmt      (IfStmt&)       override;
     void visitForStmt     (ForStmt&)      override;
-    void visitFunctionStmt(FunctionStmt&) override;  // Ch.2 — D 구현
-    void visitReturnStmt  (ReturnStmt&)   override;  // Ch.2 — D 구현
+    void visitFunctionStmt(FunctionStmt&) override;
+    void visitReturnStmt  (ReturnStmt&)   override;
 
     // 외부 공개 (LangFunction 등에서 활용)
     Value       evaluate(Expr& expr);
@@ -51,11 +51,9 @@ public:
     std::string stringify(const Value& val) const;
     std::shared_ptr<Environment> currentEnv() const { return m_currentEnv; }
 
-    // Ch.4 정적 바인딩
     using BindingMap = std::unordered_map<const Expr*, int>;
     void setBindings(const BindingMap* b) { m_bindings = b; }
 
-    // Ch.5 디버거 훅
     using StmtHook = std::function<void(Stmt&)>;
     void setStmtHook(StmtHook hook) { m_stmtHook = std::move(hook); }
 
