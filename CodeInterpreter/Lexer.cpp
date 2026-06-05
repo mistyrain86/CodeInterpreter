@@ -2,10 +2,14 @@
 #include <stdexcept>
 
 const std::unordered_map<std::string, TokenType> Lexer::s_keywords = {
-    {"var",   TokenType::KW_VAR},   {"print", TokenType::KW_PRINT},
-    {"if",    TokenType::KW_IF},    {"else",  TokenType::KW_ELSE},
-    {"for",   TokenType::KW_FOR},   {"true",  TokenType::KW_TRUE},
-    {"false", TokenType::KW_FALSE}, {"func",   TokenType::KW_FUNC},
+    {"var",    TokenType::KW_VAR},
+    {"print",  TokenType::KW_PRINT},
+    {"if",     TokenType::KW_IF},
+    {"else",   TokenType::KW_ELSE},
+    {"for",    TokenType::KW_FOR},
+    {"true",   TokenType::KW_TRUE},
+    {"false",  TokenType::KW_FALSE},
+    {"func",   TokenType::KW_FUNC},
     {"return", TokenType::KW_RETURN},
 };
 
@@ -48,16 +52,16 @@ void Lexer::scanToken() {
             else
                 addToken(TokenType::SLASH);
             break;
-    case '!': addToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);    break;
-    case '=': addToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);   break;
-    case '<': addToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);    break;
+    case '!': addToken(match('=') ? TokenType::BANG_EQUAL    : TokenType::BANG);    break;
+    case '=': addToken(match('=') ? TokenType::EQUAL_EQUAL   : TokenType::EQUAL);   break;
+    case '<': addToken(match('=') ? TokenType::LESS_EQUAL    : TokenType::LESS);    break;
     case '>': addToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER); break;
     case ' ':
     case '\r':
     case '\t':
         break;
-    case '\n': m_line++; break;
-    case '"' : scanString(); break;
+    case '\n': m_line++;         break;
+    case '"' : scanString();     break;
     case '_' : scanIdentifier(); break;
     default : 
             if (std::isdigit((unsigned char)singleChar)) scanNumber();
