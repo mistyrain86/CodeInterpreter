@@ -121,6 +121,7 @@ ExprPtr Parser::parseExpression() { return parseAssignment(); }
 ExprPtr Parser::parseAssignment() {
     ExprPtr expr = parseEquality();
     if (match({TokenType::EQUAL})) {
+        Token   eq    = previous();  // '=' 토큰 즉시 캡처 — 에러 위치 보고용
         ExprPtr value = parseAssignment();
         // 변수 대입: a = v
         if (auto* v = dynamic_cast<VariableExpr*>(expr.get()))
@@ -132,7 +133,7 @@ ExprPtr Parser::parseAssignment() {
                 idx->bracket,
                 std::move(idx->index),
                 std::move(value));
-        throw error(previous(), "잘못된 할당 대상입니다.");
+        throw error(eq, "잘못된 할당 대상입니다.");
     }
     return expr;
 }
