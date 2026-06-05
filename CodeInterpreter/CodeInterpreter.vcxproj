@@ -160,9 +160,16 @@
     <ClInclude Include="Expr.h" />
     <ClInclude Include="ExprVisitor.h" />
     <ClInclude Include="StmtVisitor.h" />
+    <ClInclude Include="ArrayBuiltin.h" />
+    <ClInclude Include="BindingMap.h" />
+    <ClInclude Include="ConstantFolder.h" />
+    <ClInclude Include="Debugger.h" />
     <ClInclude Include="ICallable.h" />
     <ClInclude Include="IChecker.h" />
     <ClInclude Include="IOptimizer.h" />
+    <ClInclude Include="LangFunction.h" />
+    <ClInclude Include="Resolver.h" />
+    <ClInclude Include="Shell.h" />
     <ClInclude Include="IInterpreter.h" />
     <ClInclude Include="ILexer.h" />
     <ClInclude Include="IParser.h" />
@@ -176,7 +183,13 @@
     <ClInclude Include="Value.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ArrayBuiltin.cpp" />
     <ClCompile Include="Checker.cpp" />
+    <ClCompile Include="ConstantFolder.cpp" />
+    <ClCompile Include="Debugger.cpp" />
+    <ClCompile Include="LangFunction.cpp" />
+    <ClCompile Include="Resolver.cpp" />
+    <ClCompile Include="Shell.cpp" />
     <ClCompile Include="CheckerTest.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="EnvironmentTest.cpp" />

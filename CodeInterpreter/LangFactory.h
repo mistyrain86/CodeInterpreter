@@ -6,6 +6,7 @@
 #include "IChecker.h"
 #include "IInterpreter.h"
 #include "IOptimizer.h"
+#include "BindingMap.h"
 
 class LangFactory {
 public:
@@ -19,6 +20,9 @@ public:
     void setOptimizer(std::unique_ptr<IOptimizer> optimizer);
 
     void run(const std::string& source);
+
+    // Ch.5 디버거 접근용
+    IInterpreter* getInterpreter() const { return m_interpreter.get(); }
 
 private:
     std::unique_ptr<ILexer>       m_lexer;
