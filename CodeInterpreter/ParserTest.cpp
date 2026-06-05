@@ -5,6 +5,7 @@
 #include "Parser.h"
 #include "LangFactory.h"
 #include "TestUtils.h"
+#include "TokenStreamBuilder.h"
 
 using ::testing::_;
 using ::testing::Return;
@@ -441,4 +442,53 @@ TEST(RealLexerParser, ParseError_MissingSemicolon_Throws) {
     LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
                         std::move(mc), std::move(mi));
     EXPECT_THROW(factory.run("print 5"), ParseError);
+}
+
+// ── TokenStreamBuilder 활용 예시 ─────────────────────────
+// 기존 t()/semi()/eof() 방식 대비 문법 흐름이 코드에 바로 드러난다.
+
+TEST(ParserBuilder, NumberLiteral) {
+    auto tokens = TokenStreamBuilder().number(5.0).semicolon().eof().build();
+    auto stmts  = Parser().parse(std::move(tokens));
+    auto* es    = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    ASSERT_NE(lit, nullptr);
+    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 5.0);
+}
+
+TEST(ParserBuilder, Addition) {
+    auto tokens = TokenStreamBuilder()
+        .number(1.0).plus().number(2.0).semicolon().eof().build();
+    auto stmts = Parser().parse(std::move(tokens));
+    auto* es   = dynamic_cast<ExprStmt*>(stmts[0].get());
+    ASSERT_NE(es, nullptr);
+    auto* bin = dynamic_cast<BinaryExpr*>(es->expression.get());
+    ASSERT_NE(bin, nullptr);
+    EXPECT_EQ(bin->op.type, TokenType::PLUS);
+}
+
+TEST(ParserBuilder, VarDecl) {
+    auto tokens = TokenStreamBuilder()
+        .kwVar().identifier("x").equal().number(42.0).semicolon().eof().build();
+    auto stmts = Parser().parse(std::move(tokens));
+    auto* vs   = dynamic_cast<VarStmt*>(stmts[0].get());
+    ASSERT_NE(vs, nullptr);
+    EXPECT_EQ(vs->name.lexeme, "x");
+    EXPECT_NE(vs->initializer, nullptr);
+}
+
+TEST(ParserBuilder, ForLoop) {
+    // for (var i = 0; i < 3; i = i + 1) print i;
+    auto tokens = TokenStreamBuilder()
+        .kwFor().lparen()
+            .kwVar().identifier("i").equal().number(0.0).semicolon()
+            .identifier("i").less().number(3.0).semicolon()
+            .identifier("i").equal()
+                .identifier("i").plus().number(1.0)
+        .rparen()
+        .kwPrint().identifier("i").semicolon()
+        .eof().build();
+    auto stmts = Parser().parse(std::move(tokens));
+    EXPECT_NE(dynamic_cast<ForStmt*>(stmts[0].get()), nullptr);
 }
