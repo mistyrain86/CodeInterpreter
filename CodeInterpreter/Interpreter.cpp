@@ -145,7 +145,8 @@ Value Interpreter::visitBinary(BinaryExpr& e) {
 std::optional<int> Interpreter::lookupBinding(const Expr* expr) const {
     if (!m_bindings) return std::nullopt;
     auto it = m_bindings->find(expr);
-    return it != m_bindings->end() ? std::optional<int>{it->second} : std::nullopt;
+    if (it == m_bindings->end()) return std::nullopt;
+    return it->second;
 }
 
 Value Interpreter::visitVariable(VariableExpr& e) {
