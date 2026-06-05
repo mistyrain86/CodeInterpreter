@@ -1,5 +1,7 @@
 #include "Interpreter.h"
 #include "ICallable.h"
+#include "LangFunction.h"
+#include "ReturnSignal.h"
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -186,14 +188,35 @@ bool Interpreter::isTruthy(const Value& v) const {
 }
 
 // ── Ch.2 함수 스텁 (D가 구현) ─────────────────────────────────────
-void Interpreter::visitFunctionStmt(FunctionStmt&) {
-    throw RuntimeError("미구현: 함수 선언 (visitFunctionStmt)");
+void Interpreter::visitFunctionStmt(FunctionStmt& s) {
+    auto fn = std::make_shared<LangFunction>(s, m_currentEnv);
+    m_currentEnv->define(s.name.lexeme, Value{fn});
 }
-Value Interpreter::visitCallExpr(CallExpr&) {
-    throw RuntimeError("미구현: 함수 호출 (visitCallExpr)");
+
+Value Interpreter::visitCallExpr(CallExpr& e) {
+    Value callee = evaluate(*e.callee);
+
+    if (!std::holds_alternative<std::shared_ptr<ICallable>>(callee))
+        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
+            + "] 런타임 오류: 함수가 아닌 대상을 호출했습니다.");
+
+    auto fn = std::get<std::shared_ptr<ICallable>>(callee);
+
+    std::vector<Value> args;
+    for (auto& arg : e.args) args.push_back(evaluate(*arg));
+
+    if ((int)args.size() != fn->arity())
+        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
+            + "] 런타임 오류: 인자 개수 불일치. 기대: "
+            + std::to_string(fn->arity())
+            + ", 실제: " + std::to_string(args.size()));
+
+    return fn->call(*this, args);
 }
-void Interpreter::visitReturnStmt(ReturnStmt&) {
-    throw RuntimeError("미구현: return 문 (visitReturnStmt)");
+
+void Interpreter::visitReturnStmt(ReturnStmt& s) {
+    Value val = s.value ? evaluate(*s.value) : Value{std::monostate{}};
+    throw ReturnSignal(std::move(val));
 }
 
 // ── Ch.3 배열 스텁 (D가 구현) ─────────────────────────────────────

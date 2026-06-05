@@ -2,8 +2,6 @@
 #include "Interpreter.h"
 #include "ReturnSignal.h"
 
-// TODO (D): 아래 3개 메서드를 구현하세요.
-
 int LangFunction::arity() const {
     return (int)m_decl.params.size();
 }
@@ -13,9 +11,16 @@ std::string LangFunction::name() const {
 }
 
 Value LangFunction::call(Interpreter& interp, const std::vector<Value>& args) {
-    // 1. 클로저 환경 기반 새 스코프 생성
-    // 2. 파라미터 바인딩
-    // 3. 본문 실행 (ReturnSignal catch)
-    // 4. 반환값 없으면 nil 반환
-    throw RuntimeError("미구현: LangFunction::call()");
+    // 클로저 환경 기반 새 스코프 생성
+    auto env = std::make_shared<Environment>(m_closure);
+    // 파라미터 바인딩
+    for (int i = 0; i < (int)m_decl.params.size(); i++)
+        env->define(m_decl.params[i].lexeme, args[i]);
+    // 본문 실행 — ReturnSignal catch → 반환값 추출
+    try {
+        interp.executeBlock(m_decl.body, std::move(env));
+    } catch (ReturnSignal& ret) {
+        return ret.value;
+    }
+    return Value{std::monostate{}};  // return 없으면 nil
 }
