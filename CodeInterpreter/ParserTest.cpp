@@ -183,6 +183,53 @@ TEST(ParserUnit, InvalidAssignTarget_Throws) {
                         t(TokenType::NUMBER,"3",3.0), semi(), eof()}), ParseError);
 }
 
+// ── Ch.2 함수 선언 테스트 ─────────────────────────────────────
+TEST(ParserTest, FunctionDecl_NoParams) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func greet() { print \"hi\"; }");
+    auto stmts  = parser.parse(std::move(tokens));
+    ASSERT_EQ(stmts.size(), 1u);
+    EXPECT_NE(dynamic_cast<FunctionStmt*>(stmts[0].get()), nullptr);
+}
+TEST(ParserTest, FunctionDecl_WithParams) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func add(a, b) { return a; }");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(fn, nullptr);
+    EXPECT_EQ(fn->params.size(), 2u);
+}
+TEST(ParserTest, FunctionDecl_MultipleParams) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func f(a, b, c) { return a; }");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(fn, nullptr);
+    EXPECT_EQ(fn->params.size(), 3u);
+    EXPECT_EQ(fn->params[0].lexeme, "a");
+    EXPECT_EQ(fn->params[1].lexeme, "b");
+    EXPECT_EQ(fn->params[2].lexeme, "c");
+}
+TEST(ParserTest, FunctionDecl_WithBody) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func f() { var x = 1; return x; }");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(fn, nullptr);
+    EXPECT_EQ(fn->name.lexeme, "f");
+    EXPECT_EQ(fn->body.size(), 2u);
+}
+TEST(ParserTest, FunctionDecl_Name) {
+    Lexer lexer; Parser parser;
+    auto tokens = lexer.tokenize("func myFunc() { }");
+    auto stmts  = parser.parse(std::move(tokens));
+    auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(fn, nullptr);
+    EXPECT_EQ(fn->name.lexeme, "myFunc");
+    EXPECT_EQ(fn->params.size(), 0u);
+    EXPECT_EQ(fn->body.size(), 0u);
+}
+
 TEST(ParserUnit, Addition) {
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
                         t(TokenType::PLUS,"+"),
