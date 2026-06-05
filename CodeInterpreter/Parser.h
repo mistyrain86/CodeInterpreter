@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <initializer_list>
 #include <vector>
 #include "IParser.h"
@@ -38,6 +39,8 @@ private:
     ExprPtr  parseCall();           // Ch.2/3
     ExprPtr  finishCall(ExprPtr callee);
     ExprPtr  parsePrimary();
+    ExprPtr  parseBinaryLeft(std::initializer_list<TokenType> ops,
+                              std::function<ExprPtr()>         next);
 
     // ── 토큰 유틸리티 ──────────────────────────────────────────
     bool         isAtEnd() const;

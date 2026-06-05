@@ -137,38 +137,32 @@ ExprPtr Parser::parseAssignment() {
     }
     return expr;
 }
-ExprPtr Parser::parseEquality() {
-    ExprPtr e = parseComparison();
-    while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
+// 좌결합 이항 연산의 공통 구조를 추출한 헬퍼 (DRY)
+ExprPtr Parser::parseBinaryLeft(std::initializer_list<TokenType>  ops,
+                                  std::function<ExprPtr()>          next) {
+    ExprPtr e = next();
+    while (match(ops)) {
         Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseComparison());
+        e = std::make_unique<BinaryExpr>(std::move(e), op, next());
     }
     return e;
+}
+ExprPtr Parser::parseEquality() {
+    return parseBinaryLeft({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL},
+                            [this] { return parseComparison(); });
 }
 ExprPtr Parser::parseComparison() {
-    ExprPtr e = parseTerm();
-    while (match({TokenType::GREATER, TokenType::GREATER_EQUAL,
-                  TokenType::LESS,    TokenType::LESS_EQUAL})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseTerm());
-    }
-    return e;
+    return parseBinaryLeft({TokenType::GREATER, TokenType::GREATER_EQUAL,
+                             TokenType::LESS,    TokenType::LESS_EQUAL},
+                            [this] { return parseTerm(); });
 }
 ExprPtr Parser::parseTerm() {
-    ExprPtr e = parseFactor();
-    while (match({TokenType::PLUS, TokenType::MINUS})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseFactor());
-    }
-    return e;
+    return parseBinaryLeft({TokenType::PLUS, TokenType::MINUS},
+                            [this] { return parseFactor(); });
 }
 ExprPtr Parser::parseFactor() {
-    ExprPtr e = parseUnary();
-    while (match({TokenType::STAR, TokenType::SLASH})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseUnary());
-    }
-    return e;
+    return parseBinaryLeft({TokenType::STAR, TokenType::SLASH},
+                            [this] { return parseUnary(); });
 }
 ExprPtr Parser::parseUnary() {
     if (match({TokenType::BANG, TokenType::MINUS})) {
