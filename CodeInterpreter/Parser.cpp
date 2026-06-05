@@ -31,12 +31,33 @@ ParseError Parser::error(const Token& tok, const std::string& msg) const {
 }
 
 StmtPtr Parser::parseStatement() {
+    if (match({TokenType::KW_FUNC}))    return parseFunctionStmt();
+    if (match({TokenType::KW_RETURN}))  return parseReturnStmt();
     if (match({TokenType::KW_VAR}))     return parseVarDecl();
     if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
     if (match({TokenType::KW_IF}))      return parseIfStmt();
     if (match({TokenType::KW_FOR}))     return parseForStmt();
     if (match({TokenType::LEFT_BRACE})) return parseBlock();
     return parseExprStmt();
+}
+StmtPtr Parser::parseFunctionStmt() {
+    Token name = consume(TokenType::IDENTIFIER, "함수 이름이 필요합니다.");
+    consume(TokenType::LEFT_PAREN, "함수 이름 뒤에 '('가 필요합니다.");
+    std::vector<Token> params;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            params.push_back(
+                consume(TokenType::IDENTIFIER, "파라미터 이름이 필요합니다."));
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_PAREN, "파라미터 목록 뒤에 ')'가 필요합니다.");
+    consume(TokenType::LEFT_BRACE,  "함수 본문 앞에 '{'가 필요합니다.");
+    std::vector<StmtPtr> body;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd())
+        body.push_back(parseStatement());
+    consume(TokenType::RIGHT_BRACE, "함수 본문 뒤에 '}'가 필요합니다.");
+    return std::make_unique<FunctionStmt>(
+        std::move(name), std::move(params), std::move(body));
 }
 StmtPtr Parser::parseVarDecl() {
     Token name = consume(TokenType::IDENTIFIER, "변수 이름이 필요합니다.");
