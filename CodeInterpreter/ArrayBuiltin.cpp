@@ -2,10 +2,12 @@
 #include "RuntimeError.h"
 #include "Value.h"
 
-// TODO (D): Array(n) → [nil * n] 생성 구현
 Value ArrayBuiltin::call(Interpreter&, const std::vector<Value>& args) {
-    // 1. args[0]이 double인지 확인 (아니면 RuntimeError)
-    // 2. n < 0 이면 RuntimeError
-    // 3. shared_ptr<vector<Value>>(n, nil) 반환
-    throw RuntimeError("미구현: ArrayBuiltin::call()");
+    if (!std::holds_alternative<double>(args[0]))
+        throw RuntimeError("런타임 오류: 배열 크기는 숫자여야 합니다.");
+    int n = static_cast<int>(std::get<double>(args[0]));
+    if (n < 0)
+        throw RuntimeError("런타임 오류: 배열 크기는 0 이상이어야 합니다.");
+    return Value{std::make_shared<std::vector<Value>>(
+        n, Value{std::monostate{}})};
 }
