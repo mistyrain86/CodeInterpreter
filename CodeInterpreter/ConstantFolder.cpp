@@ -1,7 +1,7 @@
 #include "ConstantFolder.h"
 
 std::vector<StmtPtr> ConstantFolder::optimize(std::vector<StmtPtr> stmts) {
-    for (auto& s : stmts) foldStmt(*s);
+    for (auto& s : stmts) s->accept(*this);
     return stmts;
 }
 
@@ -33,27 +33,34 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
     return expr;
 }
 
-void ConstantFolder::foldStmt(Stmt& stmt) {
-    if (auto* s = dynamic_cast<VarStmt*>(&stmt)) {
-        if (s->initializer) s->initializer = foldExpr(std::move(s->initializer));
-    } else if (auto* s = dynamic_cast<PrintStmt*>(&stmt)) {
-        s->expression = foldExpr(std::move(s->expression));
-    } else if (auto* s = dynamic_cast<ExprStmt*>(&stmt)) {
-        s->expression = foldExpr(std::move(s->expression));
-    } else if (auto* s = dynamic_cast<BlockStmt*>(&stmt)) {
-        for (auto& inner : s->statements) foldStmt(*inner);
-    } else if (auto* s = dynamic_cast<IfStmt*>(&stmt)) {
-        s->condition = foldExpr(std::move(s->condition));
-        foldStmt(*s->thenBranch);
-        if (s->elseBranch) foldStmt(*s->elseBranch);
-    } else if (auto* s = dynamic_cast<ForStmt*>(&stmt)) {
-        if (s->initializer) foldStmt(*s->initializer);
-        if (s->condition)   s->condition = foldExpr(std::move(s->condition));
-        if (s->increment)   s->increment = foldExpr(std::move(s->increment));
-        if (s->body)        foldStmt(*s->body);
-    } else if (auto* s = dynamic_cast<FunctionStmt*>(&stmt)) {
-        for (auto& inner : s->body) foldStmt(*inner);
-    } else if (auto* s = dynamic_cast<ReturnStmt*>(&stmt)) {
-        if (s->value) s->value = foldExpr(std::move(s->value));
-    }
+// ── StmtVisitor 구현 ───────────────────────────────────────────────
+
+void ConstantFolder::visitExprStmt(ExprStmt& s) {
+    s.expression = foldExpr(std::move(s.expression));
+}
+void ConstantFolder::visitPrintStmt(PrintStmt& s) {
+    s.expression = foldExpr(std::move(s.expression));
+}
+void ConstantFolder::visitVarStmt(VarStmt& s) {
+    if (s.initializer) s.initializer = foldExpr(std::move(s.initializer));
+}
+void ConstantFolder::visitBlockStmt(BlockStmt& s) {
+    for (auto& inner : s.statements) inner->accept(*this);
+}
+void ConstantFolder::visitIfStmt(IfStmt& s) {
+    s.condition = foldExpr(std::move(s.condition));
+    s.thenBranch->accept(*this);
+    if (s.elseBranch) s.elseBranch->accept(*this);
+}
+void ConstantFolder::visitForStmt(ForStmt& s) {
+    if (s.initializer) s.initializer->accept(*this);
+    if (s.condition)   s.condition  = foldExpr(std::move(s.condition));
+    if (s.increment)   s.increment  = foldExpr(std::move(s.increment));
+    if (s.body)        s.body->accept(*this);
+}
+void ConstantFolder::visitFunctionStmt(FunctionStmt& s) {
+    for (auto& inner : s.body) inner->accept(*this);
+}
+void ConstantFolder::visitReturnStmt(ReturnStmt& s) {
+    if (s.value) s.value = foldExpr(std::move(s.value));
 }

@@ -474,7 +474,8 @@ protected:
         m_result = m_folder.optimize(std::move(stmts));
         auto* ps  = dynamic_cast<PrintStmt*>(m_result[0].get());
         auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
-        ASSERT_NE(lit, nullptr);
+        EXPECT_NE(lit, nullptr) << "표현식이 LiteralExpr로 폴딩되지 않았습니다";
+        if (!lit) return 0.0;
         return std::get<double>(lit->value);
     }
 
