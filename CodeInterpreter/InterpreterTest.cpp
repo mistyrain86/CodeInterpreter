@@ -305,7 +305,7 @@ TEST_F(InterpreterFixture, Function_CallNonCallable_Throws) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("x", litStr("hello")));
     s.push_back(std::make_unique<ExprStmt>(makeCall("x", std::vector<ExprPtr>{})));
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
 }
 
 // 인자 개수 불일치
