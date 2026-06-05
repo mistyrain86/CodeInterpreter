@@ -8,8 +8,6 @@
 
 class Interpreter;
 
-// Ch.2: 사용자 정의 함수 — ICallable 구현체
-// D가 LangFunction.cpp 에서 구현
 class LangFunction : public ICallable {
 public:
     LangFunction(FunctionStmt& decl, std::shared_ptr<Environment> closure)
