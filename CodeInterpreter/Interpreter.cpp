@@ -32,6 +32,7 @@ Value Interpreter::evaluate(Expr& expr) {
 }
 
 void Interpreter::execute(Stmt& stmt) {
+    if (m_stmtHook) m_stmtHook(stmt);  // Ch.5 디버거 훅
     stmt.accept(*this);
 }
 
@@ -182,6 +183,25 @@ bool Interpreter::isTruthy(const Value& v) const {
     if (std::holds_alternative<bool>(v))           return std::get<bool>(v);
     if (std::holds_alternative<double>(v))         return std::get<double>(v) != 0.0;
     return true;
+}
+
+// ── Ch.2 함수 스텁 (D가 구현) ─────────────────────────────────────
+void Interpreter::visitFunctionStmt(FunctionStmt&) {
+    throw RuntimeError("미구현: 함수 선언 (visitFunctionStmt)");
+}
+Value Interpreter::visitCallExpr(CallExpr&) {
+    throw RuntimeError("미구현: 함수 호출 (visitCallExpr)");
+}
+void Interpreter::visitReturnStmt(ReturnStmt&) {
+    throw RuntimeError("미구현: return 문 (visitReturnStmt)");
+}
+
+// ── Ch.3 배열 스텁 (D가 구현) ─────────────────────────────────────
+Value Interpreter::visitIndexGetExpr(IndexGetExpr&) {
+    throw RuntimeError("미구현: 배열 읽기 (visitIndexGetExpr)");
+}
+Value Interpreter::visitIndexSetExpr(IndexSetExpr&) {
+    throw RuntimeError("미구현: 배열 쓰기 (visitIndexSetExpr)");
 }
 
 std::string Interpreter::stringify(const Value& v) const {
