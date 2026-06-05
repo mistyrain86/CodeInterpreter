@@ -78,6 +78,7 @@ bool Lexer::scanPunctuatorAndOperator(char singleChar) {
     case '+': addToken(TokenType::PLUS);          return true;
     case '-': addToken(TokenType::MINUS);         return true;
     case '*': addToken(TokenType::STAR);          return true;
+    case '%': addToken(TokenType::PERCENT);       return true;
 
     case '/':
         if (match('/')) skipLineComment();
