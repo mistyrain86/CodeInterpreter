@@ -12,6 +12,7 @@ public:
     void  define(const std::string& name, Value value);
     Value get(const Token& name) const;
     void  assign(const Token& name, Value value);
+    void  assignOrDefine(const Token& name, Value value);
 
     Value getAt(int distance, const std::string& name) const;
     void  assignAt(int distance, const std::string& name, Value value);
