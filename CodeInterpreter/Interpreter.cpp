@@ -205,7 +205,7 @@ Value Interpreter::visitCallExpr(CallExpr& e) {
     std::vector<Value> args;
     for (auto& arg : e.args) args.push_back(evaluate(*arg));
 
-    if ((int)args.size() != fn->arity())
+    if (static_cast<int>(args.size()) != fn->arity())
         throw RuntimeError("[라인 " + std::to_string(e.paren.line)
             + "] 런타임 오류: 인자 개수 불일치. 기대: "
             + std::to_string(fn->arity())
