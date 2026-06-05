@@ -1,13 +1,41 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="소스 파일">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="src">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="src\common">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000002}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\interface">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000003}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\ast">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000004}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\lexer">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000005}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\parser">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000006}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\checker">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000007}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\interpreter">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000008}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\optimizer">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000009}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\factory">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000010}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\shell">
+      <UniqueIdentifier>{00000001-0000-0000-0000-000000000011}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{00000002-0000-0000-0000-000000000001}</UniqueIdentifier>
     </Filter>
     <Filter Include="리소스 파일">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
@@ -18,58 +46,163 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Environment.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\common\BindingMap.h">
+      <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="Expr.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\common\CheckError.h">
+      <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="IChecker.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\common\ParseError.h">
+      <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="IInterpreter.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\common\ReturnSignal.h">
+      <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="ILexer.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\common\RuntimeError.h">
+      <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="IParser.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\common\Token.h">
+      <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="LangFactory.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\common\Value.h">
+      <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="Mocks.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\interface\ICallable.h">
+      <Filter>src\interface</Filter>
     </ClInclude>
-    <ClInclude Include="Stmt.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\interface\IChecker.h">
+      <Filter>src\interface</Filter>
     </ClInclude>
-    <ClInclude Include="TestUtils.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\interface\IInterpreter.h">
+      <Filter>src\interface</Filter>
     </ClInclude>
-    <ClInclude Include="Token.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\interface\ILexer.h">
+      <Filter>src\interface</Filter>
     </ClInclude>
-    <ClInclude Include="Value.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\interface\IOptimizer.h">
+      <Filter>src\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interface\IParser.h">
+      <Filter>src\interface</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\Expr.h">
+      <Filter>src\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\ExprVisitor.h">
+      <Filter>src\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\Stmt.h">
+      <Filter>src\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\StmtVisitor.h">
+      <Filter>src\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lexer\Lexer.h">
+      <Filter>src\lexer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parser\Parser.h">
+      <Filter>src\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="src\checker\Checker.h">
+      <Filter>src\checker</Filter>
+    </ClInclude>
+    <ClInclude Include="src\checker\Resolver.h">
+      <Filter>src\checker</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\ArrayBuiltin.h">
+      <Filter>src\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\Environment.h">
+      <Filter>src\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\Interpreter.h">
+      <Filter>src\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\interpreter\LangFunction.h">
+      <Filter>src\interpreter</Filter>
+    </ClInclude>
+    <ClInclude Include="src\optimizer\ConstantFolder.h">
+      <Filter>src\optimizer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\factory\LangFactory.h">
+      <Filter>src\factory</Filter>
+    </ClInclude>
+    <ClInclude Include="src\shell\Debugger.h">
+      <Filter>src\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="src\shell\Shell.h">
+      <Filter>src\shell</Filter>
+    </ClInclude>
+    <ClInclude Include="test\Mocks.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="test\TestUtils.h">
+      <Filter>test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Environment.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="src\lexer\Lexer.cpp">
+      <Filter>src\lexer</Filter>
     </ClCompile>
-    <ClCompile Include="EnvironmentTest.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="src\parser\Parser.cpp">
+      <Filter>src\parser</Filter>
     </ClCompile>
-    <ClCompile Include="LangFactory.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="src\checker\Checker.cpp">
+      <Filter>src\checker</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="src\checker\Resolver.cpp">
+      <Filter>src\checker</Filter>
     </ClCompile>
-    <ClCompile Include="TestMain.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="src\interpreter\ArrayBuiltin.cpp">
+      <Filter>src\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\Environment.cpp">
+      <Filter>src\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\Interpreter.cpp">
+      <Filter>src\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\interpreter\LangFunction.cpp">
+      <Filter>src\interpreter</Filter>
+    </ClCompile>
+    <ClCompile Include="src\optimizer\ConstantFolder.cpp">
+      <Filter>src\optimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\factory\LangFactory.cpp">
+      <Filter>src\factory</Filter>
+    </ClCompile>
+    <ClCompile Include="src\shell\Debugger.cpp">
+      <Filter>src\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="src\shell\Shell.cpp">
+      <Filter>src\shell</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="test\CheckerTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\EnvironmentTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\IntegrationTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\InterpreterTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\LangFactoryTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\LexerTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\ParserTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\TestMain.cpp">
+      <Filter>test</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
