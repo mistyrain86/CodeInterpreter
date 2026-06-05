@@ -173,3 +173,157 @@ TEST_F(InterpreterFixture, ForLoop_0to2) {
         blockStmt(std::move(body))));
     EXPECT_EQ(runAll(std::move(s)), "0\n1\n2\n");
 }
+
+// ── 함수 헬퍼 ────────────────────────────────────────────────────
+static Token retTok(int line = 1) {
+    return Token{TokenType::KW_RETURN, "return", std::monostate{}, line};
+}
+static Token parenTok(int line = 1) {
+    return Token{TokenType::RIGHT_PAREN, ")", std::monostate{}, line};
+}
+
+// func 선언 + 호출을 묶는 헬퍼
+// params: 파라미터 이름 목록, body: 함수 본문, args: 호출 인자
+static std::unique_ptr<CallExpr> makeCall(
+        const std::string& name,
+        std::vector<ExprPtr> args) {
+    return std::make_unique<CallExpr>(
+        varRef(name), parenTok(), std::move(args));
+}
+
+// ── Ch.2 Function 테스트 ──────────────────────────────────────────
+
+// 기본: 인자 없는 함수 선언 및 호출
+TEST_F(InterpreterFixture, Function_NoParams_Call) {
+    std::vector<StmtPtr> body;
+    body.push_back(printStmt(litStr("hello func")));
+
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("greet"), std::vector<Token>{}, std::move(body)));
+    s.push_back(std::make_unique<ExprStmt>(makeCall("greet", {})));
+
+    EXPECT_EQ(runAll(std::move(s)), "hello func\n");
+}
+
+// 기본: 파라미터 전달 및 return
+TEST_F(InterpreterFixture, Function_Params_And_Return) {
+    // func add(a, b) { return a + b; }
+    std::vector<Token> params = { makeIdent("a"), makeIdent("b") };
+    std::vector<StmtPtr> body;
+    body.push_back(std::make_unique<ReturnStmt>(
+        retTok(), bin(varRef("a"), TokenType::PLUS, "+", varRef("b"))));
+
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("add"), std::move(params), std::move(body)));
+
+    // print add(3, 7);  → 10
+    std::vector<ExprPtr> args;
+    args.push_back(litNum(3.0));
+    args.push_back(litNum(7.0));
+    s.push_back(printStmt(makeCall("add", std::move(args))));
+
+    EXPECT_EQ(runAll(std::move(s)), "10\n");
+}
+
+// return 없는 함수 → nil 반환
+TEST_F(InterpreterFixture, Function_NoReturn_ReturnsNil) {
+    std::vector<StmtPtr> body;
+    body.push_back(std::make_unique<ExprStmt>(litNum(42.0)));  // 아무것도 안 함
+
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("noop"), std::vector<Token>{}, std::move(body)));
+    s.push_back(printStmt(makeCall("noop", {})));
+
+    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+}
+
+// 재귀: 팩토리얼
+TEST_F(InterpreterFixture, Function_Recursive_Factorial) {
+    // func fact(n) { if (n <= 1) return 1; return n * fact(n-1); }
+    Token n    = makeIdent("n");
+    Token le   = Token{TokenType::LESS_EQUAL, "<=", std::monostate{}, 1};
+    Token star = Token{TokenType::STAR, "*", std::monostate{}, 1};
+    Token minus= Token{TokenType::MINUS, "-", std::monostate{}, 1};
+
+    // fact(n-1) 호출
+    std::vector<ExprPtr> recArgs;
+    recArgs.push_back(std::make_unique<BinaryExpr>(
+        std::make_unique<VariableExpr>(n), minus, litNum(1.0)));
+
+    // n * fact(n-1)
+    auto nTimesRec = std::make_unique<BinaryExpr>(
+        std::make_unique<VariableExpr>(n), star,
+        makeCall("fact", std::move(recArgs)));
+
+    // 함수 본문
+    std::vector<StmtPtr> body;
+    // if (n <= 1) return 1;
+    body.push_back(std::make_unique<IfStmt>(
+        std::make_unique<BinaryExpr>(
+            std::make_unique<VariableExpr>(n), le, litNum(1.0)),
+        std::make_unique<ReturnStmt>(retTok(), litNum(1.0)),
+        nullptr));
+    // return n * fact(n-1);
+    body.push_back(std::make_unique<ReturnStmt>(retTok(), std::move(nTimesRec)));
+
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("fact"), std::vector<Token>{n}, std::move(body)));
+
+    // print fact(5);  → 120
+    std::vector<ExprPtr> args;
+    args.push_back(litNum(5.0));
+    s.push_back(printStmt(makeCall("fact", std::move(args))));
+
+    EXPECT_EQ(runAll(std::move(s)), "120\n");
+}
+
+// 클로저: 바깥 스코프 변수 캡처
+TEST_F(InterpreterFixture, Function_Closure_CapturesOuter) {
+    // var x = 10;
+    // func getX() { return x; }
+    // print getX();  → 10
+    std::vector<StmtPtr> body;
+    body.push_back(std::make_unique<ReturnStmt>(retTok(), varRef("x")));
+
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("x", litNum(10.0)));
+    s.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("getX"), std::vector<Token>{}, std::move(body)));
+    s.push_back(printStmt(makeCall("getX", {})));
+
+    EXPECT_EQ(runAll(std::move(s)), "10\n");
+}
+
+// ── 오류 케이스 (미션 요구사항) ───────────────────────────────────
+
+// 함수가 아닌 대상 호출
+TEST_F(InterpreterFixture, Function_CallNonCallable_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("x", litStr("hello")));
+    std::vector<ExprPtr> args;
+    s.push_back(std::make_unique<ExprStmt>(makeCall("x", std::move(args))));
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}
+
+// 인자 개수 불일치
+TEST_F(InterpreterFixture, Function_ArityMismatch_Throws) {
+    // func foo(a, b, c) {}
+    std::vector<Token> params = { makeIdent("a"), makeIdent("b"), makeIdent("c") };
+    std::vector<StmtPtr> body;
+
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("foo"), std::move(params), std::move(body)));
+
+    // foo(1, 2) → 인자 2개, 기대 3개
+    std::vector<ExprPtr> args;
+    args.push_back(litNum(1.0));
+    args.push_back(litNum(2.0));
+    s.push_back(std::make_unique<ExprStmt>(makeCall("foo", std::move(args))));
+
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}
