@@ -31,8 +31,10 @@ ParseError Parser::error(const Token& tok, const std::string& msg) const {
 }
 
 StmtPtr Parser::parseStatement() {
+    // Ch.2: 함수 선언 / return
     if (match({TokenType::KW_FUNC}))    return parseFunctionStmt();
     if (match({TokenType::KW_RETURN}))  return parseReturnStmt();
+    // Ch.1: 기존 문장
     if (match({TokenType::KW_VAR}))     return parseVarDecl();
     if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
     if (match({TokenType::KW_IF}))      return parseIfStmt();
