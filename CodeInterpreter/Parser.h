@@ -9,7 +9,7 @@
 
 class Parser : public IParser {
 public:
-    Parser() = default;
+    Parser();
     std::vector<StmtPtr> parse(std::vector<Token> tokens) override;
 
 private:

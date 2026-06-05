@@ -14,9 +14,12 @@ void Parser::initDispatch() {
     m_stmtDispatch[static_cast<int>(T::LEFT_BRACE)] = [this] { return parseBlock();        };
 }
 
+Parser::Parser() {
+    initDispatch();
+}
+
 std::vector<StmtPtr> Parser::parse(std::vector<Token> tokens) {
     m_stream.load(std::move(tokens));   // TokenStream(Adapter)에 위임
-    initDispatch();                     // Command 맵 초기화
     std::vector<StmtPtr> stmts;
     while (!isAtEnd()) stmts.push_back(parseStatement());
     return stmts;
