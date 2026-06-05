@@ -426,41 +426,23 @@ TEST_F(InterpreterFixture, Array_TooLargeSize_Throws) {
     EXPECT_THROW(runAll(std::move(s)), RuntimeError);
 }
 
-// ── Ch.4 정적 바인딩 Test Double ─────────────────────────────────
-
 TEST_F(InterpreterFixture, StaticBinding_Variable_SameResult) {
-    // { var x = 10; print x; } 를 BindingMap 주입 유무 상관없이 동일 결과 검증
-    // BindingMap 없음 (폴백): 기존 동작
     auto varExpr = std::make_unique<VariableExpr>(makeIdent("x"));
     const VariableExpr* varPtr = varExpr.get();
 
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("x", litNum(10.0)));
-    stmts.push_back(printStmt(std::move(varExpr)));
-
-    // 바인딩 없을 때 결과
-    std::string withoutBinding = runAll(std::move(stmts));
-    EXPECT_EQ(withoutBinding, "10\n");
-
-    // BindingMap 직접 주입 (distance=0: 현재 스코프에 바로 있음)
     Interpreter::BindingMap bindings;
     bindings[varPtr] = 0;
     m_interp.setBindings(&bindings);
 
-    auto varExpr2 = std::make_unique<VariableExpr>(makeIdent("x"));
-    std::vector<StmtPtr> stmts2;
-    stmts2.push_back(varDecl("x", litNum(10.0)));
-    stmts2.push_back(printStmt(std::move(varExpr2)));
-
-    // 바인딩 있을 때도 동일 결과
-    std::string withBinding = runAll(std::move(stmts2));
-    EXPECT_EQ(withBinding, "10\n");
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("x", litNum(10.0)));
+    s.push_back(printStmt(std::move(varExpr)));
+    EXPECT_EQ(runAll(std::move(s)), "10\n");
 
     m_interp.setBindings(nullptr);
 }
 
 TEST_F(InterpreterFixture, StaticBinding_Assign_SameResult) {
-    // var x = 1; x = 99; print x; 를 바인딩 주입 후 동일 결과 검증
     auto assignExpr = std::make_unique<AssignExpr>(makeIdent("x"), litNum(99.0));
     const AssignExpr* assignPtr = assignExpr.get();
 
@@ -472,7 +454,6 @@ TEST_F(InterpreterFixture, StaticBinding_Assign_SameResult) {
     s.push_back(varDecl("x", litNum(1.0)));
     s.push_back(std::make_unique<ExprStmt>(std::move(assignExpr)));
     s.push_back(printStmt(varRef("x")));
-
     EXPECT_EQ(runAll(std::move(s)), "99\n");
 
     m_interp.setBindings(nullptr);
