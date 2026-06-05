@@ -304,8 +304,7 @@ TEST_F(InterpreterFixture, Function_Closure_CapturesOuter) {
 TEST_F(InterpreterFixture, Function_CallNonCallable_Throws) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("x", litStr("hello")));
-    std::vector<ExprPtr> args;
-    s.push_back(std::make_unique<ExprStmt>(makeCall("x", std::move(args))));
+    s.push_back(std::make_unique<ExprStmt>(makeCall("x", std::vector<ExprPtr>{})));
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 
