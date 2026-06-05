@@ -143,11 +143,23 @@ Value Interpreter::visitBinary(BinaryExpr& e) {
 }
 
 Value Interpreter::visitVariable(VariableExpr& e) {
+    if (m_bindings) {
+        auto it = m_bindings->find(&e);
+        if (it != m_bindings->end())
+            return m_currentEnv->getAt(it->second, e.name.lexeme);
+    }
     return m_currentEnv->get(e.name);
 }
 
 Value Interpreter::visitAssign(AssignExpr& e) {
     Value v = evaluate(*e.value);
+    if (m_bindings) {
+        auto it = m_bindings->find(&e);
+        if (it != m_bindings->end()) {
+            m_currentEnv->assignAt(it->second, e.name.lexeme, v);
+            return v;
+        }
+    }
     m_currentEnv->assign(e.name, v);
     return v;
 }
