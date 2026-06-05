@@ -7,6 +7,7 @@
 #include "Expr.h"
 #include "Stmt.h"
 #include "StmtVisitor.h"
+#include <unordered_set>  
 
 class Checker : public IChecker
               , public StmtVisitor {
@@ -27,7 +28,7 @@ public:
 private:
     std::vector<std::map<std::string, bool>> m_scopes;
 
-    int  m_functionDepth = 0;     // Ch.2 return 위치 검증용
+    int  m_functionDepth = 0; 
 
     void checkStmts(const std::vector<StmtPtr>& stmts);
     void checkExpr(Expr* expr);   // 표현식은 dynamic_cast 유지 (void 반환)
