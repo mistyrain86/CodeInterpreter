@@ -121,11 +121,16 @@ ExprPtr Parser::parseExpression() { return parseAssignment(); }
 ExprPtr Parser::parseAssignment() {
     ExprPtr expr = parseEquality();
     if (match({TokenType::EQUAL})) {
-        Token eq = previous();
-        ExprPtr val = parseAssignment();
+        ExprPtr value = parseAssignment();
         if (auto* v = dynamic_cast<VariableExpr*>(expr.get()))
-            return std::make_unique<AssignExpr>(v->name, std::move(val));
-        throw error(eq, "잘못된 할당 대상입니다.");
+            return std::make_unique<AssignExpr>(v->name, std::move(value));
+        if (auto* idx = dynamic_cast<IndexGetExpr*>(expr.get()))
+            return std::make_unique<IndexSetExpr>(
+                std::move(idx->object),
+                idx->bracket,
+                std::move(idx->index),
+                std::move(value));
+        throw error(previous(), "잘못된 할당 대상입니다.");
     }
     return expr;
 }
