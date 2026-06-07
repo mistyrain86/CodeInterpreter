@@ -1,5 +1,4 @@
-#include "Shell.h"
-#include "LangFactory.h"
+﻿#include "Shell.h"
 #include "Debugger.h"
 #include "ParseError.h"
 #include "CheckError.h"
@@ -8,15 +7,34 @@
 #include <iostream>
 #include <sstream>
 
-// TODO (A): 아래 3개 메서드를 구현하세요.
-
 void Shell::runRepl() {
-    // TODO:
-    // 1. "CodeFab Interpreter (REPL)" 출력
-    // 2. 동일 LangFactory 인스턴스 재사용 (전역변수 유지)
-    // 3. "> " 프롬프트 출력 후 한 줄 읽기
-    // 4. "exit" / "quit" 입력 시 종료
-    // 5. factory.run(line) 실행, 에러 출력 후 계속
+    std::cout << "CodeFab Interpreter (REPL 모드)\n";
+    std::cout << "종료: exit 또는 quit\n";
+
+    LangFactory factory;
+    std::string  line;
+    std::ostringstream oss;
+
+    while (true) {
+        std::cout << (oss.str().empty() ? "> " : "... ");
+        std::cout.flush();
+
+        if (!std::getline(std::cin, line)) {
+            if (!oss.str().empty()) runSource(factory, oss.str());
+            break;
+        }
+        if (line == "exit" || line == "quit") break;
+
+        if (line.empty()) {
+            if (!oss.str().empty()) {
+                runSource(factory, oss.str());
+                oss.str(""); oss.clear();
+            }
+        }
+        else {
+            oss << line << '\n';
+        }
+    }
 }
 
 void Shell::runFile(const std::string& path) {
@@ -31,4 +49,14 @@ void Shell::runDebug(const std::string& path) {
     // TODO:
     // 1. Debugger debugger(path) 생성
     // 2. debugger.run() 실행
+}
+
+void Shell::runSource(LangFactory& factory, const std::string& source) {
+    try {
+        factory.run(source);
+    }
+    catch (const ParseError& e) { std::cerr << "[구문 오류] " << e.what() << "\n"; }
+    catch (const CheckError& e) { std::cerr << "[의미 오류] " << e.what() << "\n"; }
+    catch (const RuntimeError& e) { std::cerr << "[런타임 오류] " << e.what() << "\n"; }
+    catch (const std::runtime_error& e) { std::cerr << "[오류] " << e.what() << "\n"; }
 }
