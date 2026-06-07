@@ -94,6 +94,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\common;$(ProjectDir)src\interface;$(ProjectDir)src\ast;$(ProjectDir)src\lexer;$(ProjectDir)src\parser;$(ProjectDir)src\checker;$(ProjectDir)src\interpreter;$(ProjectDir)src\optimizer;$(ProjectDir)src\factory;$(ProjectDir)src\shell;$(ProjectDir)test;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -110,6 +111,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\common;$(ProjectDir)src\interface;$(ProjectDir)src\ast;$(ProjectDir)src\lexer;$(ProjectDir)src\parser;$(ProjectDir)src\checker;$(ProjectDir)src\interpreter;$(ProjectDir)src\optimizer;$(ProjectDir)src\factory;$(ProjectDir)src\shell;$(ProjectDir)test;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,6 +126,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\common;$(ProjectDir)src\interface;$(ProjectDir)src\ast;$(ProjectDir)src\lexer;$(ProjectDir)src\parser;$(ProjectDir)src\checker;$(ProjectDir)src\interpreter;$(ProjectDir)src\optimizer;$(ProjectDir)src\factory;$(ProjectDir)src\shell;$(ProjectDir)test;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,6 +143,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)src\common;$(ProjectDir)src\interface;$(ProjectDir)src\ast;$(ProjectDir)src\lexer;$(ProjectDir)src\parser;$(ProjectDir)src\checker;$(ProjectDir)src\interpreter;$(ProjectDir)src\optimizer;$(ProjectDir)src\factory;$(ProjectDir)src\shell;$(ProjectDir)test;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,63 +154,66 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CheckError.h" />
-    <ClInclude Include="Checker.h" />
-    <ClInclude Include="ParseError.h" />
-    <ClInclude Include="Environment.h" />
-    <ClInclude Include="Interpreter.h" />
-    <ClInclude Include="ReturnSignal.h" />
-    <ClInclude Include="RuntimeError.h" />
-    <ClInclude Include="Expr.h" />
-    <ClInclude Include="ExprVisitor.h" />
-    <ClInclude Include="StmtVisitor.h" />
-    <ClInclude Include="ArrayBuiltin.h" />
-    <ClInclude Include="BindingMap.h" />
-    <ClInclude Include="ConstantFolder.h" />
-    <ClInclude Include="Debugger.h" />
-    <ClInclude Include="ICallable.h" />
-    <ClInclude Include="IChecker.h" />
-    <ClInclude Include="IOptimizer.h" />
-    <ClInclude Include="LangFunction.h" />
-    <ClInclude Include="Resolver.h" />
-    <ClInclude Include="Shell.h" />
-    <ClInclude Include="IInterpreter.h" />
-    <ClInclude Include="ILexer.h" />
-    <ClInclude Include="IParser.h" />
-    <ClInclude Include="LangFactory.h" />
-    <ClInclude Include="Parser.h" />
-    <ClInclude Include="Lexer.h" />
-    <ClInclude Include="Mocks.h" />
-    <ClInclude Include="Stmt.h" />
-    <ClInclude Include="TestUtils.h" />
-    <ClInclude Include="Token.h" />
-    <ClInclude Include="Value.h" />
+    <ClInclude Include="src\common\BindingMap.h" />
+    <ClInclude Include="src\common\CheckError.h" />
+    <ClInclude Include="src\common\ParseError.h" />
+    <ClInclude Include="src\common\ReturnSignal.h" />
+    <ClInclude Include="src\common\RuntimeError.h" />
+    <ClInclude Include="src\common\Token.h" />
+    <ClInclude Include="src\common\Value.h" />
+    <ClInclude Include="src\interface\ICallable.h" />
+    <ClInclude Include="src\interface\IChecker.h" />
+    <ClInclude Include="src\interface\IInterpreter.h" />
+    <ClInclude Include="src\interface\ILexer.h" />
+    <ClInclude Include="src\interface\IOptimizer.h" />
+    <ClInclude Include="src\interface\IParser.h" />
+    <ClInclude Include="src\ast\Expr.h" />
+    <ClInclude Include="src\ast\ExprVisitor.h" />
+    <ClInclude Include="src\ast\Stmt.h" />
+    <ClInclude Include="src\ast\StmtVisitor.h" />
+    <ClInclude Include="src\lexer\Lexer.h" />
+    <ClInclude Include="src\parser\Parser.h" />
+    <ClInclude Include="src\parser\TokenStream.h" />
+    <ClInclude Include="src\parser\ParserProxy.h" />
+    <ClInclude Include="src\checker\Checker.h" />
+    <ClInclude Include="src\checker\Resolver.h" />
+    <ClInclude Include="src\interpreter\ArrayBuiltin.h" />
+    <ClInclude Include="src\interpreter\Environment.h" />
+    <ClInclude Include="src\interpreter\Interpreter.h" />
+    <ClInclude Include="src\interpreter\LangFunction.h" />
+    <ClInclude Include="src\optimizer\ConstantFolder.h" />
+    <ClInclude Include="src\factory\LangFactory.h" />
+    <ClInclude Include="src\shell\Debugger.h" />
+    <ClInclude Include="src\shell\Shell.h" />
+    <ClInclude Include="test\Mocks.h" />
+    <ClInclude Include="test\TestUtils.h" />
+    <ClInclude Include="test\TokenStreamBuilder.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ArrayBuiltin.cpp" />
-    <ClCompile Include="Checker.cpp" />
-    <ClCompile Include="ConstantFolder.cpp" />
-    <ClCompile Include="Debugger.cpp" />
-    <ClCompile Include="LangFunction.cpp" />
-    <ClCompile Include="Resolver.cpp" />
-    <ClCompile Include="Shell.cpp" />
-    <ClCompile Include="CheckerTest.cpp" />
-    <ClCompile Include="Environment.cpp" />
-    <ClCompile Include="EnvironmentTest.cpp" />
-    <ClCompile Include="Interpreter.cpp" />
-    <ClCompile Include="InterpreterTest.cpp" />
-    <ClCompile Include="IntegrationTest.cpp" />
-    <ClCompile Include="LangFactory.cpp" />
-    <ClCompile Include="Lexer.cpp" />
-    <ClCompile Include="Parser.cpp" />
-    <ClCompile Include="LexerTest.cpp" />
-    <ClCompile Include="ParserTest.cpp" />
-    <ClCompile Include="LangFactoryTest.cpp" />
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\lexer\Lexer.cpp" />
+    <ClCompile Include="src\parser\Parser.cpp" />
+    <ClCompile Include="src\checker\Checker.cpp" />
+    <ClCompile Include="src\checker\Resolver.cpp" />
+    <ClCompile Include="src\interpreter\ArrayBuiltin.cpp" />
+    <ClCompile Include="src\interpreter\Environment.cpp" />
+    <ClCompile Include="src\interpreter\Interpreter.cpp" />
+    <ClCompile Include="src\interpreter\LangFunction.cpp" />
+    <ClCompile Include="src\optimizer\ConstantFolder.cpp" />
+    <ClCompile Include="src\factory\LangFactory.cpp" />
+    <ClCompile Include="src\shell\Debugger.cpp" />
+    <ClCompile Include="src\shell\Shell.cpp" />
+    <ClCompile Include="src\main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="TestMain.cpp">
+    <ClCompile Include="test\CheckerTest.cpp" />
+    <ClCompile Include="test\EnvironmentTest.cpp" />
+    <ClCompile Include="test\IntegrationTest.cpp" />
+    <ClCompile Include="test\InterpreterTest.cpp" />
+    <ClCompile Include="test\LangFactoryTest.cpp" />
+    <ClCompile Include="test\LexerTest.cpp" />
+    <ClCompile Include="test\ParserTest.cpp" />
+    <ClCompile Include="test\TestMain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
