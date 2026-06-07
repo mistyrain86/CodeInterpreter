@@ -32,7 +32,7 @@ int main() {
         std::cin >> choice;
 
         if (std::cin.fail()) {
-            std::cout << "\n❌ [오류] 숫자가 아닌 잘못된 문자가 입력되었습니다. 다시 시도하세요.\n\n";
+            std::cout << "\n[오류] 숫자가 아닌 잘못된 문자가 입력되었습니다. 다시 시도하세요.\n\n";
 
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -41,7 +41,6 @@ int main() {
         }
 
         std::string filename;
-        bool isExit = false;
 
         switch (choice) {
         case 1:
@@ -50,7 +49,7 @@ int main() {
             break;
 
         case 2:
-            std::cout << "\n❌ 아직 미구현된 기능입니다.\n\n";
+            std::cout << "\n아직 미구현된 기능입니다.\n\n";
             break;
 
             std::cout << "실행할 파일명을 입력하세요 (예: test.txt): ";
@@ -60,7 +59,7 @@ int main() {
             break;
 
         case 3:
-            std::cout << "\n❌ 아직 미구현된 기능입니다.\n\n";
+            std::cout << "\n아직 미구현된 기능입니다.\n\n";
             break;
 
             std::cout << "디버그할 파일명을 입력하세요 (예: test.txt): ";
@@ -71,15 +70,10 @@ int main() {
 
         case 4:
             std::cout << "\n프로그램을 종료합니다.\n";
-            isExit = true;
-            break;
+            return 0;
 
         default:
-            std::cout << "\n❌ [오류] 1부터 4 사이의 숫자만 입력할 수 있습니다.\n\n";
-            break;
-        }
-
-        if (isExit) {
+            std::cout << "\n[오류] 1부터 4 사이의 숫자만 입력할 수 있습니다.\n\n";
             break;
         }
     }

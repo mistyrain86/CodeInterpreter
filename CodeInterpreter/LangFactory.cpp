@@ -1,4 +1,4 @@
-#include "LangFactory.h"
+﻿#include "LangFactory.h"
 #include "Lexer.h"
 #include "Parser.h"
 #include "Checker.h"
@@ -34,9 +34,19 @@ void LangFactory::run(const std::string& source) {
 
     Resolver resolver;
     BindingMap bindings = resolver.resolve(stmts);
-    if (auto* interp = dynamic_cast<Interpreter*>(m_interpreter.get()))
-        interp->setBindings(&bindings);
+    auto* interp = dynamic_cast<Interpreter*>(m_interpreter.get());
+    if (interp) interp->setBindings(&bindings);
 
     m_checker->check(stmts);
     m_interpreter->interpret(stmts);
+
+    if (interp) interp->setBindings(nullptr);
+
+    if (interp)
+        if (auto* chk = dynamic_cast<Checker*>(m_checker.get()))
+            for (const auto& name : interp->globalNames())
+                chk->registerGlobal(name);
+
+    // LangFunction이 FunctionStmt&를 참조하므로 AST 소유권을 유지
+    m_stmtHistory.push_back(std::move(stmts));
 }

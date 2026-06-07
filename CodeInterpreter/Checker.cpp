@@ -1,14 +1,23 @@
-#include <cassert>
+﻿#include <cassert>
 #include "Checker.h"
 
 void Checker::check(const std::vector<StmtPtr>& stmts) {
     beginScope();
-    // 내장 함수 등록
+    for (const auto& name : m_knownGlobals)
+        m_scopes.back()[name] = true;
+    beginScope();
+
     Token arrayBuiltin{TokenType::IDENTIFIER, "Array", std::monostate{}, 0};
     declare(arrayBuiltin);
     define(arrayBuiltin);
     checkStmts(stmts);
+
     endScope();
+    endScope();
+}
+
+void Checker::registerGlobal(const std::string& name) {
+    m_knownGlobals.insert(name);
 }
 
 void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
@@ -52,13 +61,11 @@ void Checker::visitExprStmt(ExprStmt& s) {
     checkExpr(s.expression.get());
 }
 
-// ── Ch.2 함수 스텁 (C가 구현) ─────────────────────────────────────
 void Checker::visitFunctionStmt(FunctionStmt& s) {
-    // 함수 이름을 외부 스코프에 등록 (호출 위치에서 resolveVar 가능)
     declare(s.name);
     define(s.name);
 
-    // 파라미터 이름 중복 검사
+
     std::unordered_set<std::string> seen;
     for (const auto& param : s.params) {
         if (seen.count(param.lexeme))
@@ -67,7 +74,7 @@ void Checker::visitFunctionStmt(FunctionStmt& s) {
                 + param.lexeme + "')");
         seen.insert(param.lexeme);
     }
-    // 함수 본문 스코프 검사
+
     m_functionDepth++;
     beginScope();
     for (const auto& param : s.params) {
@@ -106,12 +113,10 @@ void Checker::checkExpr(Expr* expr) {
         checkExpr(e->value.get());
         resolveVar(e->name.lexeme, e->name.line);
     }
-    // Ch.2: 함수 호출 — 인자 표현식 재귀 검사
     else if (auto* e = dynamic_cast<CallExpr*>(expr)) {
         checkExpr(e->callee.get());
         for (auto& arg : e->args) checkExpr(arg.get());
     }
-    // Ch.3: 배열 인덱스
     else if (auto* e = dynamic_cast<IndexGetExpr*>(expr)) {
         checkExpr(e->object.get());
         checkExpr(e->index.get());
@@ -130,7 +135,7 @@ void Checker::beginScope() { m_scopes.emplace_back(); }
 void Checker::endScope()   { m_scopes.pop_back(); }
 
 void Checker::declare(const Token& name) {
-    auto& scope = m_scopes.back();      // 전역 포함 모든 스코프 검사
+    auto& scope = m_scopes.back();
     if (scope.count(name.lexeme))
         throw CheckError("[라인 " + std::to_string(name.line)
             + "] 의미 오류: 이미 이 스코프에 같은 이름의 변수가 있습니다. ('"
