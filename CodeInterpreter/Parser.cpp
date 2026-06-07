@@ -164,7 +164,7 @@ ExprPtr Parser::parseTerm() {
 }
 ExprPtr Parser::parseFactor() {
     ExprPtr e = parseUnary();
-    while (match({TokenType::STAR, TokenType::SLASH})) {
+    while (match({TokenType::STAR, TokenType::SLASH, TokenType::PERCENT})) {
         Token op = previous();
         e = std::make_unique<BinaryExpr>(std::move(e), op, parseUnary());
     }
