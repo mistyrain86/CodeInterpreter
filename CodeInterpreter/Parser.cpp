@@ -1,45 +1,38 @@
 #include "Parser.h"
 
+// Command 맵 초기화 — 토큰 타입 → 문장 파서 함수 등록
+void Parser::initDispatch() {
+    using T = TokenType;
+    // Ch.2: 함수 선언 / return
+    m_stmtDispatch[static_cast<int>(T::KW_FUNC)]    = [this] { return parseFunctionStmt(); };
+    m_stmtDispatch[static_cast<int>(T::KW_RETURN)]  = [this] { return parseReturnStmt();   };
+    // Ch.1: 기존 문장
+    m_stmtDispatch[static_cast<int>(T::KW_VAR)]     = [this] { return parseVarDecl();      };
+    m_stmtDispatch[static_cast<int>(T::KW_PRINT)]   = [this] { return parsePrintStmt();    };
+    m_stmtDispatch[static_cast<int>(T::KW_IF)]      = [this] { return parseIfStmt();       };
+    m_stmtDispatch[static_cast<int>(T::KW_FOR)]     = [this] { return parseForStmt();      };
+    m_stmtDispatch[static_cast<int>(T::LEFT_BRACE)] = [this] { return parseBlock();        };
+}
+
+Parser::Parser() {
+    initDispatch();
+}
+
 std::vector<StmtPtr> Parser::parse(std::vector<Token> tokens) {
-    m_tokens  = std::move(tokens);
-    m_current = 0;
+    m_stream.load(std::move(tokens));   // TokenStream(Adapter)에 위임
     std::vector<StmtPtr> stmts;
     while (!isAtEnd()) stmts.push_back(parseStatement());
     return stmts;
 }
 
-// ── 토큰 헬퍼 ─────────────────────────────────────────────
-bool         Parser::isAtEnd() const  { return peek().type == TokenType::END_OF_FILE; }
-const Token& Parser::peek() const     { return m_tokens[m_current]; }
-const Token& Parser::previous() const { return m_tokens[m_current - 1]; }
-const Token& Parser::advance()        { if (!isAtEnd()) m_current++; return previous(); }
-bool         Parser::check(TokenType t) const { return !isAtEnd() && peek().type == t; }
-
-bool Parser::match(std::initializer_list<TokenType> types) {
-    for (auto t : types) { if (check(t)) { advance(); return true; } }
-    return false;
-}
-const Token& Parser::consume(TokenType t, const std::string& msg) {
-    if (check(t)) return advance();
-    throw error(peek(), msg);
-}
-ParseError Parser::error(const Token& tok, const std::string& msg) const {
-    std::string loc = (tok.type == TokenType::END_OF_FILE)
-        ? " (파일 끝)" : " ('" + tok.lexeme + "' 근처)";
-    return ParseError("[라인 " + std::to_string(tok.line)
-                      + "] 구문 오류: " + msg + loc);
-}
-
+// Command 패턴: 토큰 타입으로 파서 함수를 조회해 디스패치
+// 새 문장 타입 추가 시 parseStatement() 수정 없이 initDispatch()에만 등록 (OCP)
 StmtPtr Parser::parseStatement() {
-    // Ch.2: 함수 선언 / return
-    if (match({TokenType::KW_FUNC}))    return parseFunctionStmt();
-    if (match({TokenType::KW_RETURN}))  return parseReturnStmt();
-    // Ch.1: 기존 문장
-    if (match({TokenType::KW_VAR}))     return parseVarDecl();
-    if (match({TokenType::KW_PRINT}))   return parsePrintStmt();
-    if (match({TokenType::KW_IF}))      return parseIfStmt();
-    if (match({TokenType::KW_FOR}))     return parseForStmt();
-    if (match({TokenType::LEFT_BRACE})) return parseBlock();
+    auto it = m_stmtDispatch.find(static_cast<int>(peek().type));
+    if (it != m_stmtDispatch.end()) {
+        advance();              // 디스패치 토큰 소비
+        return it->second();    // 등록된 파서 Command 실행
+    }
     return parseExprStmt();
 }
 StmtPtr Parser::parseFunctionStmt() {
@@ -137,38 +130,33 @@ ExprPtr Parser::parseAssignment() {
     }
     return expr;
 }
-ExprPtr Parser::parseEquality() {
-    ExprPtr e = parseComparison();
-    while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
+// 좌결합 이항 연산의 공통 구조를 추출한 헬퍼 (DRY)
+ExprPtr Parser::parseBinaryLeft(std::initializer_list<TokenType>  ops,
+                                  std::function<ExprPtr()>          next) {
+    ExprPtr e = next();
+    while (match(ops)) {
         Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseComparison());
+        e = std::make_unique<BinaryExpr>(std::move(e), op, next());
     }
     return e;
+}
+ExprPtr Parser::parseEquality() {
+    return parseBinaryLeft({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL},
+                            [this] { return parseComparison(); });
 }
 ExprPtr Parser::parseComparison() {
-    ExprPtr e = parseTerm();
-    while (match({TokenType::GREATER, TokenType::GREATER_EQUAL,
-                  TokenType::LESS,    TokenType::LESS_EQUAL})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseTerm());
-    }
-    return e;
+    return parseBinaryLeft({TokenType::GREATER, TokenType::GREATER_EQUAL,
+                             TokenType::LESS,    TokenType::LESS_EQUAL},
+                            [this] { return parseTerm(); });
 }
 ExprPtr Parser::parseTerm() {
-    ExprPtr e = parseFactor();
-    while (match({TokenType::PLUS, TokenType::MINUS})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseFactor());
-    }
-    return e;
+    return parseBinaryLeft({TokenType::PLUS, TokenType::MINUS},
+                            [this] { return parseFactor(); });
 }
 ExprPtr Parser::parseFactor() {
-    ExprPtr e = parseUnary();
-    while (match({TokenType::STAR, TokenType::SLASH, TokenType::PERCENT})) {
-        Token op = previous();
-        e = std::make_unique<BinaryExpr>(std::move(e), op, parseUnary());
-    }
-    return e;
+    return parseBinaryLeft({TokenType::STAR, TokenType::SLASH},
+                            [this] { return parseUnary(); });
+
 }
 ExprPtr Parser::parseUnary() {
     if (match({TokenType::BANG, TokenType::MINUS})) {
