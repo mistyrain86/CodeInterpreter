@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <map>
 #include <string>
 #include <vector>
@@ -14,6 +14,7 @@ class Checker : public IChecker
 public:
     Checker() = default;
     void check(const std::vector<StmtPtr>& stmts) override;
+    void registerGlobal(const std::string& name);
 
     // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
@@ -22,16 +23,17 @@ public:
     void visitBlockStmt   (BlockStmt&)    override;
     void visitIfStmt      (IfStmt&)       override;
     void visitForStmt     (ForStmt&)      override;
-    void visitFunctionStmt(FunctionStmt&) override;  // Ch.2 — C 구현
-    void visitReturnStmt  (ReturnStmt&)   override;  // Ch.2 — C 구현
+    void visitFunctionStmt(FunctionStmt&) override;
+    void visitReturnStmt  (ReturnStmt&)   override;
 
 private:
     std::vector<std::map<std::string, bool>> m_scopes;
+    std::unordered_set<std::string>          m_knownGlobals;
 
-    int  m_functionDepth = 0; 
+    int  m_functionDepth = 0;
 
     void checkStmts(const std::vector<StmtPtr>& stmts);
-    void checkExpr(Expr* expr);   // 표현식은 dynamic_cast 유지 (void 반환)
+    void checkExpr(Expr* expr);
     void beginScope();
     void endScope();
     void declare(const Token& name);

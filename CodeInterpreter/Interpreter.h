@@ -54,6 +54,8 @@ public:
     using BindingMap = std::unordered_map<const Expr*, int>;
     void setBindings(const BindingMap* b) { m_bindings = b; }
 
+    std::vector<std::string> globalNames() const;
+
     using StmtHook = std::function<void(Stmt&)>;
     void setStmtHook(StmtHook hook) { m_stmtHook = std::move(hook); }
 
