@@ -156,6 +156,7 @@ ExprPtr Parser::parseTerm() {
 ExprPtr Parser::parseFactor() {
     return parseBinaryLeft({TokenType::STAR, TokenType::SLASH},
                             [this] { return parseUnary(); });
+
 }
 ExprPtr Parser::parseUnary() {
     if (match({TokenType::BANG, TokenType::MINUS})) {
