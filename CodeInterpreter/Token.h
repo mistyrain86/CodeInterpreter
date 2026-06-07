@@ -12,7 +12,7 @@ enum class TokenType {
     COMMA,                         // 함수 인자 구분자
 
     // 산술 연산자
-    PLUS, MINUS, STAR, SLASH,
+    PLUS, MINUS, STAR, SLASH, PERCENT,
 
     // 비교 / 논리 연산자
     BANG, BANG_EQUAL,
