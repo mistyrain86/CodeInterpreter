@@ -1,4 +1,4 @@
-#include "Interpreter.h"
+﻿#include "Interpreter.h"
 #include "ArrayBuiltin.h"
 #include "ICallable.h"
 #include "LangFunction.h"
@@ -12,7 +12,6 @@ static constexpr auto UNIMPLEMENTED_EXPR   = "미구현 표현식 타입";
 static constexpr auto UNIMPLEMENTED_UNARY  = "미구현 단항 연산자";
 static constexpr auto UNIMPLEMENTED_BINARY = "미구현 이항 연산자";
 
-// 배열 타입/범위 검증 후 {배열 포인터, 인덱스} 반환
 std::pair<std::vector<Value>*, int> resolveArrayAccess(
         const Value& obj, const Value& idx, int line) {
     if (!std::holds_alternative<ArrayType>(obj))
@@ -150,6 +149,14 @@ Value Interpreter::visitBinary(BinaryExpr& e) {
     throw RuntimeError(UNIMPLEMENTED_BINARY);
 }
 
+std::vector<std::string> Interpreter::globalNames() const {
+    std::vector<std::string> result;
+    result.reserve(m_currentEnv->m_values.size());
+    for (const auto& [name, val] : m_currentEnv->m_values)
+        result.push_back(name);
+    return result;
+}
+
 std::optional<int> Interpreter::lookupBinding(const Expr* expr) const {
     if (!m_bindings) return std::nullopt;
     auto it = m_bindings->find(expr);
@@ -243,7 +250,6 @@ Value Interpreter::visitCallExpr(CallExpr& e) {
 
     auto fn = std::get<std::shared_ptr<ICallable>>(callee);
 
-    // arity 먼저 검사 — 불필요한 인자 평가 방지
     if (static_cast<int>(e.args.size()) != fn->arity())
         throw RuntimeError("[라인 " + std::to_string(e.paren.line)
             + "] 런타임 오류: 인자 개수 불일치. 기대: "
