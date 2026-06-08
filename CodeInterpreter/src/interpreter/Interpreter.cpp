@@ -12,20 +12,21 @@ static constexpr auto UNIMPLEMENTED_EXPR   = "미구현 표현식 타입";
 static constexpr auto UNIMPLEMENTED_UNARY  = "미구현 단항 연산자";
 static constexpr auto UNIMPLEMENTED_BINARY = "미구현 이항 연산자";
 
+static std::string runtimeErr(int line, const std::string& msg) {
+    return "[라인 " + std::to_string(line) + "] 런타임 오류: " + msg;
+}
+static bool isExactlyZero(double d) noexcept { return d == 0.0; }
+
 std::pair<std::vector<Value>*, int> resolveArrayAccess(
         const Value& obj, const Value& idx, int line) {
     if (!std::holds_alternative<ArrayType>(obj))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 인덱스 접근은 배열만 지원합니다.");
+        throw RuntimeError(runtimeErr(line, "인덱스 접근은 배열만 지원합니다."));
     if (!std::holds_alternative<double>(idx))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 인덱스는 반드시 숫자여야 합니다.");
+        throw RuntimeError(runtimeErr(line, "인덱스는 반드시 숫자여야 합니다."));
     auto* arr = std::get<ArrayType>(obj).get();
     int   i   = static_cast<int>(std::get<double>(idx));
     if (i < 0 || i >= static_cast<int>(arr->size()))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 인덱스 범위를 벗어났습니다. ("
-            + std::to_string(i) + ")");
+        throw RuntimeError(runtimeErr(line, "인덱스 범위를 벗어났습니다. (" + std::to_string(i) + ")"));
     return {arr, i};
 }
 
@@ -73,8 +74,7 @@ void Interpreter::initBinaryOps() {
             return std::get<double>(l) + std::get<double>(r);
         if (std::holds_alternative<std::string>(l) && std::holds_alternative<std::string>(r))
             return std::get<std::string>(l) + std::get<std::string>(r);
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
+        throw RuntimeError(runtimeErr(line, "피연산자는 두 숫자 또는 두 문자열이어야 합니다."));
     };
     m_binaryOps[static_cast<int>(T::MINUS)] = [this](const Value& l, const Value& r, int line) -> Value {
         checkNumericPair(l, r, line);
@@ -87,15 +87,15 @@ void Interpreter::initBinaryOps() {
     m_binaryOps[static_cast<int>(T::SLASH)] = [this](const Value& l, const Value& r, int line) -> Value {
         checkNumericPair(l, r, line);
         const double dr = std::get<double>(r);
-        if (dr == 0.0)
-            throw RuntimeError("[라인 " + std::to_string(line) + "] 런타임 오류: 0으로 나눌 수 없습니다.");
+        if (isExactlyZero(dr))
+            throw RuntimeError(runtimeErr(line, "0으로 나눌 수 없습니다."));
         return std::get<double>(l) / dr;
     };
     m_binaryOps[static_cast<int>(T::PERCENT)] = [this](const Value& l, const Value& r, int line) -> Value {
         checkNumericPair(l, r, line);
         const double dr = std::get<double>(r);
-        if (dr == 0.0)
-            throw RuntimeError("[라인 " + std::to_string(line) + "] 런타임 오류: 0으로 나눌 수 없습니다.");
+        if (isExactlyZero(dr))
+            throw RuntimeError(runtimeErr(line, "0으로 나눌 수 없습니다."));
         return std::fmod(std::get<double>(l), dr);
     };
     m_binaryOps[static_cast<int>(T::GREATER)] = [this](const Value& l, const Value& r, int line) -> Value {
@@ -130,7 +130,7 @@ void Interpreter::rebuildScopeStackFromClosure(Environment* closure) {
     auto* cur = closure;
     while (cur) {
         chain.push_back(cur);
-        cur = cur->m_enclosing.get();
+        cur = cur->enclosing().get();
     }
     std::reverse(chain.begin(), chain.end());  // global이 index 0
     m_scopeStack = std::move(chain);
@@ -191,8 +191,9 @@ Value Interpreter::visitBinary(BinaryExpr& e) {
 
 std::vector<std::string> Interpreter::globalNames() const {
     std::vector<std::string> result;
-    result.reserve(m_currentEnv->m_values.size());
-    for (const auto& [name, val] : m_currentEnv->m_values)
+    const auto& vals = m_currentEnv->values();
+    result.reserve(vals.size());
+    for (const auto& [name, val] : vals)
         result.push_back(name);
     return result;
 }
@@ -209,7 +210,7 @@ Value Interpreter::visitVariable(VariableExpr& e) {
         if (m_spy) m_spy->m_bindingHits++;
         // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
         int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
-        return m_scopeStack[idx]->m_values.at(e.name.lexeme);
+        return m_scopeStack[idx]->values().at(e.name.lexeme);
     }
     if (m_spy) m_spy->m_chainWalks++;
     return m_currentEnv->get(e.name);
@@ -221,7 +222,7 @@ Value Interpreter::visitAssign(AssignExpr& e) {
         if (m_spy) m_spy->m_bindingHits++;
         // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
         int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
-        m_scopeStack[idx]->m_values[e.name.lexeme] = v;
+        m_scopeStack[idx]->values()[e.name.lexeme] = v;
         return v;
     }
     if (m_spy) m_spy->m_chainWalks++;
@@ -277,8 +278,7 @@ void Interpreter::checkNumericPair(const Value& l, const Value& r, int line) con
 
 void Interpreter::checkNumericOperand(const Value& v, int line) const {
     if (!std::holds_alternative<double>(v))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 피연산자는 반드시 숫자여야 합니다.");
+        throw RuntimeError(runtimeErr(line, "피연산자는 반드시 숫자여야 합니다."));
 }
 
 bool Interpreter::isTruthy(const Value& v) const {
@@ -297,16 +297,14 @@ Value Interpreter::visitCallExpr(CallExpr& e) {
     Value callee = evaluate(*e.callee);
 
     if (!std::holds_alternative<std::shared_ptr<ICallable>>(callee))
-        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
-            + "] 런타임 오류: 함수가 아닌 대상을 호출했습니다.");
+        throw RuntimeError(runtimeErr(e.paren.line, "함수가 아닌 대상을 호출했습니다."));
 
     auto fn = std::get<std::shared_ptr<ICallable>>(callee);
 
     if (static_cast<int>(e.args.size()) != fn->arity())
-        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
-            + "] 런타임 오류: 인자 개수 불일치. 기대: "
+        throw RuntimeError(runtimeErr(e.paren.line, "인자 개수 불일치. 기대: "
             + std::to_string(fn->arity())
-            + ", 실제: " + std::to_string(e.args.size()));
+            + ", 실제: " + std::to_string(e.args.size())));
 
     std::vector<Value> args;
     for (auto& arg : e.args) args.push_back(evaluate(*arg));

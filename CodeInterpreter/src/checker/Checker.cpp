@@ -1,6 +1,12 @@
 ﻿#include <cassert>
 #include "Checker.h"
 
+namespace {
+static std::string checkErr(int line, const std::string& msg) {
+    return "[라인 " + std::to_string(line) + "] 의미 오류: " + msg;
+}
+}
+
 void Checker::check(const std::vector<StmtPtr>& stmts) {
     beginScope();
     for (const auto& name : m_knownGlobals)
@@ -68,9 +74,7 @@ void Checker::visitFunctionStmt(FunctionStmt& s) {
     std::unordered_set<std::string> seen;
     for (const auto& param : s.m_params) {
         if (seen.count(param.lexeme))
-            throw CheckError("[라인 " + std::to_string(param.line)
-                + "] 의미 오류: 파라미터 이름이 중복됩니다. ('"
-                + param.lexeme + "')");
+            throw CheckError(checkErr(param.line, "파라미터 이름이 중복됩니다. ('" + param.lexeme + "')"));
         seen.insert(param.lexeme);
     }
 
@@ -87,8 +91,7 @@ void Checker::visitFunctionStmt(FunctionStmt& s) {
 
 void Checker::visitReturnStmt(ReturnStmt& s) {
     if (m_functionDepth == 0)
-        throw CheckError("[라인 " + std::to_string(s.m_keyword.line)
-            + "] 의미 오류: 함수 외부에서 return을 사용할 수 없습니다.");
+        throw CheckError(checkErr(s.m_keyword.line, "함수 외부에서 return을 사용할 수 없습니다."));
     if (s.m_value) s.m_value->acceptVoid(*this);
 }
 
@@ -139,9 +142,7 @@ void Checker::endScope()   { m_scopes.pop_back(); }
 void Checker::declare(const Token& name) {
     auto& scope = m_scopes.back();
     if (scope.count(name.lexeme))
-        throw CheckError("[라인 " + std::to_string(name.line)
-            + "] 의미 오류: 이미 이 스코프에 같은 이름의 변수가 있습니다. ('"
-            + name.lexeme + "')");
+        throw CheckError(checkErr(name.line, "이미 이 스코프에 같은 이름의 변수가 있습니다. ('" + name.lexeme + "')"));
     scope[name.lexeme] = false;
 }
 
@@ -154,12 +155,9 @@ void Checker::resolveVar(const std::string& name, int line) {
         auto it = m_scopes[i].find(name);
         if (it != m_scopes[i].end()) {
             if (!it->second)
-                throw CheckError("[라인 " + std::to_string(line)
-                    + "] 의미 오류: 자신의 초기화식에서 지역변수를 읽을 수 없습니다. ('"
-                    + name + "')");
+                throw CheckError(checkErr(line, "자신의 초기화식에서 지역변수를 읽을 수 없습니다. ('" + name + "')"));
             return;
         }
     }
-    throw CheckError("[라인 " + std::to_string(line)
-        + "] 의미 오류: 선언되지 않은 변수입니다. ('" + name + "')");
+    throw CheckError(checkErr(line, "선언되지 않은 변수입니다. ('" + name + "')"));
 }

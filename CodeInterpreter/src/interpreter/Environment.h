@@ -25,9 +25,9 @@ public:
     static void resetGetAtHops() { s_getAtHops = 0; }
     static int  getAtHops()      { return s_getAtHops; }
 
-// Environment에서 직접 접근 가능하도록 friend 허용
-friend class Interpreter;
-friend class Debugger;
+    std::unordered_map<std::string, Value>&       values()         { return m_values; }
+    const std::unordered_map<std::string, Value>& values()   const { return m_values; }
+    const std::shared_ptr<Environment>&           enclosing() const { return m_enclosing; }
 
 private:
     std::unordered_map<std::string, Value> m_values;

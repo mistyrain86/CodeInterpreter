@@ -55,11 +55,9 @@ public:
     std::vector<std::string> globalNames() const override;
 
     using BindingMap = ::BindingMap;
-    using StmtHook = std::function<void(Stmt&)>;
-    void setStmtHook(StmtHook hook) { m_stmtHook = std::move(hook); }
+    void setStmtHook(StmtHook hook) override { m_stmtHook = std::move(hook); }
 
-    // 디버거용: 현재 execute() 호출 깊이 (1=최상위, 2=블록 내부, ...)
-    int executeDepth() const { return m_executeDepth; }
+    int executeDepth() const override { return m_executeDepth; }
 
     // 정적 바인딩 검증용 Spy — 테스트에서 setSpy() 주입 후 경로 추적
     struct BindingSpy {
