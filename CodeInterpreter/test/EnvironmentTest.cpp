@@ -42,6 +42,13 @@ protected:
     Environment                  local{global};
 };
 
+class ThreeLevelFixture : public ::testing::Test {
+protected:
+    std::shared_ptr<Environment> level1 = std::make_shared<Environment>();
+    std::shared_ptr<Environment> level2 = std::make_shared<Environment>(level1);
+    std::shared_ptr<Environment> level3 = std::make_shared<Environment>(level2);
+};
+
 TEST_F(ScopeFixture, LookupInEnclosing) {
     global->define("x", Value{42.0});
     EXPECT_DOUBLE_EQ(std::get<double>(local.get(makeIdent("x"))), 42.0);
@@ -57,19 +64,13 @@ TEST_F(ScopeFixture, AssignInEnclosing_UpdatesOuter) {
     local.assign(makeIdent("count"), Value{1.0});
     EXPECT_DOUBLE_EQ(std::get<double>(global->get(makeIdent("count"))), 1.0);
 }
-TEST_F(ScopeFixture, ThreeLevels_DeepLookup) {
-    auto level1 = std::make_shared<Environment>();
+TEST_F(ThreeLevelFixture, DeepLookup) {
     level1->define("a", Value{10.0});
-    auto level2 = std::make_shared<Environment>(level1);
-    auto level3 = std::make_shared<Environment>(level2);
     EXPECT_DOUBLE_EQ(std::get<double>(level3->get(makeIdent("a"))), 10.0);
 }
 
-TEST_F(ScopeFixture, Assign_ThreeLevels_UpdatesRoot) {
-    auto level1 = std::make_shared<Environment>();
+TEST_F(ThreeLevelFixture, Assign_UpdatesRoot) {
     level1->define("a", Value{1.0});
-    auto level2 = std::make_shared<Environment>(level1);
-    auto level3 = std::make_shared<Environment>(level2);
     level3->assign(makeIdent("a"), Value{99.0});
     EXPECT_DOUBLE_EQ(std::get<double>(level1->get(makeIdent("a"))), 99.0);
 }

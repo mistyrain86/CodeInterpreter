@@ -13,7 +13,7 @@ protected:
     std::string run(StmtPtr stmt) {
         std::vector<StmtPtr> stmts;
         stmts.push_back(std::move(stmt));
-        return captureOutput([&]{ Interpreter().interpret(stmts); });
+        return captureOutput([&]{ m_interp.interpret(stmts); });
     }
     std::string runAll(std::vector<StmtPtr> stmts) {
         return captureOutput([&]{ m_interp.interpret(stmts); });
@@ -110,7 +110,7 @@ TEST_F(InterpreterFixture, BlockScope_Isolation) {
     inner.push_back(printStmt(varRef("x")));
     s.push_back(blockStmt(std::move(inner)));
     s.push_back(printStmt(varRef("x")));
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    captureOutput([&]{ EXPECT_THROW(m_interp.interpret(s), RuntimeError); });
 }
 TEST_F(InterpreterFixture, IfTrue) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(0, litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");

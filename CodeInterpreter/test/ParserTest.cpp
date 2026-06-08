@@ -148,14 +148,14 @@ TEST(ParserUnit, InvalidAssignTarget_Throws) {
 }
 
 // ── Ch.2 함수 선언 테스트 ─────────────────────────────────────
-TEST(ParserTest, FunctionDecl_NoParams) {
+TEST(ParserIntegration, FunctionDecl_NoParams) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func greet() { print \"hi\"; }");
     auto stmts  = parser.parse(std::move(tokens));
     ASSERT_EQ(stmts.size(), 1u);
     EXPECT_NE(dynamic_cast<FunctionStmt*>(stmts[0].get()), nullptr);
 }
-TEST(ParserTest, FunctionDecl_WithParams) {
+TEST(ParserIntegration, FunctionDecl_WithParams) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func add(a, b) { return a; }");
     auto stmts  = parser.parse(std::move(tokens));
@@ -163,7 +163,7 @@ TEST(ParserTest, FunctionDecl_WithParams) {
     ASSERT_NE(fn, nullptr);
     EXPECT_EQ(fn->m_params.size(), 2u);
 }
-TEST(ParserTest, FunctionDecl_MultipleParams) {
+TEST(ParserIntegration, FunctionDecl_MultipleParams) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f(a, b, c) { return a; }");
     auto stmts  = parser.parse(std::move(tokens));
@@ -174,7 +174,7 @@ TEST(ParserTest, FunctionDecl_MultipleParams) {
     EXPECT_EQ(fn->m_params[1].lexeme, "b");
     EXPECT_EQ(fn->m_params[2].lexeme, "c");
 }
-TEST(ParserTest, FunctionDecl_WithBody) {
+TEST(ParserIntegration, FunctionDecl_WithBody) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { var x = 1; return x; }");
     auto stmts  = parser.parse(std::move(tokens));
@@ -183,7 +183,7 @@ TEST(ParserTest, FunctionDecl_WithBody) {
     EXPECT_EQ(fn->m_name.lexeme, "f");
     EXPECT_EQ(fn->m_body.size(), 2u);
 }
-TEST(ParserTest, FunctionDecl_Name) {
+TEST(ParserIntegration, FunctionDecl_Name) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func myFunc() { }");
     auto stmts  = parser.parse(std::move(tokens));
@@ -195,7 +195,7 @@ TEST(ParserTest, FunctionDecl_Name) {
 }
 
 // ── Ch.2 함수 호출 테스트 ─────────────────────────────────────
-TEST(ParserTest, CallExpr_NoArgs) {
+TEST(ParserIntegration, CallExpr_NoArgs) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("greet();");
     auto stmts  = parser.parse(std::move(tokens));
@@ -203,7 +203,7 @@ TEST(ParserTest, CallExpr_NoArgs) {
     ASSERT_NE(es, nullptr);
     EXPECT_NE(dynamic_cast<CallExpr*>(es->m_expression.get()), nullptr);
 }
-TEST(ParserTest, CallExpr_WithArgs) {
+TEST(ParserIntegration, CallExpr_WithArgs) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("add(1, 2);");
     auto stmts  = parser.parse(std::move(tokens));
@@ -212,7 +212,7 @@ TEST(ParserTest, CallExpr_WithArgs) {
     ASSERT_NE(call, nullptr);
     EXPECT_EQ(call->args.size(), 2u);
 }
-TEST(ParserTest, CallExpr_MultipleArgs) {
+TEST(ParserIntegration, CallExpr_MultipleArgs) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("f(1, 2, 3);");
     auto stmts  = parser.parse(std::move(tokens));
@@ -221,7 +221,7 @@ TEST(ParserTest, CallExpr_MultipleArgs) {
     ASSERT_NE(call, nullptr);
     EXPECT_EQ(call->args.size(), 3u);
 }
-TEST(ParserTest, CallExpr_NestedCall) {
+TEST(ParserIntegration, CallExpr_NestedCall) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("f(g());");
     auto stmts  = parser.parse(std::move(tokens));
@@ -233,7 +233,7 @@ TEST(ParserTest, CallExpr_NestedCall) {
 }
 
 // ── Ch.2 return 문 테스트 ─────────────────────────────────────
-TEST(ParserTest, ReturnStmt_WithValue) {
+TEST(ParserIntegration, ReturnStmt_WithValue) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { return 5; }");
     auto stmts  = parser.parse(std::move(tokens));
@@ -242,7 +242,7 @@ TEST(ParserTest, ReturnStmt_WithValue) {
     ASSERT_NE(ret, nullptr);
     EXPECT_NE(ret->m_value, nullptr);
 }
-TEST(ParserTest, ReturnStmt_Void) {
+TEST(ParserIntegration, ReturnStmt_Void) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { return; }");
     auto stmts  = parser.parse(std::move(tokens));
@@ -251,7 +251,7 @@ TEST(ParserTest, ReturnStmt_Void) {
     ASSERT_NE(ret, nullptr);
     EXPECT_EQ(ret->m_value, nullptr);
 }
-TEST(ParserTest, ReturnStmt_Keyword) {
+TEST(ParserIntegration, ReturnStmt_Keyword) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { return 42; }");
     auto stmts  = parser.parse(std::move(tokens));
@@ -263,7 +263,7 @@ TEST(ParserTest, ReturnStmt_Keyword) {
 }
 
 // ── Ch.3 배열 인덱스 테스트 ───────────────────────────────────
-TEST(ParserTest, IndexGetExpr) {
+TEST(ParserIntegration, IndexGetExpr) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[0];");
     auto stmts  = parser.parse(std::move(tokens));
@@ -271,7 +271,7 @@ TEST(ParserTest, IndexGetExpr) {
     ASSERT_NE(es, nullptr);
     EXPECT_NE(dynamic_cast<IndexGetExpr*>(es->m_expression.get()), nullptr);
 }
-TEST(ParserTest, IndexGetExpr_WithVar) {
+TEST(ParserIntegration, IndexGetExpr_WithVar) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[i];");
     auto stmts  = parser.parse(std::move(tokens));
@@ -280,7 +280,7 @@ TEST(ParserTest, IndexGetExpr_WithVar) {
     ASSERT_NE(idx, nullptr);
     EXPECT_NE(dynamic_cast<VariableExpr*>(idx->index.get()), nullptr);
 }
-TEST(ParserTest, IndexSetExpr) {
+TEST(ParserIntegration, IndexSetExpr) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[0] = 5;");
     auto stmts  = parser.parse(std::move(tokens));
@@ -288,7 +288,7 @@ TEST(ParserTest, IndexSetExpr) {
     ASSERT_NE(es, nullptr);
     EXPECT_NE(dynamic_cast<IndexSetExpr*>(es->m_expression.get()), nullptr);
 }
-TEST(ParserTest, IndexSetExpr_WithExpr) {
+TEST(ParserIntegration, IndexSetExpr_WithExpr) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[0] = 1 + 2;");
     auto stmts  = parser.parse(std::move(tokens));
@@ -299,22 +299,22 @@ TEST(ParserTest, IndexSetExpr_WithExpr) {
 }
 
 // ── Ch.2/3 에러 케이스 테스트 ────────────────────────────────
-TEST(ParserTest, FunctionDecl_MissingName_Throws) {
+TEST(ParserIntegration, FunctionDecl_MissingName_Throws) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func () { }");
     EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
 }
-TEST(ParserTest, CallExpr_MissingCloseParen_Throws) {
+TEST(ParserIntegration, CallExpr_MissingCloseParen_Throws) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("f(1, 2;");
     EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
 }
-TEST(ParserTest, IndexExpr_MissingCloseBracket_Throws) {
+TEST(ParserIntegration, IndexExpr_MissingCloseBracket_Throws) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[0;");
     EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
 }
-TEST(ParserTest, IndexExpr_EmptyIndex_Throws) {
+TEST(ParserIntegration, IndexExpr_EmptyIndex_Throws) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[];");
     EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
@@ -397,7 +397,7 @@ TEST_F(RealLexerParserFixture, ParseError_MissingSemicolon_Throws) {
 // ── TokenStreamBuilder 활용 예시 ─────────────────────────
 // 기존 t()/semi()/eof() 방식 대비 문법 흐름이 코드에 바로 드러난다.
 
-TEST(ParserBuilder, NumberLiteral) {
+TEST(ParserUnit, NumberLiteral) {
     auto tokens = TokenStreamBuilder().number(5.0).semicolon().eof().build();
     auto stmts  = Parser().parse(std::move(tokens));
     auto* es    = dynamic_cast<ExprStmt*>(stmts[0].get());
@@ -407,7 +407,7 @@ TEST(ParserBuilder, NumberLiteral) {
     EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 5.0);
 }
 
-TEST(ParserBuilder, Addition) {
+TEST(ParserUnit, Addition) {
     auto tokens = TokenStreamBuilder()
         .number(1.0).plus().number(2.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -418,7 +418,7 @@ TEST(ParserBuilder, Addition) {
     EXPECT_EQ(bin->op.type, TokenType::PLUS);
 }
 
-TEST(ParserBuilder, VarDecl) {
+TEST(ParserUnit, VarDecl) {
     auto tokens = TokenStreamBuilder()
         .kwVar().identifier("x").equal().number(42.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -428,7 +428,7 @@ TEST(ParserBuilder, VarDecl) {
     EXPECT_NE(vs->m_initializer, nullptr);
 }
 
-TEST(ParserBuilder, ForLoop) {
+TEST(ParserUnit, ForLoop) {
     // for (var i = 0; i < 3; i = i + 1) print i;
     auto tokens = TokenStreamBuilder()
         .kwFor().lparen()
@@ -443,7 +443,7 @@ TEST(ParserBuilder, ForLoop) {
     EXPECT_NE(dynamic_cast<ForStmt*>(stmts[0].get()), nullptr);
 }
 
-TEST(ParserBuilder, IfStmt_ThenOnly) {
+TEST(ParserUnit, IfStmt_ThenOnly) {
     auto tokens = TokenStreamBuilder()
         .kwIf().lparen().boolTrue().rparen()
         .kwPrint().number(1.0).semicolon()
@@ -455,7 +455,7 @@ TEST(ParserBuilder, IfStmt_ThenOnly) {
     EXPECT_EQ(ifStmt->m_elseBranch, nullptr);
 }
 
-TEST(ParserBuilder, IfStmt_WithElse) {
+TEST(ParserUnit, IfStmt_WithElse) {
     auto tokens = TokenStreamBuilder()
         .kwIf().lparen().boolFalse().rparen()
         .kwPrint().number(1.0).semicolon()
@@ -469,7 +469,7 @@ TEST(ParserBuilder, IfStmt_WithElse) {
     EXPECT_NE(ifStmt->m_elseBranch, nullptr);
 }
 
-TEST(ParserBuilder, EqualEqual_Expr) {
+TEST(ParserUnit, EqualEqual_Expr) {
     auto tokens = TokenStreamBuilder()
         .number(1.0).equalEqual().number(1.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -478,7 +478,7 @@ TEST(ParserBuilder, EqualEqual_Expr) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
-TEST(ParserBuilder, BangEqual_Expr) {
+TEST(ParserUnit, BangEqual_Expr) {
     auto tokens = TokenStreamBuilder()
         .number(1.0).bangEqual().number(2.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -487,7 +487,7 @@ TEST(ParserBuilder, BangEqual_Expr) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
-TEST(ParserBuilder, Greater_Comparison) {
+TEST(ParserUnit, Greater_Comparison) {
     auto tokens = TokenStreamBuilder()
         .number(3.0).greater().number(1.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -496,7 +496,7 @@ TEST(ParserBuilder, Greater_Comparison) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
-TEST(ParserBuilder, LessEqual_Comparison) {
+TEST(ParserUnit, LessEqual_Comparison) {
     auto tokens = TokenStreamBuilder()
         .number(1.0).lessEqual().number(2.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -505,7 +505,7 @@ TEST(ParserBuilder, LessEqual_Comparison) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
-TEST(ParserBuilder, GreaterEqual_Comparison) {
+TEST(ParserUnit, GreaterEqual_Comparison) {
     auto tokens = TokenStreamBuilder()
         .number(2.0).greaterEqual().number(2.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -514,7 +514,7 @@ TEST(ParserBuilder, GreaterEqual_Comparison) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
-TEST(ParserBuilder, Subtraction_Term) {
+TEST(ParserUnit, Subtraction_Term) {
     auto tokens = TokenStreamBuilder()
         .number(5.0).minus().number(3.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));
@@ -523,7 +523,7 @@ TEST(ParserBuilder, Subtraction_Term) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
-TEST(ParserBuilder, Division_Factor) {
+TEST(ParserUnit, Division_Factor) {
     auto tokens = TokenStreamBuilder()
         .number(6.0).slash().number(2.0).semicolon().eof().build();
     auto stmts = Parser().parse(std::move(tokens));

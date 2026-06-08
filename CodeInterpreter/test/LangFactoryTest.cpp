@@ -18,7 +18,7 @@ static auto emptyParse() {
     return ::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> { return {}; });
 }
 
-class LangFactoryFixture : public ::testing::Test {
+class LangFactoryMockFixture : public ::testing::Test {
 protected:
     MockLexer*       ml = nullptr;
     MockParser*      mp = nullptr;
@@ -43,7 +43,7 @@ protected:
     }
 };
 
-TEST_F(LangFactoryFixture, Pipeline_CallsInOrder) {
+TEST_F(LangFactoryMockFixture, Pipeline_CallsInOrder) {
     InSequence seq;
     EXPECT_CALL(*ml, tokenize("print 5;")).Times(1);
     EXPECT_CALL(*mp, parse(_))
@@ -54,7 +54,7 @@ TEST_F(LangFactoryFixture, Pipeline_CallsInOrder) {
     factory->run("print 5;");
 }
 
-TEST_F(LangFactoryFixture, ParseError_StopsBeforeChecker) {
+TEST_F(LangFactoryMockFixture, ParseError_StopsBeforeChecker) {
     EXPECT_CALL(*ml, tokenize(_)).Times(1);
     EXPECT_CALL(*mp, parse(_))
         .WillOnce(Throw(ParseError("[라인 1] 구문 오류: 테스트")));
@@ -64,7 +64,7 @@ TEST_F(LangFactoryFixture, ParseError_StopsBeforeChecker) {
     EXPECT_THROW(factory->run(""), ParseError);
 }
 
-TEST_F(LangFactoryFixture, CheckerError_StopsBeforeInterpreter) {
+TEST_F(LangFactoryMockFixture, CheckerError_StopsBeforeInterpreter) {
     EXPECT_CALL(*ml, tokenize(_)).Times(1);
     EXPECT_CALL(*mp, parse(_))
         .WillOnce(emptyParse());
@@ -76,7 +76,7 @@ TEST_F(LangFactoryFixture, CheckerError_StopsBeforeInterpreter) {
 }
 
 // ── Real Lexer + Real Parser + Real Checker 통합 픽스처 ─────────
-class RealLexerFixture : public ::testing::Test {
+class LangFactoryIntegrationFixture : public ::testing::Test {
 protected:
     MockInterpreter* mi = nullptr;
     std::unique_ptr<LangFactory> factory;
@@ -93,42 +93,42 @@ protected:
     }
 };
 
-TEST_F(RealLexerFixture, PrintStmt_Integration) {
+TEST_F(LangFactoryIntegrationFixture, PrintStmt_Integration) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     factory->run("print 5;");
 }
 
-TEST_F(RealLexerFixture, VarDecl_Integration) {
+TEST_F(LangFactoryIntegrationFixture, VarDecl_Integration) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     factory->run("var x = 10;");
 }
 
-TEST_F(RealLexerFixture, PrintLiteral_CheckerPasses) {
+TEST_F(LangFactoryIntegrationFixture, PrintLiteral_CheckerPasses) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     EXPECT_NO_THROW(factory->run("print 42;"));
 }
 
-TEST_F(RealLexerFixture, VarDeclAndRef_CheckerPasses) {
+TEST_F(LangFactoryIntegrationFixture, VarDeclAndRef_CheckerPasses) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     EXPECT_NO_THROW(factory->run("var x = 10; print x;"));
 }
 
-TEST_F(RealLexerFixture, ParseError_IncompleteSyntax) {
+TEST_F(LangFactoryIntegrationFixture, ParseError_IncompleteSyntax) {
     EXPECT_CALL(*mi, interpret(_)).Times(0);
     EXPECT_THROW(factory->run("var"), ParseError);
 }
 
-TEST_F(RealLexerFixture, DuplicateVar_InBlock_Throws) {
+TEST_F(LangFactoryIntegrationFixture, DuplicateVar_InBlock_Throws) {
     EXPECT_CALL(*mi, interpret(_)).Times(0);
     EXPECT_THROW(factory->run("{ var x = 1; var x = 2; }"), CheckError);
 }
 
-TEST_F(RealLexerFixture, SelfReference_InBlock_Throws) {
+TEST_F(LangFactoryIntegrationFixture, SelfReference_InBlock_Throws) {
     EXPECT_CALL(*mi, interpret(_)).Times(0);
     EXPECT_THROW(factory->run("{ var x = x; }"), CheckError);
 }
 
-TEST_F(LangFactoryFixture, LexerError_StopsBeforeParser) {
+TEST_F(LangFactoryMockFixture, LexerError_StopsBeforeParser) {
     EXPECT_CALL(*ml, tokenize(_))
         .WillOnce(::testing::Throw(std::runtime_error("lexer error")));
     EXPECT_CALL(*mp, parse(_)).Times(0);
@@ -138,7 +138,7 @@ TEST_F(LangFactoryFixture, LexerError_StopsBeforeParser) {
     EXPECT_THROW(factory->run(""), std::runtime_error);
 }
 
-TEST_F(RealLexerFixture, RuntimeError_Propagates) {
+TEST_F(LangFactoryIntegrationFixture, RuntimeError_Propagates) {
     EXPECT_CALL(*mi, interpret(_))
         .WillOnce([](const std::vector<StmtPtr>&) {
             throw RuntimeError("0으로 나눌 수 없습니다.");
@@ -146,23 +146,23 @@ TEST_F(RealLexerFixture, RuntimeError_Propagates) {
     EXPECT_THROW(factory->run("print 1 / 0;"), RuntimeError);
 }
 
-TEST_F(RealLexerFixture, Complex_VarAndArith_Integration) {
+TEST_F(LangFactoryIntegrationFixture, Complex_VarAndArith_Integration) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     EXPECT_NO_THROW(factory->run("var a = 1; var b = 2; print a + b;"));
 }
 
 // Lexer 특화 테스트
-TEST_F(RealLexerFixture, StringLiteral_EndToEnd) {
+TEST_F(LangFactoryIntegrationFixture, StringLiteral_EndToEnd) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     EXPECT_NO_THROW(factory->run("print \"hello\";"));
 }
 
-TEST_F(RealLexerFixture, LineComment_Ignored) {
+TEST_F(LangFactoryIntegrationFixture, LineComment_Ignored) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     EXPECT_NO_THROW(factory->run("// 주석\nprint 5;"));
 }
 
-TEST_F(RealLexerFixture, UnexpectedChar_LexerError) {
+TEST_F(LangFactoryIntegrationFixture, UnexpectedChar_LexerError) {
     EXPECT_CALL(*mi, interpret(_)).Times(0);
     EXPECT_THROW(factory->run("@"), std::runtime_error);
 }
