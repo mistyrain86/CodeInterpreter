@@ -1,5 +1,4 @@
 #include "Resolver.h"
-#include <stdexcept>
 
 BindingMap Resolver::resolve(const std::vector<StmtPtr>& stmts) {
     m_bindings.clear();
@@ -10,82 +9,97 @@ BindingMap Resolver::resolve(const std::vector<StmtPtr>& stmts) {
 }
 
 void Resolver::resolveStmts(const std::vector<StmtPtr>& stmts) {
-    for (auto& s : stmts) resolveStmt(*s);
+    for (auto& s : stmts) s->accept(*this);
 }
 
-void Resolver::resolveStmt(Stmt& stmt) {
-    if (auto* s = dynamic_cast<VarStmt*>(&stmt)) {
-        declare(s->name);
-        if (s->initializer) resolveExpr(*s->initializer);
-        define(s->name);
-    }
-    else if (auto* s = dynamic_cast<FunctionStmt*>(&stmt)) {
-        declare(s->name); define(s->name);
-        m_functionDepth++;
-        beginScope();
-        for (auto& p : s->params) { declare(p); define(p); }
-        resolveStmts(s->body);
-        endScope();
-        m_functionDepth--;
-    }
-    else if (auto* s = dynamic_cast<ReturnStmt*>(&stmt)) {
-        if (s->value) resolveExpr(*s->value);
-    }
-    else if (auto* s = dynamic_cast<BlockStmt*>(&stmt)) {
-        beginScope(); resolveStmts(s->statements); endScope();
-    }
-    else if (auto* s = dynamic_cast<IfStmt*>(&stmt)) {
-        resolveExpr(*s->condition);
-        resolveStmt(*s->thenBranch);
-        if (s->elseBranch) resolveStmt(*s->elseBranch);
-    }
-    else if (auto* s = dynamic_cast<ForStmt*>(&stmt)) {
-        beginScope();
-        if (s->initializer) resolveStmt(*s->initializer);
-        if (s->condition)   resolveExpr(*s->condition);
-        if (s->increment)   resolveExpr(*s->increment);
-        if (s->body)        resolveStmt(*s->body);
-        endScope();
-    }
-    else if (auto* s = dynamic_cast<PrintStmt*>(&stmt)) {
-        resolveExpr(*s->expression);
-    }
-    else if (auto* s = dynamic_cast<ExprStmt*>(&stmt)) {
-        resolveExpr(*s->expression);
-    }
+// ── StmtVisitor 구현 ───────────────────────────────────────────────
+
+void Resolver::visitVarStmt(VarStmt& s) {
+    declare(s.name);
+    if (s.initializer) s.initializer->acceptVoid(*this);
+    define(s.name);
 }
 
-void Resolver::resolveExpr(Expr& expr) {
-    if (auto* e = dynamic_cast<VariableExpr*>(&expr)) {
-        resolveLocal(expr, e->name.lexeme);
-    }
-    else if (auto* e = dynamic_cast<AssignExpr*>(&expr)) {
-        resolveExpr(*e->value);
-        resolveLocal(expr, e->name.lexeme);
-    }
-    else if (auto* e = dynamic_cast<BinaryExpr*>(&expr)) {
-        resolveExpr(*e->left); resolveExpr(*e->right);
-    }
-    else if (auto* e = dynamic_cast<UnaryExpr*>(&expr)) {
-        resolveExpr(*e->right);
-    }
-    else if (auto* e = dynamic_cast<GroupingExpr*>(&expr)) {
-        resolveExpr(*e->expression);
-    }
-    else if (auto* e = dynamic_cast<CallExpr*>(&expr)) {
-        resolveExpr(*e->callee);
-        for (auto& arg : e->args) resolveExpr(*arg);
-    }
-    else if (auto* e = dynamic_cast<IndexGetExpr*>(&expr)) {
-        resolveExpr(*e->object); resolveExpr(*e->index);
-    }
-    else if (auto* e = dynamic_cast<IndexSetExpr*>(&expr)) {
-        resolveExpr(*e->object);
-        resolveExpr(*e->index);
-        resolveExpr(*e->value);
-    }
-    // LiteralExpr: no-op
+void Resolver::visitFunctionStmt(FunctionStmt& s) {
+    declare(s.name); define(s.name);
+    m_functionDepth++;
+    beginScope();
+    for (auto& p : s.params) { declare(p); define(p); }
+    resolveStmts(s.body);
+    endScope();
+    m_functionDepth--;
 }
+
+void Resolver::visitReturnStmt(ReturnStmt& s) {
+    if (s.value) s.value->acceptVoid(*this);
+}
+
+void Resolver::visitBlockStmt(BlockStmt& s) {
+    beginScope(); resolveStmts(s.statements); endScope();
+}
+
+void Resolver::visitIfStmt(IfStmt& s) {
+    s.condition->acceptVoid(*this);
+    s.thenBranch->accept(*this);
+    if (s.elseBranch) s.elseBranch->accept(*this);
+}
+
+void Resolver::visitForStmt(ForStmt& s) {
+    beginScope();
+    if (s.initializer) s.initializer->accept(*this);
+    if (s.condition)   s.condition->acceptVoid(*this);
+    if (s.increment)   s.increment->acceptVoid(*this);
+    if (s.body)        s.body->accept(*this);
+    endScope();
+}
+
+void Resolver::visitPrintStmt(PrintStmt& s) {
+    s.expression->acceptVoid(*this);
+}
+
+void Resolver::visitExprStmt(ExprStmt& s) {
+    s.expression->acceptVoid(*this);
+}
+
+// ── VoidExprVisitor 구현 ───────────────────────────────────────────
+
+void Resolver::visitVariable(VariableExpr& e) {
+    resolveLocal(e, e.name.lexeme);
+}
+
+void Resolver::visitAssign(AssignExpr& e) {
+    e.value->acceptVoid(*this);
+    resolveLocal(e, e.name.lexeme);
+}
+
+void Resolver::visitBinary(BinaryExpr& e) {
+    e.left->acceptVoid(*this); e.right->acceptVoid(*this);
+}
+
+void Resolver::visitUnary(UnaryExpr& e) {
+    e.right->acceptVoid(*this);
+}
+
+void Resolver::visitGrouping(GroupingExpr& e) {
+    e.expression->acceptVoid(*this);
+}
+
+void Resolver::visitCallExpr(CallExpr& e) {
+    e.callee->acceptVoid(*this);
+    for (auto& arg : e.args) arg->acceptVoid(*this);
+}
+
+void Resolver::visitIndexGetExpr(IndexGetExpr& e) {
+    e.object->acceptVoid(*this); e.index->acceptVoid(*this);
+}
+
+void Resolver::visitIndexSetExpr(IndexSetExpr& e) {
+    e.object->acceptVoid(*this);
+    e.index->acceptVoid(*this);
+    e.value->acceptVoid(*this);
+}
+
+// ── 스코프 관리 ────────────────────────────────────────────────────
 
 void Resolver::resolveLocal(Expr& expr, const std::string& name) {
     for (int i = (int)m_scopes.size() - 1; i >= 0; i--) {
@@ -99,7 +113,7 @@ void Resolver::resolveLocal(Expr& expr, const std::string& name) {
 }
 
 void Resolver::beginScope() { m_scopes.emplace_back(); }
-void Resolver::endScope() { m_scopes.pop_back(); }
+void Resolver::endScope()   { m_scopes.pop_back(); }
 
 void Resolver::declare(const Token& name) {
     if (!m_scopes.empty()) m_scopes.back()[name.lexeme] = false;

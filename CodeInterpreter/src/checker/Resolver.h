@@ -5,25 +5,41 @@
 #include "BindingMap.h"
 #include "Stmt.h"
 #include "Expr.h"
+#include "StmtVisitor.h"
+#include "VoidExprVisitor.h"
 
-// Ch.4 정적 바인딩 — AST를 순회하며 변수 distance 계산
-// C가 Resolver.cpp 에서 구현
-class Resolver {
+class Resolver : public StmtVisitor, public VoidExprVisitor {
 public:
-    // stmts를 순회하여 BindingMap 반환
     BindingMap resolve(const std::vector<StmtPtr>& stmts);
 
+    // StmtVisitor
+    void visitExprStmt    (ExprStmt&)     override;
+    void visitPrintStmt   (PrintStmt&)    override;
+    void visitVarStmt     (VarStmt&)      override;
+    void visitBlockStmt   (BlockStmt&)    override;
+    void visitIfStmt      (IfStmt&)       override;
+    void visitForStmt     (ForStmt&)      override;
+    void visitFunctionStmt(FunctionStmt&) override;
+    void visitReturnStmt  (ReturnStmt&)   override;
+
+    // VoidExprVisitor
+    void visitLiteral     (LiteralExpr&)   override {}
+    void visitGrouping    (GroupingExpr&)  override;
+    void visitUnary       (UnaryExpr&)     override;
+    void visitBinary      (BinaryExpr&)    override;
+    void visitVariable    (VariableExpr&)  override;
+    void visitAssign      (AssignExpr&)    override;
+    void visitCallExpr    (CallExpr&)      override;
+    void visitIndexGetExpr(IndexGetExpr&)  override;
+    void visitIndexSetExpr(IndexSetExpr&)  override;
+
 private:
-    // 스코프 스택: 변수명 → 초기화 여부
     std::vector<std::unordered_map<std::string, bool>> m_scopes;
     BindingMap m_bindings;
     int        m_functionDepth = 0;
 
     void resolveStmts(const std::vector<StmtPtr>& stmts);
-    void resolveStmt (Stmt& stmt);
-    void resolveExpr (Expr& expr);
     void resolveLocal(Expr& expr, const std::string& name);
-
     void beginScope();
     void endScope();
     void declare(const Token& name);

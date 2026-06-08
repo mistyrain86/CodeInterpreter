@@ -1,5 +1,18 @@
 #include "ConstantFolder.h"
 
+ConstantFolder::ConstantFolder() { initFoldOps(); }
+
+void ConstantFolder::initFoldOps() {
+    using T = TokenType;
+    m_foldOps[static_cast<int>(T::PLUS)]  = [](double a, double b) -> std::optional<double> { return a + b; };
+    m_foldOps[static_cast<int>(T::MINUS)] = [](double a, double b) -> std::optional<double> { return a - b; };
+    m_foldOps[static_cast<int>(T::STAR)]  = [](double a, double b) -> std::optional<double> { return a * b; };
+    m_foldOps[static_cast<int>(T::SLASH)] = [](double a, double b) -> std::optional<double> {
+        if (b == 0.0) return std::nullopt;  // 0 나누기는 런타임에 위임
+        return a / b;
+    };
+}
+
 std::vector<StmtPtr> ConstantFolder::optimize(std::vector<StmtPtr> stmts) {
     for (auto& s : stmts) s->accept(*this);
     return stmts;
@@ -20,14 +33,10 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
         std::holds_alternative<double>(rr->value)) {
         double a = std::get<double>(ll->value);
         double b = std::get<double>(rr->value);
-        switch (bin->op.type) {
-            case TokenType::PLUS:  return std::make_unique<LiteralExpr>(Value{a + b});
-            case TokenType::MINUS: return std::make_unique<LiteralExpr>(Value{a - b});
-            case TokenType::STAR:  return std::make_unique<LiteralExpr>(Value{a * b});
-            case TokenType::SLASH:
-                if (b != 0.0) return std::make_unique<LiteralExpr>(Value{a / b});
-                break;
-            default: break;
+        auto it = m_foldOps.find(static_cast<int>(bin->op.type));
+        if (it != m_foldOps.end()) {
+            auto result = it->second(a, b);
+            if (result) return std::make_unique<LiteralExpr>(Value{*result});
         }
     }
     return expr;

@@ -1,4 +1,4 @@
-﻿#include <cassert>
+#include <cassert>
 #include "Checker.h"
 
 void Checker::check(const std::vector<StmtPtr>& stmts) {
@@ -28,7 +28,7 @@ void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
 
 void Checker::visitVarStmt(VarStmt& s) {
     declare(s.name);
-    if (s.initializer) checkExpr(s.initializer.get());
+    if (s.initializer) s.initializer->acceptVoid(*this);
     define(s.name);
 }
 
@@ -39,7 +39,7 @@ void Checker::visitBlockStmt(BlockStmt& s) {
 }
 
 void Checker::visitIfStmt(IfStmt& s) {
-    checkExpr(s.condition.get());
+    s.condition->acceptVoid(*this);
     s.thenBranch->accept(*this);
     if (s.elseBranch) s.elseBranch->accept(*this);
 }
@@ -47,24 +47,23 @@ void Checker::visitIfStmt(IfStmt& s) {
 void Checker::visitForStmt(ForStmt& s) {
     beginScope();
     if (s.initializer) s.initializer->accept(*this);
-    if (s.condition)   checkExpr(s.condition.get());
-    if (s.increment)   checkExpr(s.increment.get());
+    if (s.condition)   s.condition->acceptVoid(*this);
+    if (s.increment)   s.increment->acceptVoid(*this);
     if (s.body)        s.body->accept(*this);
     endScope();
 }
 
 void Checker::visitPrintStmt(PrintStmt& s) {
-    checkExpr(s.expression.get());
+    s.expression->acceptVoid(*this);
 }
 
 void Checker::visitExprStmt(ExprStmt& s) {
-    checkExpr(s.expression.get());
+    s.expression->acceptVoid(*this);
 }
 
 void Checker::visitFunctionStmt(FunctionStmt& s) {
     declare(s.name);
     define(s.name);
-
 
     std::unordered_set<std::string> seen;
     for (const auto& param : s.params) {
@@ -90,43 +89,46 @@ void Checker::visitReturnStmt(ReturnStmt& s) {
     if (m_functionDepth == 0)
         throw CheckError("[라인 " + std::to_string(s.keyword.line)
             + "] 의미 오류: 함수 외부에서 return을 사용할 수 없습니다.");
-    if (s.value) checkExpr(s.value.get());
+    if (s.value) s.value->acceptVoid(*this);
 }
 
-// ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
+// ── VoidExprVisitor 구현 ───────────────────────────────────────────
 
-void Checker::checkExpr(Expr* expr) {
-    assert(expr != nullptr);
-    if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
-        checkExpr(e->left.get()); checkExpr(e->right.get());
-    }
-    else if (auto* e = dynamic_cast<GroupingExpr*>(expr)) {
-        checkExpr(e->expression.get());
-    }
-    else if (auto* e = dynamic_cast<UnaryExpr*>(expr)) {
-        checkExpr(e->right.get());
-    }
-    else if (auto* e = dynamic_cast<VariableExpr*>(expr)) {
-        resolveVar(e->name.lexeme, e->name.line);
-    }
-    else if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
-        checkExpr(e->value.get());
-        resolveVar(e->name.lexeme, e->name.line);
-    }
-    else if (auto* e = dynamic_cast<CallExpr*>(expr)) {
-        checkExpr(e->callee.get());
-        for (auto& arg : e->args) checkExpr(arg.get());
-    }
-    else if (auto* e = dynamic_cast<IndexGetExpr*>(expr)) {
-        checkExpr(e->object.get());
-        checkExpr(e->index.get());
-    }
-    else if (auto* e = dynamic_cast<IndexSetExpr*>(expr)) {
-        checkExpr(e->object.get());
-        checkExpr(e->index.get());
-        checkExpr(e->value.get());
-    }
-    // LiteralExpr: 검사 없음
+void Checker::visitGrouping(GroupingExpr& e) {
+    e.expression->acceptVoid(*this);
+}
+
+void Checker::visitUnary(UnaryExpr& e) {
+    e.right->acceptVoid(*this);
+}
+
+void Checker::visitBinary(BinaryExpr& e) {
+    e.left->acceptVoid(*this); e.right->acceptVoid(*this);
+}
+
+void Checker::visitVariable(VariableExpr& e) {
+    resolveVar(e.name.lexeme, e.name.line);
+}
+
+void Checker::visitAssign(AssignExpr& e) {
+    e.value->acceptVoid(*this);
+    resolveVar(e.name.lexeme, e.name.line);
+}
+
+void Checker::visitCallExpr(CallExpr& e) {
+    e.callee->acceptVoid(*this);
+    for (auto& arg : e.args) arg->acceptVoid(*this);
+}
+
+void Checker::visitIndexGetExpr(IndexGetExpr& e) {
+    e.object->acceptVoid(*this);
+    e.index->acceptVoid(*this);
+}
+
+void Checker::visitIndexSetExpr(IndexSetExpr& e) {
+    e.object->acceptVoid(*this);
+    e.index->acceptVoid(*this);
+    e.value->acceptVoid(*this);
 }
 
 // ── 스코프 관리 ────────────────────────────────────────────────────
@@ -158,5 +160,6 @@ void Checker::resolveVar(const std::string& name, int line) {
             return;
         }
     }
-    // 스코프에 없으면 전역 변수로 간주 — 런타임에서 RuntimeError로 처리
+    throw CheckError("[라인 " + std::to_string(line)
+        + "] 의미 오류: 선언되지 않은 변수입니다. ('" + name + "')");
 }

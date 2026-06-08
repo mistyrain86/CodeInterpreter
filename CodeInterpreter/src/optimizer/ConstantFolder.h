@@ -1,4 +1,7 @@
 #pragma once
+#include <functional>
+#include <optional>
+#include <unordered_map>
 #include "IOptimizer.h"
 #include "Expr.h"
 #include "StmtVisitor.h"
@@ -7,6 +10,7 @@
 class ConstantFolder : public IOptimizer
                      , public StmtVisitor {
 public:
+    ConstantFolder();
     std::vector<StmtPtr> optimize(std::vector<StmtPtr> stmts) override;
 
     // StmtVisitor
@@ -20,5 +24,8 @@ public:
     void visitReturnStmt  (ReturnStmt&)   override;
 
 private:
+    using FoldFn = std::function<std::optional<double>(double, double)>;
+    std::unordered_map<int, FoldFn> m_foldOps;
+    void    initFoldOps();
     ExprPtr foldExpr(ExprPtr expr);
 };
