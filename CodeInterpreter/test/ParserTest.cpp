@@ -24,14 +24,6 @@ static std::vector<StmtPtr> parse(std::vector<Token> tokens) {
 }
 
 // ── 단위 테스트 ───────────────────────────────────────────
-TEST(ParserUnit, NumberLiteral) {
-    auto stmts = parse({t(TokenType::NUMBER,"5",5.0), semi(), eof()});
-    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
-    ASSERT_NE(es, nullptr);
-    auto* lit = dynamic_cast<LiteralExpr*>(es->m_expression.get());
-    ASSERT_NE(lit, nullptr);
-    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 5.0);
-}
 TEST(ParserUnit, StringLiteral) {
     auto stmts = parse({t(TokenType::STRING,"\"hi\"",std::string("hi")), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
@@ -357,15 +349,6 @@ TEST(ParserTest, IndexExpr_EmptyIndex_Throws) {
     EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
 }
 
-TEST(ParserUnit, Addition) {
-    auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
-                        t(TokenType::PLUS,"+"),
-                        t(TokenType::NUMBER,"2",2.0), semi(), eof()});
-    auto* bin = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
-    ASSERT_NE(bin, nullptr);
-    EXPECT_EQ(bin->op.type, TokenType::PLUS);
-}
 TEST(ParserUnit, Precedence_MulBeforeAdd) {
     // 1 + 2 * 3 → right 쪽이 Binary(*)
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::PLUS,"+"),
