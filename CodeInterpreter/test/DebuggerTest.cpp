@@ -137,11 +137,9 @@ TEST_F(DebuggerFixture, NextSkipsLoopBody) {
 // ── typeName 전 타입 경로 ──────────────────────────────────────────────
 
 TEST_F(DebuggerFixture, Inspect_ShowsAllValueTypes) {
-    // 각 타입 변수 선언 후 inspect
-    std::string cmds =
-        "step\nstep\nstep\nstep\nstep\nstep\n"  // 6줄 선언 통과
-        "inspect\nexit\n";
-    std::string out = run(ALL_TYPES, cmds);
+    // line 5(func 선언) 직전까지 실행 → lines 1-4 완료 후 inspect
+    // break 5 + continue: line 5에서 정지, numVar/strVar/boolVar/arrVar 정의됨
+    std::string out = run(ALL_TYPES, "break 5\ncontinue\ninspect\nexit\n");
     EXPECT_NE(out.find("Number"),  std::string::npos);
     EXPECT_NE(out.find("String"),  std::string::npos);
     EXPECT_NE(out.find("Boolean"), std::string::npos);
