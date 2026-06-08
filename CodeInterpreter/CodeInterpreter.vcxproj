@@ -207,6 +207,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="test\CheckerTest.cpp" />
+    <ClCompile Include="test\ConstantFolderTest.cpp" />
     <ClCompile Include="test\EnvironmentTest.cpp" />
     <ClCompile Include="test\StaticBindingTest.cpp" />
     <ClCompile Include="test\IntegrationTest.cpp" />

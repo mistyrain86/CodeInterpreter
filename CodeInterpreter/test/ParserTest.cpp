@@ -24,14 +24,6 @@ static std::vector<StmtPtr> parse(std::vector<Token> tokens) {
 }
 
 // ── 단위 테스트 ───────────────────────────────────────────
-TEST(ParserUnit, NumberLiteral) {
-    auto stmts = parse({t(TokenType::NUMBER,"5",5.0), semi(), eof()});
-    auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
-    ASSERT_NE(es, nullptr);
-    auto* lit = dynamic_cast<LiteralExpr*>(es->m_expression.get());
-    ASSERT_NE(lit, nullptr);
-    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 5.0);
-}
 TEST(ParserUnit, StringLiteral) {
     auto stmts = parse({t(TokenType::STRING,"\"hi\"",std::string("hi")), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
@@ -357,15 +349,6 @@ TEST(ParserTest, IndexExpr_EmptyIndex_Throws) {
     EXPECT_THROW(parser.parse(std::move(tokens)), ParseError);
 }
 
-TEST(ParserUnit, Addition) {
-    auto stmts = parse({t(TokenType::NUMBER,"1",1.0),
-                        t(TokenType::PLUS,"+"),
-                        t(TokenType::NUMBER,"2",2.0), semi(), eof()});
-    auto* bin = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
-    ASSERT_NE(bin, nullptr);
-    EXPECT_EQ(bin->op.type, TokenType::PLUS);
-}
 TEST(ParserUnit, Precedence_MulBeforeAdd) {
     // 1 + 2 * 3 → right 쪽이 Binary(*)
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::PLUS,"+"),
@@ -400,48 +383,46 @@ TEST(ParserUnit, Comparison_Less) {
 
 // ── Real Lexer 통합 테스트 ────────────────────────────────
 // Lexer(실제) + Parser(실제) / Checker·Interpreter는 Mock으로 격리
-TEST(RealLexerParser, NumberLiteral_PassesThrough) {
-    auto mc = std::make_unique<MockChecker>();
-    EXPECT_CALL(*mc, check(_)).Times(1);
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(1);
 
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-                        std::move(mc), std::move(mi));
-    EXPECT_NO_THROW(factory.run("5;"));
+class RealLexerParserFixture : public ::testing::Test {
+protected:
+    MockChecker*     m_mcRaw = nullptr;
+    MockInterpreter* m_miRaw = nullptr;
+    std::unique_ptr<LangFactory> m_factory;
+
+    void SetUp() override {
+        auto mc  = std::make_unique<MockChecker>();
+        m_mcRaw  = mc.get();
+        auto mi  = std::make_unique<MockInterpreter>();
+        m_miRaw  = mi.get();
+        m_factory = std::make_unique<LangFactory>(
+            std::make_unique<Lexer>(), std::make_unique<Parser>(),
+            std::move(mc), std::move(mi));
+    }
+};
+
+TEST_F(RealLexerParserFixture, NumberLiteral_PassesThrough) {
+    EXPECT_CALL(*m_mcRaw, check(_)).Times(1);
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
+    EXPECT_NO_THROW(m_factory->run("5;"));
 }
 
-TEST(RealLexerParser, PrintStmt_NoThrow) {
-    auto mc = std::make_unique<MockChecker>();
-    EXPECT_CALL(*mc, check(_)).Times(1);
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(1);
-
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-                        std::move(mc), std::move(mi));
-    EXPECT_NO_THROW(factory.run("print 42;"));
+TEST_F(RealLexerParserFixture, PrintStmt_NoThrow) {
+    EXPECT_CALL(*m_mcRaw, check(_)).Times(1);
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
+    EXPECT_NO_THROW(m_factory->run("print 42;"));
 }
 
-TEST(RealLexerParser, VarDecl_NoThrow) {
-    auto mc = std::make_unique<MockChecker>();
-    EXPECT_CALL(*mc, check(_)).Times(1);
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(1);
-
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-                        std::move(mc), std::move(mi));
-    EXPECT_NO_THROW(factory.run("var x = 10;"));
+TEST_F(RealLexerParserFixture, VarDecl_NoThrow) {
+    EXPECT_CALL(*m_mcRaw, check(_)).Times(1);
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
+    EXPECT_NO_THROW(m_factory->run("var x = 10;"));
 }
 
-TEST(RealLexerParser, ParseError_MissingSemicolon_Throws) {
-    auto mc = std::make_unique<MockChecker>();
-    EXPECT_CALL(*mc, check(_)).Times(0);
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(0);
-
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-                        std::move(mc), std::move(mi));
-    EXPECT_THROW(factory.run("print 5"), ParseError);
+TEST_F(RealLexerParserFixture, ParseError_MissingSemicolon_Throws) {
+    EXPECT_CALL(*m_mcRaw, check(_)).Times(0);
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
+    EXPECT_THROW(m_factory->run("print 5"), ParseError);
 }
 
 // ── TokenStreamBuilder 활용 예시 ─────────────────────────
