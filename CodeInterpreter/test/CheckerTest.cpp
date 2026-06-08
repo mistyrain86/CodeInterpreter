@@ -397,3 +397,34 @@ TEST(ResolverTest, LocalVar_InBindings) {
     auto bindings = r.resolve(p.parse(l.tokenize("{ var x = 1; print x; }")));
     EXPECT_FALSE(bindings.empty());
 }
+
+// ── 커버리지 보강 ──────────────────────────────────────────────────
+
+// ExprStmt 단독 문장 분석 경로
+TEST(CheckerUnit, ExprStmt_Variable_Checked) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("x", litNum(1.0)));
+    stmts.push_back(std::make_unique<ExprStmt>(varRef("x")));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+// UnaryExpr 분석 경로
+TEST(CheckerUnit, UnaryExpr_Bang_Checked) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(
+        std::make_unique<UnaryExpr>(
+            Token{TokenType::BANG, "!", std::monostate{}, 1},
+            litBool(true))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+// GroupingExpr 분석 경로
+TEST(CheckerUnit, GroupingExpr_Checked) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(
+        std::make_unique<GroupingExpr>(litNum(42.0))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
