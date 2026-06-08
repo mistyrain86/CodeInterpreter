@@ -70,20 +70,23 @@ StmtPtr Parser::parseVarDecl() {
     return std::make_unique<VarStmt>(std::move(name), std::move(init));
 }
 StmtPtr Parser::parsePrintStmt() {
+    int     ln  = previous().line;   // 'print' 키워드 줄 번호
     ExprPtr val = parseExpression();
     consume(TokenType::SEMICOLON, "값 출력 뒤에 ';'가 필요합니다.");
-    return std::make_unique<PrintStmt>(std::move(val));
+    return std::make_unique<PrintStmt>(std::move(val), ln);
 }
 StmtPtr Parser::parseIfStmt() {
+    int     ln    = previous().line;  // 'if' 키워드 줄 번호
     consume(TokenType::LEFT_PAREN,  "if 뒤에 '('가 필요합니다.");
-    ExprPtr cond = parseExpression();
+    ExprPtr cond  = parseExpression();
     consume(TokenType::RIGHT_PAREN, "조건식 뒤에 ')'가 필요합니다.");
     StmtPtr thenB = parseStatement();
     StmtPtr elseB;
     if (match({TokenType::KW_ELSE})) elseB = parseStatement(); // Greedy 매칭
-    return std::make_unique<IfStmt>(std::move(cond), std::move(thenB), std::move(elseB));
+    return std::make_unique<IfStmt>(std::move(cond), std::move(thenB), std::move(elseB), ln);
 }
 StmtPtr Parser::parseForStmt() {
+    int     ln   = previous().line;   // 'for' 키워드 줄 번호
     consume(TokenType::LEFT_PAREN, "for 뒤에 '('가 필요합니다.");
     StmtPtr init;
     if      (match({TokenType::SEMICOLON})) { /* empty */ }
@@ -96,7 +99,7 @@ StmtPtr Parser::parseForStmt() {
     if (!check(TokenType::RIGHT_PAREN)) incr = parseExpression();
     consume(TokenType::RIGHT_PAREN, "for 증감식 뒤에 ')'가 필요합니다.");
     return std::make_unique<ForStmt>(std::move(init), std::move(cond),
-                                     std::move(incr), parseStatement());
+                                     std::move(incr), parseStatement(), ln);
 }
 StmtPtr Parser::parseBlock() {
     std::vector<StmtPtr> stmts;

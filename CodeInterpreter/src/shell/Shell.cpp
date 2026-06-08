@@ -38,17 +38,27 @@ void Shell::runRepl() {
 }
 
 void Shell::runFile(const std::string& path) {
-    // TODO:
-    // 1. 파일 열기, 없으면 "[오류] 파일을 찾을 수 없습니다: path" 출력 후 exit(1)
-    // 2. 전체 내용 읽기
-    // 3. factory.run(source) 실행
-    // 4. 에러 발생 시 메시지 출력 후 exit(코드)
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "[오류] 파일을 찾을 수 없습니다: " << path << "\n";
+        std::exit(1);
+    }
+    std::ostringstream ss;
+    ss << file.rdbuf();
+
+    LangFactory factory;
+    try {
+        factory.run(ss.str());
+    }
+    catch (const ParseError& e)        { std::cerr << "[구문 오류] "   << e.what() << "\n"; std::exit(1); }
+    catch (const CheckError& e)        { std::cerr << "[의미 오류] "   << e.what() << "\n"; std::exit(2); }
+    catch (const RuntimeError& e)      { std::cerr << "[런타임 오류] " << e.what() << "\n"; std::exit(3); }
+    catch (const std::runtime_error& e){ std::cerr << "[오류] "        << e.what() << "\n"; std::exit(4); }
 }
 
 void Shell::runDebug(const std::string& path) {
-    // TODO:
-    // 1. Debugger debugger(path) 생성
-    // 2. debugger.run() 실행
+    Debugger debugger(path);
+    debugger.run();
 }
 
 void Shell::runSource(LangFactory& factory, const std::string& source) {
