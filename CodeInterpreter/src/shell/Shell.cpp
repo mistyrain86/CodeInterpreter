@@ -13,27 +13,16 @@ void Shell::runRepl() {
 
     LangFactory factory;
     std::string  line;
-    std::ostringstream oss;
 
     while (true) {
-        std::cout << (oss.str().empty() ? "> " : "... ");
+        std::cout << "> ";
         std::cout.flush();
 
-        if (!std::getline(std::cin, line)) {
-            if (!oss.str().empty()) runSource(factory, oss.str());
-            break;
-        }
+        if (!std::getline(std::cin, line)) break;
         if (line == "exit" || line == "quit") break;
+        if (line.empty()) continue;
 
-        if (line.empty()) {
-            if (!oss.str().empty()) {
-                runSource(factory, oss.str());
-                oss.str(""); oss.clear();
-            }
-        }
-        else {
-            oss << line << '\n';
-        }
+        runSource(factory, line);
     }
 }
 
