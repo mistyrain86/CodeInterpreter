@@ -1,12 +1,14 @@
-#pragma once
+﻿#pragma once
 #include <memory>
 #include "Token.h"
 #include "Value.h"
 #include "ExprVisitor.h"
+#include "VoidExprVisitor.h"
 
 struct Expr {
     virtual ~Expr() = default;
-    virtual Value accept(ExprVisitor& v) = 0;
+    virtual Value accept    (ExprVisitor&     v) = 0;
+    virtual void  acceptVoid(VoidExprVisitor& v) = 0;
 };
 using ExprPtr = std::unique_ptr<Expr>;
 
@@ -16,32 +18,37 @@ struct BinaryExpr : Expr {
     ExprPtr right;
     BinaryExpr(ExprPtr l, Token op, ExprPtr r)
         : left(std::move(l)), op(std::move(op)), right(std::move(r)) {}
-    Value accept(ExprVisitor& v) override { return v.visitBinary(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitBinary(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitBinary(*this); }
 };
 
 struct GroupingExpr : Expr {
     ExprPtr expression;
     explicit GroupingExpr(ExprPtr e) : expression(std::move(e)) {}
-    Value accept(ExprVisitor& v) override { return v.visitGrouping(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitGrouping(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitGrouping(*this); }
 };
 
 struct LiteralExpr : Expr {
     Value value;
     explicit LiteralExpr(Value v) : value(std::move(v)) {}
-    Value accept(ExprVisitor& v) override { return v.visitLiteral(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitLiteral(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitLiteral(*this); }
 };
 
 struct UnaryExpr : Expr {
     Token   op;
     ExprPtr right;
     UnaryExpr(Token op, ExprPtr r) : op(std::move(op)), right(std::move(r)) {}
-    Value accept(ExprVisitor& v) override { return v.visitUnary(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitUnary(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitUnary(*this); }
 };
 
 struct VariableExpr : Expr {
     Token name;
     explicit VariableExpr(Token n) : name(std::move(n)) {}
-    Value accept(ExprVisitor& v) override { return v.visitVariable(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitVariable(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitVariable(*this); }
 };
 
 struct AssignExpr : Expr {
@@ -49,10 +56,10 @@ struct AssignExpr : Expr {
     ExprPtr value;
     AssignExpr(Token n, ExprPtr v)
         : name(std::move(n)), value(std::move(v)) {}
-    Value accept(ExprVisitor& v) override { return v.visitAssign(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitAssign(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitAssign(*this); }
 };
 
-// ── Chapter 2: 함수 호출 ───────────────────────────────────────────
 struct CallExpr : Expr {
     ExprPtr              callee;
     Token                paren;   // 닫는 ')', 에러 리포트용
@@ -61,10 +68,10 @@ struct CallExpr : Expr {
         : callee(std::move(callee))
         , paren(std::move(paren))
         , args(std::move(args)) {}
-    Value accept(ExprVisitor& v) override { return v.visitCallExpr(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitCallExpr(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitCallExpr(*this); }
 };
 
-// ── Chapter 3: 배열 인덱스 ────────────────────────────────────────
 struct IndexGetExpr : Expr {
     ExprPtr object;
     Token   bracket;
@@ -73,7 +80,8 @@ struct IndexGetExpr : Expr {
         : object(std::move(obj))
         , bracket(std::move(bracket))
         , index(std::move(idx)) {}
-    Value accept(ExprVisitor& v) override { return v.visitIndexGetExpr(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitIndexGetExpr(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitIndexGetExpr(*this); }
 };
 
 struct IndexSetExpr : Expr {
@@ -86,5 +94,6 @@ struct IndexSetExpr : Expr {
         , bracket(std::move(bracket))
         , index(std::move(idx))
         , value(std::move(val)) {}
-    Value accept(ExprVisitor& v) override { return v.visitIndexSetExpr(*this); }
+    Value accept    (ExprVisitor& v)     override { return v.visitIndexSetExpr(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitIndexSetExpr(*this); }
 };

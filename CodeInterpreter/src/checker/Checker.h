@@ -1,16 +1,18 @@
-﻿#pragma once
+#pragma once
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include "CheckError.h"
 #include "IChecker.h"
 #include "Expr.h"
 #include "Stmt.h"
 #include "StmtVisitor.h"
-#include <unordered_set>  
+#include "VoidExprVisitor.h"
 
 class Checker : public IChecker
-              , public StmtVisitor {
+              , public StmtVisitor
+              , public VoidExprVisitor {
 public:
     Checker() = default;
     void check(const std::vector<StmtPtr>& stmts) override;
@@ -26,14 +28,23 @@ public:
     void visitFunctionStmt(FunctionStmt&) override;
     void visitReturnStmt  (ReturnStmt&)   override;
 
+    // VoidExprVisitor
+    void visitLiteral     (LiteralExpr&)   override {}
+    void visitGrouping    (GroupingExpr&)  override;
+    void visitUnary       (UnaryExpr&)     override;
+    void visitBinary      (BinaryExpr&)    override;
+    void visitVariable    (VariableExpr&)  override;
+    void visitAssign      (AssignExpr&)    override;
+    void visitCallExpr    (CallExpr&)      override;
+    void visitIndexGetExpr(IndexGetExpr&)  override;
+    void visitIndexSetExpr(IndexSetExpr&)  override;
+
 private:
     std::vector<std::map<std::string, bool>> m_scopes;
     std::unordered_set<std::string>          m_knownGlobals;
-
     int  m_functionDepth = 0;
 
     void checkStmts(const std::vector<StmtPtr>& stmts);
-    void checkExpr(Expr* expr);
     void beginScope();
     void endScope();
     void declare(const Token& name);
