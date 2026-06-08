@@ -43,6 +43,8 @@ void Shell::runFile(const std::string& path) {
         std::cerr << "[오류] 파일을 찾을 수 없습니다: " << path << "\n";
         std::exit(1);
     }
+    std::cout << "CodeFab Interpreter (FILE 모드)\n";
+    std::cout << "[FILE] 소스코드 로딩: " << path << "\n";
     std::ostringstream ss;
     ss << file.rdbuf();
 
