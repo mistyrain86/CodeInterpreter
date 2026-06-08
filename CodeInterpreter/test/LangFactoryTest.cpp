@@ -128,7 +128,6 @@ TEST_F(RealLexerFixture, SelfReference_InBlock_Throws) {
     EXPECT_THROW(factory->run("{ var x = x; }"), CheckError);
 }
 
-// 커버리지 보강
 TEST_F(LangFactoryFixture, LexerError_StopsBeforeParser) {
     EXPECT_CALL(*ml, tokenize(_))
         .WillOnce(::testing::Throw(std::runtime_error("lexer error")));

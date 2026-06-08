@@ -493,7 +493,6 @@ TEST(ParserBuilder, ForLoop) {
     EXPECT_NE(dynamic_cast<ForStmt*>(stmts[0].get()), nullptr);
 }
 
-// ── 커버리지 보강: parseIfStmt() ─────────────────────────────────
 TEST(ParserBuilder, IfStmt_ThenOnly) {
     auto tokens = TokenStreamBuilder()
         .kwIf().lparen().boolTrue().rparen()
@@ -520,7 +519,6 @@ TEST(ParserBuilder, IfStmt_WithElse) {
     EXPECT_NE(ifStmt->elseBranch, nullptr);
 }
 
-// ── 커버리지 보강: parseEquality() 루프 ─────────────────────────
 TEST(ParserBuilder, EqualEqual_Expr) {
     auto tokens = TokenStreamBuilder()
         .number(1.0).equalEqual().number(1.0).semicolon().eof().build();
@@ -539,7 +537,6 @@ TEST(ParserBuilder, BangEqual_Expr) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
 }
 
-// ── 커버리지 보강: parseComparison() 루프 ───────────────────────
 TEST(ParserBuilder, Greater_Comparison) {
     auto tokens = TokenStreamBuilder()
         .number(3.0).greater().number(1.0).semicolon().eof().build();
@@ -567,7 +564,6 @@ TEST(ParserBuilder, GreaterEqual_Comparison) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
 }
 
-// ── 커버리지 보강: parseTerm() / parseFactor() 루프 ─────────────
 TEST(ParserBuilder, Subtraction_Term) {
     auto tokens = TokenStreamBuilder()
         .number(5.0).minus().number(3.0).semicolon().eof().build();
