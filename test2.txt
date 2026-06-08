@@ -1,0 +1,7 @@
+var a = 3;
+{
+    var b = 10;
+    var flag = true;
+    a = a + 1;
+    print a;
+}
