@@ -41,6 +41,7 @@ struct ScopeGuard {
 Interpreter::Interpreter()
     : m_currentEnv(std::make_shared<Environment>()) {
     m_currentEnv->define("Array", Value{std::make_shared<ArrayBuiltin>()});
+    m_scopeStack.push_back(m_currentEnv.get());  // 전역 스코프를 스택에 등록
     initBinaryOps();
 }
 
@@ -102,6 +103,18 @@ void Interpreter::initBinaryOps() {
 
 // ── 공개 진입점 ────────────────────────────────────────────────────
 
+void Interpreter::rebuildScopeStackFromClosure(Environment* closure) {
+    // 클로저 env 체인을 global → closure 순으로 재구성
+    std::vector<Environment*> chain;
+    auto* cur = closure;
+    while (cur) {
+        chain.push_back(cur);
+        cur = cur->m_enclosing.get();
+    }
+    std::reverse(chain.begin(), chain.end());  // global이 index 0
+    m_scopeStack = std::move(chain);
+}
+
 void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
     for (const auto& s : stmts) execute(*s);
 }
@@ -120,6 +133,9 @@ void Interpreter::execute(Stmt& stmt) {
 void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
                                 std::shared_ptr<Environment> env) {
     ScopeGuard guard(m_currentEnv, std::move(env));
+    m_scopeStack.push_back(m_currentEnv.get());
+    struct StackGuard { std::vector<Environment*>& s; ~StackGuard() { s.pop_back(); } }
+        stackGuard{m_scopeStack};
     for (const auto& s : stmts) execute(*s);
 }
 
@@ -167,17 +183,26 @@ std::optional<int> Interpreter::lookupBinding(const Expr* expr) const {
 }
 
 Value Interpreter::visitVariable(VariableExpr& e) {
-    if (auto dist = lookupBinding(&e))
-        return m_currentEnv->getAt(*dist, e.name.lexeme);
+    if (auto dist = lookupBinding(&e)) {
+        if (m_spy) m_spy->m_bindingHits++;
+        // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
+        int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
+        return m_scopeStack[idx]->m_values.at(e.name.lexeme);
+    }
+    if (m_spy) m_spy->m_chainWalks++;
     return m_currentEnv->get(e.name);
 }
 
 Value Interpreter::visitAssign(AssignExpr& e) {
     Value v = evaluate(*e.value);
     if (auto dist = lookupBinding(&e)) {
-        m_currentEnv->assignAt(*dist, e.name.lexeme, v);
+        if (m_spy) m_spy->m_bindingHits++;
+        // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
+        int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
+        m_scopeStack[idx]->m_values[e.name.lexeme] = v;
         return v;
     }
+    if (m_spy) m_spy->m_chainWalks++;
     m_currentEnv->assign(e.name, v);
     return v;
 }
@@ -210,6 +235,9 @@ void Interpreter::visitForStmt(ForStmt& s) {
     if (!s.m_body)
         throw RuntimeError("런타임 오류: ForStmt body가 null입니다.");
     ScopeGuard guard(m_currentEnv, std::make_shared<Environment>(m_currentEnv));
+    m_scopeStack.push_back(m_currentEnv.get());
+    struct StackGuard { std::vector<Environment*>& s; ~StackGuard() { s.pop_back(); } }
+        stackGuard{m_scopeStack};
     if (s.m_initializer) execute(*s.m_initializer);
     while (true) {
         if (s.m_condition && !isTruthy(evaluate(*s.m_condition))) break;

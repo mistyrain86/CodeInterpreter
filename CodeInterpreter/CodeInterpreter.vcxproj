@@ -208,6 +208,7 @@
     </ClCompile>
     <ClCompile Include="test\CheckerTest.cpp" />
     <ClCompile Include="test\EnvironmentTest.cpp" />
+    <ClCompile Include="test\StaticBindingTest.cpp" />
     <ClCompile Include="test\IntegrationTest.cpp" />
     <ClCompile Include="test\InterpreterTest.cpp" />
     <ClCompile Include="test\LangFactoryTest.cpp" />

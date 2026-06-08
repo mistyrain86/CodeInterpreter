@@ -62,11 +62,26 @@ public:
     // 디버거용: 현재 execute() 호출 깊이 (1=최상위, 2=블록 내부, ...)
     int executeDepth() const { return m_executeDepth; }
 
+    // 정적 바인딩 검증용 Spy — 테스트에서 setSpy() 주입 후 경로 추적
+    struct BindingSpy {
+        int m_bindingHits = 0;  // scope stack O(1) 직접 접근 경로 (정적 바인딩)
+        int m_chainWalks  = 0;  // get 경로 (환경 체인 탐색)
+        void reset() { m_bindingHits = m_chainWalks = 0; }
+    };
+    void setSpy(BindingSpy* spy) { m_spy = spy; }
+
+    // 클로저 호출 시 scope stack 재구성용 — LangFunction::call()에서 사용
+    std::vector<Environment*> saveScopeStack() const { return m_scopeStack; }
+    void restoreScopeStack(std::vector<Environment*> saved) { m_scopeStack = std::move(saved); }
+    void rebuildScopeStackFromClosure(Environment* closure);
+
 private:
-    std::shared_ptr<Environment> m_currentEnv;
-    const BindingMap*            m_bindings     = nullptr;
-    StmtHook                     m_stmtHook;
-    int                          m_executeDepth = 0;
+    std::shared_ptr<Environment>  m_currentEnv;
+    std::vector<Environment*>     m_scopeStack;   // 평탄화 스코프 스택 — O(1) 직접 접근용
+    const BindingMap*             m_bindings     = nullptr;
+    StmtHook                      m_stmtHook;
+    int                           m_executeDepth = 0;
+    BindingSpy*                   m_spy          = nullptr;
 
     using BinaryOpFn = std::function<Value(const Value&, const Value&, int)>;
     std::unordered_map<int, BinaryOpFn> m_binaryOps;

@@ -11,7 +11,10 @@ void Environment::define(const std::string& name, Value value) {
 Value Environment::get(const Token& name) const {
     auto it = m_values.find(name.lexeme);
     if (it != m_values.end()) return it->second;
-    if (m_enclosing)           return m_enclosing->get(name);
+    if (m_enclosing) {
+        s_chainSteps++;  // 현재 스코프에 없어 상위로 이동
+        return m_enclosing->get(name);
+    }
     throw RuntimeError(makeUndefinedVarMessage(name));
 }
 
@@ -24,7 +27,10 @@ void Environment::assign(const Token& name, Value value) {
 
 Value Environment::getAt(int distance, const std::string& name) const {
     const Environment* env = this;
-    for (int i = 0; i < distance; i++) env = env->m_enclosing.get();
+    for (int i = 0; i < distance; i++) {
+        s_getAtHops++;  // 포인터 순회 1회
+        env = env->m_enclosing.get();
+    }
     return env->m_values.at(name);
 }
 
