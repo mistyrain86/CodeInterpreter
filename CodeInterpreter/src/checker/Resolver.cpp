@@ -15,50 +15,50 @@ void Resolver::resolveStmts(const std::vector<StmtPtr>& stmts) {
 // ── StmtVisitor 구현 ───────────────────────────────────────────────
 
 void Resolver::visitVarStmt(VarStmt& s) {
-    declare(s.name);
-    if (s.initializer) s.initializer->acceptVoid(*this);
-    define(s.name);
+    declare(s.m_name);
+    if (s.m_initializer) s.m_initializer->acceptVoid(*this);
+    define(s.m_name);
 }
 
 void Resolver::visitFunctionStmt(FunctionStmt& s) {
-    declare(s.name); define(s.name);
+    declare(s.m_name); define(s.m_name);
     m_functionDepth++;
     beginScope();
-    for (auto& p : s.params) { declare(p); define(p); }
-    resolveStmts(s.body);
+    for (auto& p : s.m_params) { declare(p); define(p); }
+    resolveStmts(s.m_body);
     endScope();
     m_functionDepth--;
 }
 
 void Resolver::visitReturnStmt(ReturnStmt& s) {
-    if (s.value) s.value->acceptVoid(*this);
+    if (s.m_value) s.m_value->acceptVoid(*this);
 }
 
 void Resolver::visitBlockStmt(BlockStmt& s) {
-    beginScope(); resolveStmts(s.statements); endScope();
+    beginScope(); resolveStmts(s.m_statements); endScope();
 }
 
 void Resolver::visitIfStmt(IfStmt& s) {
-    s.condition->acceptVoid(*this);
-    s.thenBranch->accept(*this);
-    if (s.elseBranch) s.elseBranch->accept(*this);
+    s.m_condition->acceptVoid(*this);
+    s.m_thenBranch->accept(*this);
+    if (s.m_elseBranch) s.m_elseBranch->accept(*this);
 }
 
 void Resolver::visitForStmt(ForStmt& s) {
     beginScope();
-    if (s.initializer) s.initializer->accept(*this);
-    if (s.condition)   s.condition->acceptVoid(*this);
-    if (s.increment)   s.increment->acceptVoid(*this);
-    if (s.body)        s.body->accept(*this);
+    if (s.m_initializer) s.m_initializer->accept(*this);
+    if (s.m_condition)   s.m_condition->acceptVoid(*this);
+    if (s.m_increment)   s.m_increment->acceptVoid(*this);
+    if (s.m_body)        s.m_body->accept(*this);
     endScope();
 }
 
 void Resolver::visitPrintStmt(PrintStmt& s) {
-    s.expression->acceptVoid(*this);
+    s.m_expression->acceptVoid(*this);
 }
 
 void Resolver::visitExprStmt(ExprStmt& s) {
-    s.expression->acceptVoid(*this);
+    s.m_expression->acceptVoid(*this);
 }
 
 // ── VoidExprVisitor 구현 ───────────────────────────────────────────

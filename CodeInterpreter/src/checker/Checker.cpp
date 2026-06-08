@@ -1,4 +1,4 @@
-#include <cassert>
+﻿#include <cassert>
 #include "Checker.h"
 
 void Checker::check(const std::vector<StmtPtr>& stmts) {
@@ -46,7 +46,7 @@ void Checker::visitIfStmt(IfStmt& s) {
 
 void Checker::visitForStmt(ForStmt& s) {
     beginScope();
-    if (s.m_initializer) s.initializer->accept(*this);
+    if (s.m_initializer) s.m_initializer->accept(*this);
     if (s.m_condition)   s.m_condition->acceptVoid(*this);
     if (s.m_increment)   s.m_increment->acceptVoid(*this);
     if (s.m_body)        s.m_body->accept(*this);
