@@ -536,23 +536,23 @@ TEST_F(InterpreterFixture, ConstantFolder_RunResult) {
 }
 
 TEST_F(InterpreterFixture, Truthy_Zero_IsFalse) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0,
         litNum(0.0), printStmt(litStr("yes")), nullptr)), "");
 }
 
 TEST_F(InterpreterFixture, Truthy_NonZero_IsTrue) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0,
         litNum(1.0), printStmt(litStr("yes")), nullptr)), "yes\n");
 }
 
 TEST_F(InterpreterFixture, Truthy_String_IsTrue) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0,
         litStr("hello"), printStmt(litStr("yes")), nullptr)), "yes\n");
 }
 
 TEST_F(InterpreterFixture, ForStmt_NullBody_Throws) {
     std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ForStmt>(
+    s.push_back(std::make_unique<ForStmt>(0,
         nullptr, nullptr, nullptr, nullptr));
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
