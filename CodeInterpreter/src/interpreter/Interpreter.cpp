@@ -29,6 +29,27 @@ std::pair<std::vector<Value>*, int> resolveArrayAccess(
     return {arr, i};
 }
 
+std::string stringifyDouble(double d) {
+    if (std::isfinite(d) && d == std::floor(d))
+        return std::to_string(static_cast<long long>(d));
+    std::ostringstream oss;
+    oss << d;
+    return oss.str();
+}
+
+std::string stringifyArray(const ArrayType& arr,
+                           const std::function<std::string(const Value&)>& recurse) {
+    if (!arr) return "[]";
+    std::ostringstream oss;
+    oss << "[";
+    for (std::size_t i = 0; i < arr->size(); ++i) {
+        if (i) oss << ", ";
+        oss << recurse((*arr)[i]);
+    }
+    oss << "]";
+    return oss.str();
+}
+
 struct ScopeGuard {
     std::shared_ptr<Environment>& ref;
     std::shared_ptr<Environment>  prev;
@@ -315,31 +336,15 @@ Value Interpreter::visitIndexSetExpr(IndexSetExpr& e) {
 }
 
 std::string Interpreter::stringify(const Value& v) const {
-    if (std::holds_alternative<std::monostate>(v)) return "nil";
-    if (std::holds_alternative<bool>(v)) return std::get<bool>(v) ? "true" : "false";
-    if (std::holds_alternative<double>(v)) {
-        double d = std::get<double>(v);
-        if (std::isfinite(d) && d == std::floor(d))
-            return std::to_string(static_cast<long long>(d));
-        std::ostringstream oss;
-        oss << d;
-        return oss.str();
-    }
+    if (std::holds_alternative<std::monostate>(v))              return "nil";
+    if (std::holds_alternative<bool>(v))                        return std::get<bool>(v) ? "true" : "false";
+    if (std::holds_alternative<double>(v))                      return stringifyDouble(std::get<double>(v));
     if (std::holds_alternative<std::shared_ptr<ICallable>>(v)) {
         auto& fn = std::get<std::shared_ptr<ICallable>>(v);
         return fn ? "<fn " + fn->name() + ">" : "<fn>";
     }
-    if (std::holds_alternative<ArrayType>(v)) {
-        auto& arr = std::get<ArrayType>(v);
-        if (!arr) return "[]";
-        std::ostringstream oss;
-        oss << "[";
-        for (std::size_t i = 0; i < arr->size(); ++i) {
-            if (i) oss << ", ";
-            oss << stringify((*arr)[i]);
-        }
-        oss << "]";
-        return oss.str();
-    }
+    if (std::holds_alternative<ArrayType>(v))
+        return stringifyArray(std::get<ArrayType>(v),
+                              [this](const Value& e) { return stringify(e); });
     return std::get<std::string>(v);
 }

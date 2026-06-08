@@ -4,8 +4,29 @@
 #include "CheckError.h"
 #include "RuntimeError.h"
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <sstream>
+
+namespace {
+void printPrompt(bool multiLine) {
+    std::cout << (multiLine ? "... " : "> ");
+    std::cout.flush();
+}
+
+enum ExitCode { ParseErrorCode, CheckErrorCode, RuntimeErrorCode, InternalErrorCode };
+
+void runWithErrors(LangFactory& factory, const std::string& source,
+                   const std::function<void(int)>& onError) {
+    try {
+        factory.run(source);
+    }
+    catch (const ParseError& e)         { std::cerr << "[구문 오류] "   << e.what() << "\n"; onError(ParseErrorCode); }
+    catch (const CheckError& e)         { std::cerr << "[의미 오류] "   << e.what() << "\n"; onError(CheckErrorCode); }
+    catch (const RuntimeError& e)       { std::cerr << "[런타임 오류] " << e.what() << "\n"; onError(RuntimeErrorCode); }
+    catch (const std::runtime_error& e) { std::cerr << "[오류] "        << e.what() << "\n"; onError(InternalErrorCode); }
+}
+}
 
 void Shell::runRepl() {
     std::cout << "CodeFab Interpreter (REPL 모드)\n";
@@ -15,8 +36,7 @@ void Shell::runRepl() {
     std::string  line;
 
     while (true) {
-        std::cout << "> ";
-        std::cout.flush();
+        printPrompt(false);
 
         if (!std::getline(std::cin, line)) break;
         if (line == "exit" || line == "quit") break;
@@ -38,13 +58,7 @@ void Shell::runFile(const std::string& path) {
     ss << file.rdbuf();
 
     LangFactory factory;
-    try {
-        factory.run(ss.str());
-    }
-    catch (const ParseError& e)        { std::cerr << "[구문 오류] "   << e.what() << "\n"; std::exit(1); }
-    catch (const CheckError& e)        { std::cerr << "[의미 오류] "   << e.what() << "\n"; std::exit(2); }
-    catch (const RuntimeError& e)      { std::cerr << "[런타임 오류] " << e.what() << "\n"; std::exit(3); }
-    catch (const std::runtime_error& e){ std::cerr << "[오류] "        << e.what() << "\n"; std::exit(4); }
+    runWithErrors(factory, ss.str(), [](int code) { std::exit(code); });
 }
 
 void Shell::runDebug(const std::string& path) {
@@ -53,11 +67,5 @@ void Shell::runDebug(const std::string& path) {
 }
 
 void Shell::runSource(LangFactory& factory, const std::string& source) {
-    try {
-        factory.run(source);
-    }
-    catch (const ParseError& e) { std::cerr << "[구문 오류] " << e.what() << "\n"; }
-    catch (const CheckError& e) { std::cerr << "[의미 오류] " << e.what() << "\n"; }
-    catch (const RuntimeError& e) { std::cerr << "[런타임 오류] " << e.what() << "\n"; }
-    catch (const std::runtime_error& e) { std::cerr << "[오류] " << e.what() << "\n"; }
+    runWithErrors(factory, source, [](int) {});
 }
