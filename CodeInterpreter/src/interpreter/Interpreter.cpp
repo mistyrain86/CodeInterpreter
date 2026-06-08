@@ -55,9 +55,9 @@ Value Interpreter::evaluate(Expr& expr) {
 
 void Interpreter::execute(Stmt& stmt) {
     m_executeDepth++;
+    struct Guard { int& d; ~Guard() { --d; } } guard{m_executeDepth};
     if (m_stmtHook) m_stmtHook(stmt);
     stmt.accept(*this);
-    m_executeDepth--;
 }
 
 void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
