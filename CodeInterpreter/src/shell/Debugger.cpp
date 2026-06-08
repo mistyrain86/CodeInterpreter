@@ -1,4 +1,4 @@
-#include "Debugger.h"
+﻿#include "Debugger.h"
 #include "IInterpreter.h"
 #include "Interpreter.h"
 #include "ParseError.h"
@@ -93,7 +93,12 @@ void Debugger::run() {
 void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
     int  line         = stmt.getLine();
     if (line == 0) return;                                    // BlockStmt 등 건너뜀
-    bool atBreakpoint = m_breakpoints.count(line) > 0;
+
+    bool atBreakpoint = false;
+    for (int bp : m_breakpoints) {
+        if (bp > m_lastStmtLine && bp <= line) { atBreakpoint = true; break; }
+    }
+    m_lastStmtLine = line;
 
     // 정지 조건 판단
     if (!atBreakpoint) {
