@@ -190,3 +190,10 @@ TEST_F(LexerFixture, ArrayAccess) {
     EXPECT_EQ(tokenArray[3].type, TokenType::RIGHT_BRACKET);
     EXPECT_DOUBLE_EQ(std::get<double>(tokenArray[2].literal), 0.0);
 }
+
+TEST_F(LexerFixture, CarriageReturn_Ignored) {
+    auto tokenArray = lexer.tokenize("var\r\na = 1;");
+    EXPECT_EQ(tokenArray[0].type, TokenType::KW_VAR);
+    EXPECT_EQ(tokenArray[1].type, TokenType::IDENTIFIER);
+}
+
