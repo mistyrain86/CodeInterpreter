@@ -280,12 +280,30 @@ TEST(CheckerUnit, IndexSetExpr_NoThrow) {
 
 // ── CheckerMock: Mock Lexer·Parser 통합 테스트 ───────────────────
 
+class CheckerMockFixture : public ::testing::Test {
+protected:
+    MockLexer*       m_mlRaw = nullptr;
+    MockParser*      m_mpRaw = nullptr;
+    MockInterpreter* m_miRaw = nullptr;
+    std::unique_ptr<LangFactory> m_factory;
+
+    void SetUp() override {
+        auto ml  = std::make_unique<MockLexer>();
+        m_mlRaw  = ml.get();
+        EXPECT_CALL(*m_mlRaw, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{}));
+        auto mp  = std::make_unique<MockParser>();
+        m_mpRaw  = mp.get();
+        auto mi  = std::make_unique<MockInterpreter>();
+        m_miRaw  = mi.get();
+        m_factory = std::make_unique<LangFactory>(
+            std::move(ml), std::move(mp),
+            std::make_unique<Checker>(), std::move(mi));
+    }
+};
+
 // MockParser → { var a = 1; var a = 2; } → CheckError, Interpreter 미호출
-TEST(CheckerMock, DuplicateVar_MockParser_Throws) {
-    auto ml = std::make_unique<MockLexer>();
-    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{}));
-    auto mp = std::make_unique<MockParser>();
-    EXPECT_CALL(*mp, parse(_))
+TEST_F(CheckerMockFixture, DuplicateVar_MockParser_Throws) {
+    EXPECT_CALL(*m_mpRaw, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
             std::vector<StmtPtr> block;
             block.push_back(varDecl("a", litNum(1.0), 1));
@@ -294,105 +312,99 @@ TEST(CheckerMock, DuplicateVar_MockParser_Throws) {
             stmts.push_back(blockStmt(std::move(block)));
             return stmts;
         }));
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(0);
-    LangFactory factory(std::move(ml), std::move(mp),
-        std::make_unique<Checker>(), std::move(mi));
-    EXPECT_THROW(factory.run(""), CheckError);
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
+    EXPECT_THROW(m_factory->run(""), CheckError);
 }
 
 // MockParser → var a = 10.0; → Checker 통과, Interpreter 1회 호출
-TEST(CheckerMock, ValidCode_MockParser_NoThrow) {
-    auto ml = std::make_unique<MockLexer>();
-    EXPECT_CALL(*ml, tokenize(_)).WillOnce(::testing::Return(std::vector<Token>{}));
-    auto mp = std::make_unique<MockParser>();
-    EXPECT_CALL(*mp, parse(_))
+TEST_F(CheckerMockFixture, ValidCode_MockParser_NoThrow) {
+    EXPECT_CALL(*m_mpRaw, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
             std::vector<StmtPtr> stmts;
             stmts.push_back(varDecl("a", litNum(10.0)));
             return stmts;
         }));
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(1);
-    LangFactory factory(std::move(ml), std::move(mp),
-        std::make_unique<Checker>(), std::move(mi));
-    EXPECT_NO_THROW(factory.run(""));
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
+    EXPECT_NO_THROW(m_factory->run(""));
 }
 
 // ── CheckerRealParser: 실제 Lexer·Parser 통합 테스트 ─────────────
 
+class CheckerRealParserFixture : public ::testing::Test {
+protected:
+    MockInterpreter* m_miRaw = nullptr;
+    std::unique_ptr<LangFactory> m_factory;
+
+    void SetUp() override {
+        auto mi  = std::make_unique<MockInterpreter>();
+        m_miRaw  = mi.get();
+        m_factory = std::make_unique<LangFactory>(
+            std::make_unique<Lexer>(), std::make_unique<Parser>(),
+            std::make_unique<Checker>(), std::move(mi));
+    }
+};
+
 // { var a = 1; var a = 2; } → CheckError, Interpreter 미호출
-TEST(CheckerRealParser, DuplicateVar_Throws) {
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(0);
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-        std::make_unique<Checker>(), std::move(mi));
-    EXPECT_THROW(factory.run("{ var a = 1; var a = 2; }"), CheckError);
+TEST_F(CheckerRealParserFixture, DuplicateVar_Throws) {
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
+    EXPECT_THROW(m_factory->run("{ var a = 1; var a = 2; }"), CheckError);
 }
 
 // var a = 10; → Checker 통과, Interpreter 1회 호출
-TEST(CheckerRealParser, ValidVarDecl_NoThrow) {
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(1);
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-        std::make_unique<Checker>(), std::move(mi));
-    EXPECT_NO_THROW(factory.run("var a = 10;"));
+TEST_F(CheckerRealParserFixture, ValidVarDecl_NoThrow) {
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
+    EXPECT_NO_THROW(m_factory->run("var a = 10;"));
 }
 
 // { var a = a; } → 자기 참조 → CheckError, Interpreter 미호출
-TEST(CheckerRealParser, SelfRefInit_Throws) {
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(0);
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-        std::make_unique<Checker>(), std::move(mi));
-    EXPECT_THROW(factory.run("{ var a = a; }"), CheckError);
+TEST_F(CheckerRealParserFixture, SelfRefInit_Throws) {
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
+    EXPECT_THROW(m_factory->run("{ var a = a; }"), CheckError);
 }
 
 // var x = 1; { var x = 2; } → 섀도잉 허용, Interpreter 1회 호출
-TEST(CheckerRealParser, Shadowing_NoThrow) {
-    auto mi = std::make_unique<MockInterpreter>();
-    EXPECT_CALL(*mi, interpret(_)).Times(1);
-    LangFactory factory(std::make_unique<Lexer>(), std::make_unique<Parser>(),
-        std::make_unique<Checker>(), std::move(mi));
-    EXPECT_NO_THROW(factory.run("var x = 1; { var x = 2; }"));
+TEST_F(CheckerRealParserFixture, Shadowing_NoThrow) {
+    EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
+    EXPECT_NO_THROW(m_factory->run("var x = 1; { var x = 2; }"));
 }
 
-// ── CheckerTest: 함수·return 의미 검사 ───────────────────────────
+// ── CheckerTest: 함수·return 의미 검사 / ResolverTest: 변수 바인딩 ──
+
+class CheckerRealFixture : public ::testing::Test {
+protected:
+    Lexer    m_lexer;
+    Parser   m_parser;
+    Checker  m_checker;
+    Resolver m_resolver;
+};
 
 // func foo(a, a) { } → 파라미터 중복 → CheckError
-TEST(CheckerTest, DuplicateParam_Throws) {
-    Lexer l; Parser p; Checker c;
-    auto stmts = p.parse(l.tokenize("func foo(a, a) { }"));
-    EXPECT_THROW(c.check(stmts), CheckError);
+TEST_F(CheckerRealFixture, DuplicateParam_Throws) {
+    auto stmts = m_parser.parse(m_lexer.tokenize("func foo(a, a) { }"));
+    EXPECT_THROW(m_checker.check(stmts), CheckError);
 }
 
 // return 5; → 함수 외부 return → CheckError
-TEST(CheckerTest, ReturnOutsideFunction_Throws) {
-    Lexer l; Parser p; Checker c;
-    auto stmts = p.parse(l.tokenize("return 5;"));
-    EXPECT_THROW(c.check(stmts), CheckError);
+TEST_F(CheckerRealFixture, ReturnOutsideFunction_Throws) {
+    auto stmts = m_parser.parse(m_lexer.tokenize("return 5;"));
+    EXPECT_THROW(m_checker.check(stmts), CheckError);
 }
 
 // func add(a, b) { return a; } → 정상 함수 선언 통과
-TEST(CheckerTest, ValidFunction_NoThrow) {
-    Lexer l; Parser p; Checker c;
-    auto stmts = p.parse(l.tokenize("func add(a, b) { return a; }"));
-    EXPECT_NO_THROW(c.check(stmts));
+TEST_F(CheckerRealFixture, ValidFunction_NoThrow) {
+    auto stmts = m_parser.parse(m_lexer.tokenize("func add(a, b) { return a; }"));
+    EXPECT_NO_THROW(m_checker.check(stmts));
 }
 
-// ── ResolverTest: 변수 바인딩 거리 계산 ──────────────────────────
-
 // var x = 1; print x; → 전역 변수는 BindingMap에 등록되지 않음
-TEST(ResolverTest, GlobalVar_NotInBindings) {
-    Lexer l; Parser p; Resolver r;
-    auto bindings = r.resolve(p.parse(l.tokenize("var x = 1; print x;")));
+TEST_F(CheckerRealFixture, GlobalVar_NotInBindings) {
+    auto bindings = m_resolver.resolve(m_parser.parse(m_lexer.tokenize("var x = 1; print x;")));
     EXPECT_TRUE(bindings.empty());
 }
 
 // { var x = 1; print x; } → 로컬 변수는 BindingMap에 distance=0으로 등록
-TEST(ResolverTest, LocalVar_InBindings) {
-    Lexer l; Parser p; Resolver r;
-    auto bindings = r.resolve(p.parse(l.tokenize("{ var x = 1; print x; }")));
+TEST_F(CheckerRealFixture, LocalVar_InBindings) {
+    auto bindings = m_resolver.resolve(m_parser.parse(m_lexer.tokenize("{ var x = 1; print x; }")));
     EXPECT_FALSE(bindings.empty());
 }
 
