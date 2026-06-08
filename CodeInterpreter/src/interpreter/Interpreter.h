@@ -69,6 +69,13 @@ public:
     };
     void setSpy(BindingSpy* spy) { m_spy = spy; }
 
+    // 상수 합치기 최적화 검증용 Spy — visitBinary 호출 횟수 추적
+    struct OpSpy {
+        int m_binaryOpCount = 0;
+        void reset() { m_binaryOpCount = 0; }
+    };
+    void setOpSpy(OpSpy* spy) { m_opSpy = spy; }
+
     // 클로저 호출 시 scope stack 재구성용 — LangFunction::call()에서 사용
     std::vector<Environment*> saveScopeStack() const { return m_scopeStack; }
     void restoreScopeStack(std::vector<Environment*> saved) { m_scopeStack = std::move(saved); }
@@ -81,6 +88,7 @@ private:
     StmtHook                      m_stmtHook;
     int                           m_executeDepth = 0;
     BindingSpy*                   m_spy          = nullptr;
+    OpSpy*                        m_opSpy        = nullptr;
 
     using BinaryOpFn = std::function<Value(const Value&, const Value&, int)>;
     std::unordered_map<int, BinaryOpFn> m_binaryOps;

@@ -181,6 +181,7 @@ Value Interpreter::visitUnary(UnaryExpr& e) {
 }
 
 Value Interpreter::visitBinary(BinaryExpr& e) {
+    if (m_opSpy) m_opSpy->m_binaryOpCount++;
     Value l = evaluate(*e.left);
     Value r = evaluate(*e.right);
     auto it = m_binaryOps.find(static_cast<int>(e.op.type));

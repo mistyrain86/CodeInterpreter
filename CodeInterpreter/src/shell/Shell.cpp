@@ -34,28 +34,15 @@ void Shell::runRepl() {
 
     LangFactory factory;
     std::string  line;
-    std::ostringstream oss;
-
-    auto flushBuffer = [&] {
-        runSource(factory, oss.str());
-        oss.str(""); oss.clear();
-    };
 
     while (true) {
-        printPrompt(!oss.str().empty());
+        printPrompt(false);
 
-        if (!std::getline(std::cin, line)) {
-            if (!oss.str().empty()) runSource(factory, oss.str());
-            break;
-        }
+        if (!std::getline(std::cin, line)) break;
         if (line == "exit" || line == "quit") break;
+        if (line.empty()) continue;
 
-        if (line.empty()) {
-            if (!oss.str().empty()) flushBuffer();
-        }
-        else {
-            oss << line << '\n';
-        }
+        runSource(factory, line);
     }
 }
 
