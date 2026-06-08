@@ -1,15 +1,11 @@
 ﻿#include "Debugger.h"
 #include "IInterpreter.h"
 #include "Interpreter.h"
-#include "ParseError.h"
-#include "CheckError.h"
-#include "RuntimeError.h"
+#include "ShellUtils.h"
 #include "Token.h"
 #include "Value.h"
 #include <climits>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 
 static std::string typeName(const Value& v) {
     if (std::holds_alternative<std::monostate>(v))             return "Nil";
@@ -54,36 +50,20 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
 
     // 각 청크 앞에 빈 줄 prefix를 붙여 파서의 줄 번호를 유지
     bool hasError = false;
-    auto runChunk = [&](int startLine, const std::string& chunk) {
-        std::string source(startLine, '\n');  // 줄 번호 offset 유지
-        source += chunk;
-        try {
-            factory.run(source);
-        }
-        catch (const DebugSessionExit&)    { throw; }
-        catch (const ParseError& e)        { std::cerr << "[구문 오류] "   << e.what() << "\n"; hasError = true; }
-        catch (const CheckError& e)        { std::cerr << "[의미 오류] "   << e.what() << "\n"; hasError = true; }
-        catch (const RuntimeError& e)      { std::cerr << "[런타임 오류] " << e.what() << "\n"; hasError = true; }
-        catch (const std::runtime_error& e){ std::cerr << "[오류] "        << e.what() << "\n"; hasError = true; }
-    };
-
     try {
-        std::ostringstream current;
-        int chunkStartLine = 0;
-        for (int i = 0; i <= (int)m_sourceLines.size(); i++) {
-            if (hasError) break;
-            bool isBlank = (i == (int)m_sourceLines.size()) ||
-                           m_sourceLines[i].find_first_not_of(" \t\r\n") == std::string::npos;
-            if (isBlank) {
-                if (!current.str().empty()) {
-                    runChunk(chunkStartLine, current.str());
-                    current.str(""); current.clear();
-                }
-                chunkStartLine = i + 1;
-            } else {
-                current << m_sourceLines[i] << '\n';
+        forEachChunk(m_sourceLines, [&](int startLine, const std::string& chunk) -> bool {
+            std::string source(startLine, '\n');
+            source += chunk;
+            try {
+                factory.run(source);
             }
-        }
+            catch (const DebugSessionExit&)    { throw; }
+            catch (const ParseError& e)        { printError(e); hasError = true; }
+            catch (const CheckError& e)        { printError(e); hasError = true; }
+            catch (const RuntimeError& e)      { printError(e); hasError = true; }
+            catch (const std::runtime_error& e){ printError(e); hasError = true; }
+            return !hasError;
+        });
     }
     catch (const DebugSessionExit&) { return; }
 
