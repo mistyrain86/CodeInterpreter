@@ -19,7 +19,7 @@ arr[2] = 3;
 		print arr[j];
 	}
 	{
-		var arr = Array(20);
+		var arr = Array(3);
 		arr[0] = 7;
 		arr[1] = 8;
 		arr[2] = 9;
