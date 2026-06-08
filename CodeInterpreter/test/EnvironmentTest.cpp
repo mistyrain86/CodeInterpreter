@@ -68,7 +68,6 @@ TEST_F(ScopeFixture, ThreeLevels_DeepLookup) {
     EXPECT_DOUBLE_EQ(std::get<double>(level3->get(tok("a"))), 10.0);
 }
 
-// 커버리지 보강
 TEST_F(ScopeFixture, Assign_ThreeLevels_UpdatesRoot) {
     auto level1 = std::make_shared<Environment>();
     level1->define("a", Value{1.0});
@@ -88,4 +87,16 @@ TEST_F(EnvironmentFixture, Define_Overwrite_SameName) {
     env.define("x", Value{1.0});
     env.define("x", Value{42.0});
     EXPECT_DOUBLE_EQ(std::get<double>(env.get(tok("x"))), 42.0);
+}
+
+TEST_F(ScopeFixture, Get_NotInAnyScope_Throws) {
+    auto level1 = std::make_shared<Environment>();
+    auto level2 = std::make_shared<Environment>(level1);
+    EXPECT_THROW(level2->get(tok("notDefined")), std::runtime_error);
+}
+
+TEST_F(ScopeFixture, Assign_NotInAnyScope_Throws) {
+    auto level1 = std::make_shared<Environment>();
+    auto level2 = std::make_shared<Environment>(level1);
+    EXPECT_THROW(level2->assign(tok("notDefined"), Value{1.0}), std::runtime_error);
 }
