@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include "Expr.h"
+#include "LangFactory.h"
 #include "Stmt.h"
 #include "Token.h"
 
@@ -39,4 +40,14 @@ inline StmtPtr printStmt(ExprPtr expr) {
 }
 inline StmtPtr blockStmt(std::vector<StmtPtr> stmts) {
     return std::make_unique<BlockStmt>(std::move(stmts));
+}
+inline ExprPtr binaryExpr(ExprPtr l, TokenType op, std::string lex, ExprPtr r) {
+    return std::make_unique<BinaryExpr>(
+        std::move(l), Token{op, std::move(lex), std::monostate{}, 1}, std::move(r));
+}
+inline std::string execSource(const std::string& src) {
+    return captureOutput([&]{
+        LangFactory factory;
+        factory.run(src);
+    });
 }
