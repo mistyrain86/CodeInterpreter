@@ -56,6 +56,7 @@ void Debugger::run() {
     try {
         factory.run(source);
     }
+    catch (const DebugSessionExit&)    { return; }
     catch (const ParseError& e)        { std::cerr << "[구문 오류] "   << e.what() << "\n"; }
     catch (const CheckError& e)        { std::cerr << "[의미 오류] "   << e.what() << "\n"; }
     catch (const RuntimeError& e)      { std::cerr << "[런타임 오류] " << e.what() << "\n"; }
@@ -115,7 +116,7 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
         }
         if (input == "exit" || input == "quit") {
             std::cout << "[DEBUG] 디버그 세션을 종료합니다.\n";
-            std::exit(0);
+            throw DebugSessionExit{};
         }
         processCommand(input, interp);
     }
