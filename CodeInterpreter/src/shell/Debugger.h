@@ -1,4 +1,5 @@
 #pragma once
+#include <climits>
 #include <set>
 #include <string>
 #include <vector>
@@ -7,7 +8,6 @@
 class Interpreter;
 
 // Ch.5 디버거 — Stmt 단위 stepping, watch, inspect, breakpoint
-// A가 Debugger.cpp 에서 구현
 class Debugger {
 public:
     explicit Debugger(const std::string& path);
@@ -17,9 +17,11 @@ public:
 
 private:
     std::string              m_path;
-    std::set<int>            m_breakpoints;  // 설정된 줄 번호
-    std::set<std::string>    m_watches;      // 감시 중인 변수명
-    bool                     m_stepMode = true;  // false = continue 중
+    std::vector<std::string> m_sourceLines;         // 소스 줄 캐시 (줄 번호 표시용)
+    std::set<int>            m_breakpoints;          // 설정된 줄 번호
+    std::set<std::string>    m_watches;              // 감시 중인 변수명
+    bool                     m_stepMode  = true;     // false = continue 중
+    int                      m_nextDepth = INT_MAX;  // step: INT_MAX, next: 현재 depth
 
     // Interpreter StmtHook — 각 Stmt 실행 전 호출
     void onBeforeStmt(Stmt& stmt, Interpreter& interp);

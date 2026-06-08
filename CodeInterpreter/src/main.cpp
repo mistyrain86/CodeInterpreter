@@ -49,21 +49,17 @@ int main() {
             break;
 
         case 2:
-            std::cout << "\n아직 미구현된 기능입니다.\n\n";
-            break;
-
             std::cout << "실행할 파일명을 입력하세요 (예: test.txt): ";
             std::cin >> filename;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cout << filename << " 파일을 실행합니다...\n\n";
             shell.runFile(filename);
             break;
 
         case 3:
-            std::cout << "\n아직 미구현된 기능입니다.\n\n";
-            break;
-
             std::cout << "디버그할 파일명을 입력하세요 (예: test.txt): ";
             std::cin >> filename;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cout << filename << " 파일의 디버깅을 시작합니다...\n\n";
             shell.runDebug(filename);
             break;
