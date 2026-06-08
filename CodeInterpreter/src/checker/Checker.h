@@ -16,7 +16,7 @@ class Checker : public IChecker
 public:
     Checker() = default;
     void check(const std::vector<StmtPtr>& stmts) override;
-    void registerGlobal(const std::string& name);
+    void registerGlobal(const std::string& name) override;
 
     // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
