@@ -28,7 +28,7 @@ TEST(ParserUnit, NumberLiteral) {
     auto stmts = parse({t(TokenType::NUMBER,"5",5.0), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    auto* lit = dynamic_cast<LiteralExpr*>(es->m_expression.get());
     ASSERT_NE(lit, nullptr);
     EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 5.0);
 }
@@ -36,7 +36,7 @@ TEST(ParserUnit, StringLiteral) {
     auto stmts = parse({t(TokenType::STRING,"\"hi\"",std::string("hi")), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    auto* lit = dynamic_cast<LiteralExpr*>(es->m_expression.get());
     ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<std::string>(lit->value), "hi");
 }
@@ -44,7 +44,7 @@ TEST(ParserUnit, BoolTrue) {
     auto stmts = parse({t(TokenType::KW_TRUE,"true"), semi(), eof()});
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    auto* lit = dynamic_cast<LiteralExpr*>(es->m_expression.get());
     ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<bool>(lit->value), true);
 }
@@ -52,7 +52,7 @@ TEST(ParserUnit, BoolFalse) {
     auto stmts = parse({t(TokenType::KW_FALSE,"false"), semi(), eof()});
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    auto* lit = dynamic_cast<LiteralExpr*>(es->m_expression.get());
     ASSERT_NE(lit, nullptr);
     EXPECT_EQ(std::get<bool>(lit->value), false);
 }
@@ -62,14 +62,14 @@ TEST(ParserUnit, Grouping) {
                         t(TokenType::RIGHT_PAREN,")"), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<GroupingExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<GroupingExpr*>(es->m_expression.get()), nullptr);
 }
 
 TEST(ParserUnit, UnaryMinus) {
     auto stmts = parse({t(TokenType::MINUS,"-"),
                         t(TokenType::NUMBER,"3",3.0), semi(), eof()});
     auto* un = dynamic_cast<UnaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
     ASSERT_NE(un, nullptr);
     EXPECT_EQ(un->op.type, TokenType::MINUS);
 }
@@ -77,7 +77,7 @@ TEST(ParserUnit, UnaryBang) {
     auto stmts = parse({t(TokenType::BANG,"!"),
                         t(TokenType::KW_TRUE,"true"), semi(), eof()});
     auto* un = dynamic_cast<UnaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
     ASSERT_NE(un, nullptr);
     EXPECT_EQ(un->op.type, TokenType::BANG);
 }
@@ -103,7 +103,7 @@ TEST(ParserUnit, BlockStmt) {
                         t(TokenType::RIGHT_BRACE,"}"),eof()});
     auto* blk = dynamic_cast<BlockStmt*>(stmts[0].get());
     ASSERT_NE(blk, nullptr);
-    EXPECT_EQ((int)blk->statements.size(), 1);
+    EXPECT_EQ((int)blk->m_statements.size(), 1);
 }
 TEST(ParserUnit, ForStmt) {
     auto stmts = parse({
@@ -134,10 +134,10 @@ TEST(ParserUnit, DanglingElse) {
     });
     auto* outer = dynamic_cast<IfStmt*>(stmts[0].get());
     ASSERT_NE(outer, nullptr);
-    EXPECT_EQ(outer->elseBranch, nullptr);  // 바깥 if → else 없음
-    auto* inner = dynamic_cast<IfStmt*>(outer->thenBranch.get());
+    EXPECT_EQ(outer->m_elseBranch, nullptr);  // 바깥 if → else 없음
+    auto* inner = dynamic_cast<IfStmt*>(outer->m_thenBranch.get());
     ASSERT_NE(inner, nullptr);
-    EXPECT_NE(inner->elseBranch, nullptr);  // 안쪽 if → else 있음
+    EXPECT_NE(inner->m_elseBranch, nullptr);  // 안쪽 if → else 있음
 }
 
 TEST(ParserUnit, PrintStmt) {
@@ -152,29 +152,29 @@ TEST(ParserUnit, VarDecl_WithInit) {
                         t(TokenType::NUMBER,"10",10.0), semi(), eof()});
     auto* vs = dynamic_cast<VarStmt*>(stmts[0].get());
     ASSERT_NE(vs, nullptr);
-    EXPECT_EQ(vs->name.lexeme, "a");
-    EXPECT_NE(vs->initializer, nullptr);
+    EXPECT_EQ(vs->m_name.lexeme, "a");
+    EXPECT_NE(vs->m_initializer, nullptr);
 }
 TEST(ParserUnit, VarDecl_NoInit) {
     auto stmts = parse({t(TokenType::KW_VAR,"var"),
                         t(TokenType::IDENTIFIER,"x"), semi(), eof()});
     auto* vs = dynamic_cast<VarStmt*>(stmts[0].get());
     ASSERT_NE(vs, nullptr);
-    EXPECT_EQ(vs->initializer, nullptr);
+    EXPECT_EQ(vs->m_initializer, nullptr);
 }
 
 TEST(ParserUnit, VariableRef) {
     auto stmts = parse({t(TokenType::IDENTIFIER,"a"), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<VariableExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<VariableExpr*>(es->m_expression.get()), nullptr);
 }
 TEST(ParserUnit, Assignment) {
     auto stmts = parse({t(TokenType::IDENTIFIER,"a"), t(TokenType::EQUAL,"="),
                         t(TokenType::NUMBER,"5",5.0), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    auto* asg = dynamic_cast<AssignExpr*>(es->expression.get());
+    auto* asg = dynamic_cast<AssignExpr*>(es->m_expression.get());
     ASSERT_NE(asg, nullptr);
     EXPECT_EQ(asg->name.lexeme, "a");
 }
@@ -198,7 +198,7 @@ TEST(ParserTest, FunctionDecl_WithParams) {
     auto stmts  = parser.parse(std::move(tokens));
     auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
     ASSERT_NE(fn, nullptr);
-    EXPECT_EQ(fn->params.size(), 2u);
+    EXPECT_EQ(fn->m_params.size(), 2u);
 }
 TEST(ParserTest, FunctionDecl_MultipleParams) {
     Lexer lexer; Parser parser;
@@ -206,10 +206,10 @@ TEST(ParserTest, FunctionDecl_MultipleParams) {
     auto stmts  = parser.parse(std::move(tokens));
     auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
     ASSERT_NE(fn, nullptr);
-    EXPECT_EQ(fn->params.size(), 3u);
-    EXPECT_EQ(fn->params[0].lexeme, "a");
-    EXPECT_EQ(fn->params[1].lexeme, "b");
-    EXPECT_EQ(fn->params[2].lexeme, "c");
+    EXPECT_EQ(fn->m_params.size(), 3u);
+    EXPECT_EQ(fn->m_params[0].lexeme, "a");
+    EXPECT_EQ(fn->m_params[1].lexeme, "b");
+    EXPECT_EQ(fn->m_params[2].lexeme, "c");
 }
 TEST(ParserTest, FunctionDecl_WithBody) {
     Lexer lexer; Parser parser;
@@ -217,8 +217,8 @@ TEST(ParserTest, FunctionDecl_WithBody) {
     auto stmts  = parser.parse(std::move(tokens));
     auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
     ASSERT_NE(fn, nullptr);
-    EXPECT_EQ(fn->name.lexeme, "f");
-    EXPECT_EQ(fn->body.size(), 2u);
+    EXPECT_EQ(fn->m_name.lexeme, "f");
+    EXPECT_EQ(fn->m_body.size(), 2u);
 }
 TEST(ParserTest, FunctionDecl_Name) {
     Lexer lexer; Parser parser;
@@ -226,9 +226,9 @@ TEST(ParserTest, FunctionDecl_Name) {
     auto stmts  = parser.parse(std::move(tokens));
     auto* fn = dynamic_cast<FunctionStmt*>(stmts[0].get());
     ASSERT_NE(fn, nullptr);
-    EXPECT_EQ(fn->name.lexeme, "myFunc");
-    EXPECT_EQ(fn->params.size(), 0u);
-    EXPECT_EQ(fn->body.size(), 0u);
+    EXPECT_EQ(fn->m_name.lexeme, "myFunc");
+    EXPECT_EQ(fn->m_params.size(), 0u);
+    EXPECT_EQ(fn->m_body.size(), 0u);
 }
 
 // ── Ch.2 함수 호출 테스트 ─────────────────────────────────────
@@ -238,14 +238,14 @@ TEST(ParserTest, CallExpr_NoArgs) {
     auto stmts  = parser.parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<CallExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<CallExpr*>(es->m_expression.get()), nullptr);
 }
 TEST(ParserTest, CallExpr_WithArgs) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("add(1, 2);");
     auto stmts  = parser.parse(std::move(tokens));
     auto* es   = dynamic_cast<ExprStmt*>(stmts[0].get());
-    auto* call = dynamic_cast<CallExpr*>(es->expression.get());
+    auto* call = dynamic_cast<CallExpr*>(es->m_expression.get());
     ASSERT_NE(call, nullptr);
     EXPECT_EQ(call->args.size(), 2u);
 }
@@ -254,7 +254,7 @@ TEST(ParserTest, CallExpr_MultipleArgs) {
     auto tokens = lexer.tokenize("f(1, 2, 3);");
     auto stmts  = parser.parse(std::move(tokens));
     auto* es   = dynamic_cast<ExprStmt*>(stmts[0].get());
-    auto* call = dynamic_cast<CallExpr*>(es->expression.get());
+    auto* call = dynamic_cast<CallExpr*>(es->m_expression.get());
     ASSERT_NE(call, nullptr);
     EXPECT_EQ(call->args.size(), 3u);
 }
@@ -263,7 +263,7 @@ TEST(ParserTest, CallExpr_NestedCall) {
     auto tokens = lexer.tokenize("f(g());");
     auto stmts  = parser.parse(std::move(tokens));
     auto* es    = dynamic_cast<ExprStmt*>(stmts[0].get());
-    auto* outer = dynamic_cast<CallExpr*>(es->expression.get());
+    auto* outer = dynamic_cast<CallExpr*>(es->m_expression.get());
     ASSERT_NE(outer, nullptr);
     ASSERT_EQ(outer->args.size(), 1u);
     EXPECT_NE(dynamic_cast<CallExpr*>(outer->args[0].get()), nullptr);
@@ -275,28 +275,28 @@ TEST(ParserTest, ReturnStmt_WithValue) {
     auto tokens = lexer.tokenize("func f() { return 5; }");
     auto stmts  = parser.parse(std::move(tokens));
     auto* fn  = dynamic_cast<FunctionStmt*>(stmts[0].get());
-    auto* ret = dynamic_cast<ReturnStmt*>(fn->body[0].get());
+    auto* ret = dynamic_cast<ReturnStmt*>(fn->m_body[0].get());
     ASSERT_NE(ret, nullptr);
-    EXPECT_NE(ret->value, nullptr);
+    EXPECT_NE(ret->m_value, nullptr);
 }
 TEST(ParserTest, ReturnStmt_Void) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { return; }");
     auto stmts  = parser.parse(std::move(tokens));
     auto* fn  = dynamic_cast<FunctionStmt*>(stmts[0].get());
-    auto* ret = dynamic_cast<ReturnStmt*>(fn->body[0].get());
+    auto* ret = dynamic_cast<ReturnStmt*>(fn->m_body[0].get());
     ASSERT_NE(ret, nullptr);
-    EXPECT_EQ(ret->value, nullptr);
+    EXPECT_EQ(ret->m_value, nullptr);
 }
 TEST(ParserTest, ReturnStmt_Keyword) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { return 42; }");
     auto stmts  = parser.parse(std::move(tokens));
     auto* fn  = dynamic_cast<FunctionStmt*>(stmts[0].get());
-    auto* ret = dynamic_cast<ReturnStmt*>(fn->body[0].get());
+    auto* ret = dynamic_cast<ReturnStmt*>(fn->m_body[0].get());
     ASSERT_NE(ret, nullptr);
-    EXPECT_EQ(ret->keyword.type, TokenType::KW_RETURN);
-    EXPECT_EQ(ret->keyword.lexeme, "return");
+    EXPECT_EQ(ret->m_keyword.type, TokenType::KW_RETURN);
+    EXPECT_EQ(ret->m_keyword.lexeme, "return");
 }
 
 // ── Ch.3 배열 인덱스 테스트 ───────────────────────────────────
@@ -306,14 +306,14 @@ TEST(ParserTest, IndexGetExpr) {
     auto stmts  = parser.parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<IndexGetExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<IndexGetExpr*>(es->m_expression.get()), nullptr);
 }
 TEST(ParserTest, IndexGetExpr_WithVar) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[i];");
     auto stmts  = parser.parse(std::move(tokens));
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
-    auto* idx = dynamic_cast<IndexGetExpr*>(es->expression.get());
+    auto* idx = dynamic_cast<IndexGetExpr*>(es->m_expression.get());
     ASSERT_NE(idx, nullptr);
     EXPECT_NE(dynamic_cast<VariableExpr*>(idx->index.get()), nullptr);
 }
@@ -323,14 +323,14 @@ TEST(ParserTest, IndexSetExpr) {
     auto stmts  = parser.parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<IndexSetExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<IndexSetExpr*>(es->m_expression.get()), nullptr);
 }
 TEST(ParserTest, IndexSetExpr_WithExpr) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[0] = 1 + 2;");
     auto stmts  = parser.parse(std::move(tokens));
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
-    auto* set = dynamic_cast<IndexSetExpr*>(es->expression.get());
+    auto* set = dynamic_cast<IndexSetExpr*>(es->m_expression.get());
     ASSERT_NE(set, nullptr);
     EXPECT_NE(dynamic_cast<BinaryExpr*>(set->value.get()), nullptr);
 }
@@ -362,7 +362,7 @@ TEST(ParserUnit, Addition) {
                         t(TokenType::PLUS,"+"),
                         t(TokenType::NUMBER,"2",2.0), semi(), eof()});
     auto* bin = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
     ASSERT_NE(bin, nullptr);
     EXPECT_EQ(bin->op.type, TokenType::PLUS);
 }
@@ -372,7 +372,7 @@ TEST(ParserUnit, Precedence_MulBeforeAdd) {
                         t(TokenType::NUMBER,"2",2.0), t(TokenType::STAR,"*"),
                         t(TokenType::NUMBER,"3",3.0), semi(), eof()});
     auto* add = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
     ASSERT_NE(add, nullptr);
     EXPECT_EQ(add->op.type, TokenType::PLUS);
     auto* mul = dynamic_cast<BinaryExpr*>(add->right.get());
@@ -385,7 +385,7 @@ TEST(ParserUnit, LeftAssociativity) {
                         t(TokenType::NUMBER,"4",4.0),   t(TokenType::MINUS,"-"),
                         t(TokenType::NUMBER,"3",3.0),   semi(), eof()});
     auto* outer = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
     ASSERT_NE(outer, nullptr);
     EXPECT_NE(dynamic_cast<BinaryExpr*>(outer->left.get()), nullptr);
 }
@@ -393,7 +393,7 @@ TEST(ParserUnit, Comparison_Less) {
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::LESS,"<"),
                         t(TokenType::NUMBER,"2",2.0), semi(), eof()});
     auto* bin = dynamic_cast<BinaryExpr*>(
-        dynamic_cast<ExprStmt*>(stmts[0].get())->expression.get());
+        dynamic_cast<ExprStmt*>(stmts[0].get())->m_expression.get());
     ASSERT_NE(bin, nullptr);
     EXPECT_EQ(bin->op.type, TokenType::LESS);
 }
@@ -452,7 +452,7 @@ TEST(ParserBuilder, NumberLiteral) {
     auto stmts  = Parser().parse(std::move(tokens));
     auto* es    = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    auto* lit = dynamic_cast<LiteralExpr*>(es->expression.get());
+    auto* lit = dynamic_cast<LiteralExpr*>(es->m_expression.get());
     ASSERT_NE(lit, nullptr);
     EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 5.0);
 }
@@ -463,7 +463,7 @@ TEST(ParserBuilder, Addition) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es   = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    auto* bin = dynamic_cast<BinaryExpr*>(es->expression.get());
+    auto* bin = dynamic_cast<BinaryExpr*>(es->m_expression.get());
     ASSERT_NE(bin, nullptr);
     EXPECT_EQ(bin->op.type, TokenType::PLUS);
 }
@@ -474,8 +474,8 @@ TEST(ParserBuilder, VarDecl) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* vs   = dynamic_cast<VarStmt*>(stmts[0].get());
     ASSERT_NE(vs, nullptr);
-    EXPECT_EQ(vs->name.lexeme, "x");
-    EXPECT_NE(vs->initializer, nullptr);
+    EXPECT_EQ(vs->m_name.lexeme, "x");
+    EXPECT_NE(vs->m_initializer, nullptr);
 }
 
 TEST(ParserBuilder, ForLoop) {
@@ -502,7 +502,7 @@ TEST(ParserBuilder, IfStmt_ThenOnly) {
     ASSERT_EQ(stmts.size(), 1u);
     auto* ifStmt = dynamic_cast<IfStmt*>(stmts[0].get());
     ASSERT_NE(ifStmt, nullptr);
-    EXPECT_EQ(ifStmt->elseBranch, nullptr);
+    EXPECT_EQ(ifStmt->m_elseBranch, nullptr);
 }
 
 TEST(ParserBuilder, IfStmt_WithElse) {
@@ -516,7 +516,7 @@ TEST(ParserBuilder, IfStmt_WithElse) {
     ASSERT_EQ(stmts.size(), 1u);
     auto* ifStmt = dynamic_cast<IfStmt*>(stmts[0].get());
     ASSERT_NE(ifStmt, nullptr);
-    EXPECT_NE(ifStmt->elseBranch, nullptr);
+    EXPECT_NE(ifStmt->m_elseBranch, nullptr);
 }
 
 TEST(ParserBuilder, EqualEqual_Expr) {
@@ -525,7 +525,7 @@ TEST(ParserBuilder, EqualEqual_Expr) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
 TEST(ParserBuilder, BangEqual_Expr) {
@@ -534,7 +534,7 @@ TEST(ParserBuilder, BangEqual_Expr) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
 TEST(ParserBuilder, Greater_Comparison) {
@@ -543,7 +543,7 @@ TEST(ParserBuilder, Greater_Comparison) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
 TEST(ParserBuilder, LessEqual_Comparison) {
@@ -552,7 +552,7 @@ TEST(ParserBuilder, LessEqual_Comparison) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
 TEST(ParserBuilder, GreaterEqual_Comparison) {
@@ -561,7 +561,7 @@ TEST(ParserBuilder, GreaterEqual_Comparison) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
 TEST(ParserBuilder, Subtraction_Term) {
@@ -570,7 +570,7 @@ TEST(ParserBuilder, Subtraction_Term) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }
 
 TEST(ParserBuilder, Division_Factor) {
@@ -579,5 +579,5 @@ TEST(ParserBuilder, Division_Factor) {
     auto stmts = Parser().parse(std::move(tokens));
     auto* es = dynamic_cast<ExprStmt*>(stmts[0].get());
     ASSERT_NE(es, nullptr);
-    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->expression.get()), nullptr);
+    EXPECT_NE(dynamic_cast<BinaryExpr*>(es->m_expression.get()), nullptr);
 }

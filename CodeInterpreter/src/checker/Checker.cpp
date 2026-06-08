@@ -27,47 +27,47 @@ void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
 // ── StmtVisitor 구현 ───────────────────────────────────────────────
 
 void Checker::visitVarStmt(VarStmt& s) {
-    declare(s.name);
-    if (s.initializer) checkExpr(s.initializer.get());
-    define(s.name);
+    declare(s.m_name);
+    if (s.m_initializer) checkExpr(s.m_initializer.get());
+    define(s.m_name);
 }
 
 void Checker::visitBlockStmt(BlockStmt& s) {
     beginScope();
-    checkStmts(s.statements);
+    checkStmts(s.m_statements);
     endScope();
 }
 
 void Checker::visitIfStmt(IfStmt& s) {
-    checkExpr(s.condition.get());
-    s.thenBranch->accept(*this);
-    if (s.elseBranch) s.elseBranch->accept(*this);
+    checkExpr(s.m_condition.get());
+    s.m_thenBranch->accept(*this);
+    if (s.m_elseBranch) s.m_elseBranch->accept(*this);
 }
 
 void Checker::visitForStmt(ForStmt& s) {
     beginScope();
-    if (s.initializer) s.initializer->accept(*this);
-    if (s.condition)   checkExpr(s.condition.get());
-    if (s.increment)   checkExpr(s.increment.get());
-    if (s.body)        s.body->accept(*this);
+    if (s.m_initializer) s.m_initializer->accept(*this);
+    if (s.m_condition)   checkExpr(s.m_condition.get());
+    if (s.m_increment)   checkExpr(s.m_increment.get());
+    if (s.m_body)        s.m_body->accept(*this);
     endScope();
 }
 
 void Checker::visitPrintStmt(PrintStmt& s) {
-    checkExpr(s.expression.get());
+    checkExpr(s.m_expression.get());
 }
 
 void Checker::visitExprStmt(ExprStmt& s) {
-    checkExpr(s.expression.get());
+    checkExpr(s.m_expression.get());
 }
 
 void Checker::visitFunctionStmt(FunctionStmt& s) {
-    declare(s.name);
-    define(s.name);
+    declare(s.m_name);
+    define(s.m_name);
 
 
     std::unordered_set<std::string> seen;
-    for (const auto& param : s.params) {
+    for (const auto& param : s.m_params) {
         if (seen.count(param.lexeme))
             throw CheckError("[라인 " + std::to_string(param.line)
                 + "] 의미 오류: 파라미터 이름이 중복됩니다. ('"
@@ -77,20 +77,20 @@ void Checker::visitFunctionStmt(FunctionStmt& s) {
 
     m_functionDepth++;
     beginScope();
-    for (const auto& param : s.params) {
+    for (const auto& param : s.m_params) {
         declare(param);
         define(param);
     }
-    checkStmts(s.body);
+    checkStmts(s.m_body);
     endScope();
     m_functionDepth--;
 }
 
 void Checker::visitReturnStmt(ReturnStmt& s) {
     if (m_functionDepth == 0)
-        throw CheckError("[라인 " + std::to_string(s.keyword.line)
+        throw CheckError("[라인 " + std::to_string(s.m_keyword.line)
             + "] 의미 오류: 함수 외부에서 return을 사용할 수 없습니다.");
-    if (s.value) checkExpr(s.value.get());
+    if (s.m_value) checkExpr(s.m_value.get());
 }
 
 // ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────

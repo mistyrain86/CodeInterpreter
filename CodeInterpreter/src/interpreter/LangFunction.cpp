@@ -3,19 +3,19 @@
 #include "ReturnSignal.h"
 
 int LangFunction::arity() const {
-    return (int)m_decl.params.size();
+    return (int)m_decl.m_params.size();
 }
 
 std::string LangFunction::name() const {
-    return m_decl.name.lexeme;
+    return m_decl.m_name.lexeme;
 }
 
 Value LangFunction::call(Interpreter& interp, const std::vector<Value>& args) {
     auto env = std::make_shared<Environment>(m_closure);
-    for (int i = 0; i < (int)m_decl.params.size(); i++)
-        env->define(m_decl.params[i].lexeme, args[i]);
+    for (int i = 0; i < (int)m_decl.m_params.size(); i++)
+        env->define(m_decl.m_params[i].lexeme, args[i]);
     try {
-        interp.executeBlock(m_decl.body, std::move(env));
+        interp.executeBlock(m_decl.m_body, std::move(env));
     } catch (ReturnSignal& ret) {
         return ret.value;
     }
