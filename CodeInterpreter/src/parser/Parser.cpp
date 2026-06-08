@@ -154,7 +154,7 @@ ExprPtr Parser::parseTerm() {
                             [this] { return parseFactor(); });
 }
 ExprPtr Parser::parseFactor() {
-    return parseBinaryLeft({TokenType::STAR, TokenType::SLASH},
+    return parseBinaryLeft({TokenType::STAR, TokenType::SLASH, TokenType::PERCENT},
                             [this] { return parseUnary(); });
 
 }
