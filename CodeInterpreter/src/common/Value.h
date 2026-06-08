@@ -10,7 +10,7 @@ class ICallable;
 using ArrayType = std::shared_ptr<std::vector<struct Value>>;
 
 struct Value : std::variant<
-    std::monostate,                // nil
+    std::monostate,                // null
     double,                        // 숫자
     std::string,                   // 문자열
     bool,                          // 불리언
