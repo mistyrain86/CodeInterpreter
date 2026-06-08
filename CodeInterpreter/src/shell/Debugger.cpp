@@ -182,7 +182,7 @@ void Debugger::cmdWatch(const std::string& var) {
 
 void Debugger::cmdUnwatch(const std::string& var) {
     m_watches.erase(var);
-    std::cout << "[WATCH] " << var << " 감시 해제\n";
+    std::cout << "[WATCH] '" << var << "' 감시 해제\n";
 }
 
 void Debugger::cmdWatched(Interpreter& interp) {
