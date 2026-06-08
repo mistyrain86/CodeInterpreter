@@ -140,7 +140,7 @@ TEST(CheckerUnit, ForLoopVar_InBody_NoThrow) {
     std::vector<StmtPtr> body;
     body.push_back(printStmt(std::make_unique<VariableExpr>(i)));
     std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ForStmt>(
+    stmts.push_back(std::make_unique<ForStmt>(0,
         varDecl("i", litNum(0.0)),
         std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(i), lt, litNum(3.0)),
         std::make_unique<AssignExpr>(i,
@@ -154,7 +154,7 @@ TEST(CheckerUnit, IfBranch_NoThrow) {
     std::vector<StmtPtr> thenB;
     thenB.push_back(varDecl("x", litNum(1.0)));
     std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<IfStmt>(
+    stmts.push_back(std::make_unique<IfStmt>(0,
         litBool(true), blockStmt(std::move(thenB)), nullptr));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
@@ -172,7 +172,7 @@ TEST(CheckerUnit, IfElseBranch_NoThrow) {
     thenB.push_back(varDecl("x", litNum(1.0)));
     elseB.push_back(varDecl("y", litNum(2.0)));
     std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<IfStmt>(
+    stmts.push_back(std::make_unique<IfStmt>(0,
         litBool(true), blockStmt(std::move(thenB)), blockStmt(std::move(elseB))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
@@ -180,7 +180,7 @@ TEST(CheckerUnit, IfElseBranch_NoThrow) {
 // visitForStmt L36-39 FALSE: initializer·condition·increment·body 모두 null
 TEST(CheckerUnit, ForAllNullFields_NoThrow) {
     std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ForStmt>(nullptr, nullptr, nullptr, nullptr));
+    stmts.push_back(std::make_unique<ForStmt>(0, nullptr, nullptr, nullptr, nullptr));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 

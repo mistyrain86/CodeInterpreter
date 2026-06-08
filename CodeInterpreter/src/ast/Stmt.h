@@ -24,11 +24,12 @@ struct ExprStmt : Stmt {
 };
 
 struct PrintStmt : Stmt {
-    int     line = 0;
+    int     m_line;
     ExprPtr expression;
-    explicit PrintStmt(ExprPtr e, int ln = 0) : expression(std::move(e)), line(ln) {}
+    PrintStmt(int line, ExprPtr e) : m_line(line), expression(std::move(e)) {}
+    explicit PrintStmt(ExprPtr e)  : m_line(0),    expression(std::move(e)) {}
     void accept(StmtVisitor& v) override { v.visitPrintStmt(*this); }
-    int  getLine() const override { return line; }
+    int  getLine() const override { return m_line; }
 };
 
 struct VarStmt : Stmt {
@@ -47,33 +48,33 @@ struct BlockStmt : Stmt {
 };
 
 struct IfStmt : Stmt {
-    int     line = 0;
+    int     m_line;
     ExprPtr condition;
     StmtPtr thenBranch;
     StmtPtr elseBranch;
-    IfStmt(ExprPtr c, StmtPtr t, StmtPtr e, int ln = 0)
-        : condition(std::move(c))
+    IfStmt(int line, ExprPtr c, StmtPtr t, StmtPtr e)
+        : m_line(line)
+        , condition(std::move(c))
         , thenBranch(std::move(t))
-        , elseBranch(std::move(e))
-        , line(ln) {}
+        , elseBranch(std::move(e)) {}
     void accept(StmtVisitor& v) override { v.visitIfStmt(*this); }
-    int  getLine() const override { return line; }
+    int  getLine() const override { return m_line; }
 };
 
 struct ForStmt : Stmt {
-    int     line = 0;
+    int     m_line;
     StmtPtr initializer;
     ExprPtr condition;
     ExprPtr increment;
     StmtPtr body;
-    ForStmt(StmtPtr i, ExprPtr c, ExprPtr inc, StmtPtr b, int ln = 0)
-        : initializer(std::move(i))
+    ForStmt(int line, StmtPtr i, ExprPtr c, ExprPtr inc, StmtPtr b)
+        : m_line(line)
+        , initializer(std::move(i))
         , condition(std::move(c))
         , increment(std::move(inc))
-        , body(std::move(b))
-        , line(ln) {}
+        , body(std::move(b)) {}
     void accept(StmtVisitor& v) override { v.visitForStmt(*this); }
-    int  getLine() const override { return line; }
+    int  getLine() const override { return m_line; }
 };
 
 // ── Chapter 2: 함수 선언 / return ─────────────────────────────────

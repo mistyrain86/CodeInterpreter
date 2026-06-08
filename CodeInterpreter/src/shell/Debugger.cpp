@@ -47,9 +47,12 @@ void Debugger::run() {
         onBeforeStmt(stmt, *interp);
     });
 
+    // 4. 시작 메시지 출력
+    std::cout << "CodeFab Interpreter (DEBUG 모드)\n";
+    std::cout << "종료: exit 또는 quit\n";
     std::cout << "[DEBUG] 소스코드 로딩: " << m_path << "\n";
 
-    // 4. 실행 (Lex → Parse → Check → Interpret)
+    // 5. 실행 (Lex → Parse → Check → Interpret)
     try {
         factory.run(source);
     }
@@ -64,6 +67,7 @@ void Debugger::run() {
 // ── Stmt 실행 직전 호출되는 Hook ────────────────────────────────────
 void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
     int  line         = stmt.getLine();
+    if (line == 0) return;                                    // BlockStmt 등 건너뜀
     bool atBreakpoint = m_breakpoints.count(line) > 0;
 
     // 정지 조건 판단
@@ -87,7 +91,7 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
 
     printWatches(interp);
 
-    // 커맨드 루프 — step/next/continue 입력 시 탈출
+    // 커맨드 루프 — step/next/continue/exit/quit 입력 시 탈출
     std::string input;
     while (true) {
         std::cout << "> ";
@@ -96,12 +100,12 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
 
         if (input == "step") {
             m_stepMode  = true;
-            m_nextDepth = INT_MAX;   // 모든 깊이에서 정지
+            m_nextDepth = INT_MAX;
             break;
         }
         if (input == "next") {
             m_stepMode  = true;
-            m_nextDepth = interp.executeDepth();  // 현재 깊이에서만 정지
+            m_nextDepth = interp.executeDepth();
             break;
         }
         if (input == "continue") {
@@ -109,13 +113,17 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
             m_nextDepth = 0;
             break;
         }
+        if (input == "exit" || input == "quit") {
+            std::cout << "[DEBUG] 디버그 세션을 종료합니다.\n";
+            std::exit(0);
+        }
         processCommand(input, interp);
     }
 }
 
 // ── 커맨드 디스패처 ───────────────────────────────────────────────────
 void Debugger::processCommand(const std::string& input, Interpreter& interp) {
-    if (input.empty()) return;   // 빈 Enter 무시
+    if (input.empty()) return;
     if (input.size() > 6 && input.substr(0, 6) == "break ") {
         try { cmdBreak(std::stoi(input.substr(6))); }
         catch (...) { std::cout << "사용법: break <줄번호>\n"; }
@@ -151,6 +159,7 @@ void Debugger::processCommand(const std::string& input, Interpreter& interp) {
         std::cout << "  unwatch <변수>  변수 감시 해제\n";
         std::cout << "  watched         감시 중인 변수 목록과 현재 값 출력\n";
         std::cout << "  inspect         현재 스코프 전체 변수/값/타입 출력\n";
+        std::cout << "  exit / quit     디버그 세션 종료\n";
     }
 }
 
@@ -217,7 +226,7 @@ void Debugger::cmdInspect(Interpreter& interp) {
         bool        isGlobal = (i == (int)chain.size() - 1);
         std::string label    = isGlobal ? "[전역]" : "[로컬]";
         for (const auto& [k, v] : chain[i]->m_values) {
-            if (k == "Array") continue;   // 내장 함수 제외
+            if (k == "Array") continue;
             std::cout << label << " " << k
                       << " = "  << interp.stringify(v)
                       << " ("   << typeName(v) << ")\n";
