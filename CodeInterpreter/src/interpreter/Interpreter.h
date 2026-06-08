@@ -51,11 +51,10 @@ public:
     std::string stringify(const Value& val) const;
     std::shared_ptr<Environment> currentEnv() const { return m_currentEnv; }
 
-    using BindingMap = std::unordered_map<const Expr*, int>;
-    void setBindings(const BindingMap* b) { m_bindings = b; }
+    void setBindings(const BindingMap* b) override { m_bindings = b; }
+    std::vector<std::string> globalNames() const override;
 
-    std::vector<std::string> globalNames() const;
-
+    using BindingMap = ::BindingMap;
     using StmtHook = std::function<void(Stmt&)>;
     void setStmtHook(StmtHook hook) { m_stmtHook = std::move(hook); }
 

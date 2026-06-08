@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,7 +18,6 @@ public:
                 std::unique_ptr<IChecker>     checker,
                 std::unique_ptr<IInterpreter> interpreter);
 
-    // 최적화 패스 선택적 등록 (nullptr이면 스킵)
     void setOptimizer(std::unique_ptr<IOptimizer> optimizer);
 
     void run(const std::string& source);
@@ -31,6 +30,9 @@ private:
     std::unique_ptr<IOptimizer>   m_optimizer;
     std::unique_ptr<IChecker>     m_checker;
     std::unique_ptr<IInterpreter> m_interpreter;
-    // LangFunction이 FunctionStmt&를 참조하므로 AST를 세션 내내 소유
     std::vector<std::vector<StmtPtr>> m_stmtHistory;
+
+    std::vector<StmtPtr> compileToAst(const std::string& source);
+    void                 bindAndCheck(const std::vector<StmtPtr>& stmts);
+    void                 syncGlobals();
 };

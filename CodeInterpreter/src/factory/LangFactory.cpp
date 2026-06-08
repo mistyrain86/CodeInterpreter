@@ -26,27 +26,29 @@ void LangFactory::setOptimizer(std::unique_ptr<IOptimizer> optimizer) {
 }
 
 void LangFactory::run(const std::string& source) {
+    auto stmts = compileToAst(source);
+    bindAndCheck(stmts);
+    m_interpreter->interpret(stmts);
+    syncGlobals();
+    m_stmtHistory.push_back(std::move(stmts));
+}
+
+std::vector<StmtPtr> LangFactory::compileToAst(const std::string& source) {
     auto tokens = m_lexer->tokenize(source);
     auto stmts  = m_parser->parse(std::move(tokens));
+    if (m_optimizer) stmts = m_optimizer->optimize(std::move(stmts));
+    return stmts;
+}
 
-    if (m_optimizer)
-        stmts = m_optimizer->optimize(std::move(stmts));
-
+void LangFactory::bindAndCheck(const std::vector<StmtPtr>& stmts) {
     Resolver resolver;
     BindingMap bindings = resolver.resolve(stmts);
-    auto* interp = dynamic_cast<Interpreter*>(m_interpreter.get());
-    if (interp) interp->setBindings(&bindings);
-
+    m_interpreter->setBindings(&bindings);
     m_checker->check(stmts);
-    m_interpreter->interpret(stmts);
+    m_interpreter->setBindings(nullptr);
+}
 
-    if (interp) interp->setBindings(nullptr);
-
-    if (interp)
-        if (auto* chk = dynamic_cast<Checker*>(m_checker.get()))
-            for (const auto& name : interp->globalNames())
-                chk->registerGlobal(name);
-
-    // LangFunction이 FunctionStmt&를 참조하므로 AST 소유권을 유지
-    m_stmtHistory.push_back(std::move(stmts));
+void LangFactory::syncGlobals() {
+    for (const auto& name : m_interpreter->globalNames())
+        m_checker->registerGlobal(name);
 }

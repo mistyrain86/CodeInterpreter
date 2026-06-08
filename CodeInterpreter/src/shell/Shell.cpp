@@ -1,4 +1,4 @@
-#include "Shell.h"
+﻿#include "Shell.h"
 #include "Debugger.h"
 #include "ParseError.h"
 #include "CheckError.h"
@@ -9,7 +9,11 @@
 #include <sstream>
 
 namespace {
-// 에러 출력 + onError 콜백으로 runFile(exit) / runSource(continue) 분기
+void printPrompt(bool multiLine) {
+    std::cout << (multiLine ? "... " : "> ");
+    std::cout.flush();
+}
+
 void runWithErrors(LangFactory& factory, const std::string& source,
                    const std::function<void(int)>& onError) {
     try {
@@ -30,9 +34,13 @@ void Shell::runRepl() {
     std::string  line;
     std::ostringstream oss;
 
+    auto flushBuffer = [&] {
+        runSource(factory, oss.str());
+        oss.str(""); oss.clear();
+    };
+
     while (true) {
-        std::cout << (oss.str().empty() ? "> " : "... ");
-        std::cout.flush();
+        printPrompt(!oss.str().empty());
 
         if (!std::getline(std::cin, line)) {
             if (!oss.str().empty()) runSource(factory, oss.str());
@@ -41,10 +49,7 @@ void Shell::runRepl() {
         if (line == "exit" || line == "quit") break;
 
         if (line.empty()) {
-            if (!oss.str().empty()) {
-                runSource(factory, oss.str());
-                oss.str(""); oss.clear();
-            }
+            if (!oss.str().empty()) flushBuffer();
         }
         else {
             oss << line << '\n';
