@@ -31,16 +31,10 @@ void Debugger::run() {
         std::cerr << "[오류] 파일을 찾을 수 없습니다: " << m_path << "\n";
         return;
     }
-    std::ostringstream ss;
-    ss << file.rdbuf();
-    std::string source = ss.str();
-
-    // 2. 소스 줄 캐싱 (줄 번호 표시용)
-    std::istringstream lineStream(source);
     std::string ln;
-    while (std::getline(lineStream, ln)) m_sourceLines.push_back(ln);
+    while (std::getline(file, ln)) m_sourceLines.push_back(ln);
 
-    // 3. 파이프라인 구성 + StmtHook 등록
+    // 2. 파이프라인 구성 + StmtHook 등록 (factory는 청크 간 상태 공유)
     LangFactory factory;
     IInterpreter* interpIface = factory.getInterpreter();
     auto*         interp      = dynamic_cast<Interpreter*>(interpIface);
@@ -50,20 +44,47 @@ void Debugger::run() {
         onBeforeStmt(stmt, *interp);
     });
 
-    // 4. 시작 메시지 출력
+    // 3. 시작 메시지 출력
     std::cout << "CodeFab Interpreter (DEBUG 모드)\n";
     std::cout << "종료: exit 또는 quit\n";
     std::cout << "[DEBUG] 소스코드 로딩: " << m_path << "\n";
 
-    // 5. 실행 (Lex → Parse → Check → Interpret)
+    // 4. 빈 줄 기준으로 청크 분리 후 순서대로 실행
+    // 오류 발생 시 메시지 출력 후 실행 종료
+    // 각 청크 앞에 빈 줄 prefix를 붙여 파서의 줄 번호를 유지
+    bool hasError = false;
+    auto runChunk = [&](int startLine, const std::string& chunk) {
+        std::string source(startLine, '\n');  // 줄 번호 offset 유지
+        source += chunk;
+        try {
+            factory.run(source);
+        }
+        catch (const DebugSessionExit&)    { throw; }
+        catch (const ParseError& e)        { std::cerr << "[구문 오류] "   << e.what() << "\n"; hasError = true; }
+        catch (const CheckError& e)        { std::cerr << "[의미 오류] "   << e.what() << "\n"; hasError = true; }
+        catch (const RuntimeError& e)      { std::cerr << "[런타임 오류] " << e.what() << "\n"; hasError = true; }
+        catch (const std::runtime_error& e){ std::cerr << "[오류] "        << e.what() << "\n"; hasError = true; }
+    };
+
     try {
-        factory.run(source);
+        std::ostringstream current;
+        int chunkStartLine = 0;
+        for (int i = 0; i <= (int)m_sourceLines.size(); i++) {
+            if (hasError) break;
+            bool isBlank = (i == (int)m_sourceLines.size()) ||
+                           m_sourceLines[i].find_first_not_of(" \t\r\n") == std::string::npos;
+            if (isBlank) {
+                if (!current.str().empty()) {
+                    runChunk(chunkStartLine, current.str());
+                    current.str(""); current.clear();
+                }
+                chunkStartLine = i + 1;
+            } else {
+                current << m_sourceLines[i] << '\n';
+            }
+        }
     }
-    catch (const DebugSessionExit&)    { return; }
-    catch (const ParseError& e)        { std::cerr << "[구문 오류] "   << e.what() << "\n"; }
-    catch (const CheckError& e)        { std::cerr << "[의미 오류] "   << e.what() << "\n"; }
-    catch (const RuntimeError& e)      { std::cerr << "[런타임 오류] " << e.what() << "\n"; }
-    catch (const std::runtime_error& e){ std::cerr << "[오류] "        << e.what() << "\n"; }
+    catch (const DebugSessionExit&) { return; }
 
     std::cout << "[DEBUG] 실행 완료\n";
 }
