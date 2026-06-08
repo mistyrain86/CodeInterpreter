@@ -1,4 +1,5 @@
 #include "Debugger.h"
+#include "IInterpreter.h"
 #include "Interpreter.h"
 #include "ParseError.h"
 #include "CheckError.h"
@@ -41,9 +42,11 @@ void Debugger::run() {
 
     // 3. 파이프라인 구성 + StmtHook 등록
     LangFactory factory;
-    auto* interp = dynamic_cast<Interpreter*>(factory.getInterpreter());
+    IInterpreter* interpIface = factory.getInterpreter();
+    auto*         interp      = dynamic_cast<Interpreter*>(interpIface);
+    if (!interp) return;
 
-    interp->setStmtHook([this, interp](Stmt& stmt) {
+    interpIface->setStmtHook([this, interp](Stmt& stmt) {
         onBeforeStmt(stmt, *interp);
     });
 
@@ -219,14 +222,14 @@ void Debugger::cmdInspect(Interpreter& interp) {
     const Environment* cur = interp.currentEnv().get();
     while (cur) {
         chain.push_back(cur);
-        cur = cur->m_enclosing.get();
+        cur = cur->enclosing().get();
     }
 
     // chain[0] = 가장 안쪽(로컬), chain[last] = 전역
     for (int i = 0; i < (int)chain.size(); i++) {
         bool        isGlobal = (i == (int)chain.size() - 1);
         std::string label    = isGlobal ? "[전역]" : "[로컬]";
-        for (const auto& [k, v] : chain[i]->m_values) {
+        for (const auto& [k, v] : chain[i]->values()) {
             if (k == "Array") continue;
             std::cout << label << " " << k
                       << " = "  << interp.stringify(v)

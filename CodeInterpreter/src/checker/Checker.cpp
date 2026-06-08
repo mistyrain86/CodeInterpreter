@@ -1,6 +1,12 @@
 ﻿#include <cassert>
 #include "Checker.h"
 
+namespace {
+static std::string checkErr(int line, const std::string& msg) {
+    return "[라인 " + std::to_string(line) + "] 의미 오류: " + msg;
+}
+}
+
 void Checker::check(const std::vector<StmtPtr>& stmts) {
     beginScope();
     for (const auto& name : m_knownGlobals)
@@ -28,7 +34,7 @@ void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
 
 void Checker::visitVarStmt(VarStmt& s) {
     declare(s.m_name);
-    if (s.m_initializer) checkExpr(s.m_initializer.get());
+    if (s.m_initializer) s.m_initializer->acceptVoid(*this);
     define(s.m_name);
 }
 
@@ -39,7 +45,7 @@ void Checker::visitBlockStmt(BlockStmt& s) {
 }
 
 void Checker::visitIfStmt(IfStmt& s) {
-    checkExpr(s.m_condition.get());
+    s.m_condition->acceptVoid(*this);
     s.m_thenBranch->accept(*this);
     if (s.m_elseBranch) s.m_elseBranch->accept(*this);
 }
@@ -47,31 +53,28 @@ void Checker::visitIfStmt(IfStmt& s) {
 void Checker::visitForStmt(ForStmt& s) {
     beginScope();
     if (s.m_initializer) s.m_initializer->accept(*this);
-    if (s.m_condition)   checkExpr(s.m_condition.get());
-    if (s.m_increment)   checkExpr(s.m_increment.get());
+    if (s.m_condition)   s.m_condition->acceptVoid(*this);
+    if (s.m_increment)   s.m_increment->acceptVoid(*this);
     if (s.m_body)        s.m_body->accept(*this);
     endScope();
 }
 
 void Checker::visitPrintStmt(PrintStmt& s) {
-    checkExpr(s.m_expression.get());
+    s.m_expression->acceptVoid(*this);
 }
 
 void Checker::visitExprStmt(ExprStmt& s) {
-    checkExpr(s.m_expression.get());
+    s.m_expression->acceptVoid(*this);
 }
 
 void Checker::visitFunctionStmt(FunctionStmt& s) {
     declare(s.m_name);
     define(s.m_name);
 
-
     std::unordered_set<std::string> seen;
     for (const auto& param : s.m_params) {
         if (seen.count(param.lexeme))
-            throw CheckError("[라인 " + std::to_string(param.line)
-                + "] 의미 오류: 파라미터 이름이 중복됩니다. ('"
-                + param.lexeme + "')");
+            throw CheckError(checkErr(param.line, "파라미터 이름이 중복됩니다. ('" + param.lexeme + "')"));
         seen.insert(param.lexeme);
     }
 
@@ -88,45 +91,47 @@ void Checker::visitFunctionStmt(FunctionStmt& s) {
 
 void Checker::visitReturnStmt(ReturnStmt& s) {
     if (m_functionDepth == 0)
-        throw CheckError("[라인 " + std::to_string(s.m_keyword.line)
-            + "] 의미 오류: 함수 외부에서 return을 사용할 수 없습니다.");
-    if (s.m_value) checkExpr(s.m_value.get());
+        throw CheckError(checkErr(s.m_keyword.line, "함수 외부에서 return을 사용할 수 없습니다."));
+    if (s.m_value) s.m_value->acceptVoid(*this);
 }
 
-// ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
+// ── VoidExprVisitor 구현 ───────────────────────────────────────────
 
-void Checker::checkExpr(Expr* expr) {
-    assert(expr != nullptr);
-    if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
-        checkExpr(e->left.get()); checkExpr(e->right.get());
-    }
-    else if (auto* e = dynamic_cast<GroupingExpr*>(expr)) {
-        checkExpr(e->expression.get());
-    }
-    else if (auto* e = dynamic_cast<UnaryExpr*>(expr)) {
-        checkExpr(e->right.get());
-    }
-    else if (auto* e = dynamic_cast<VariableExpr*>(expr)) {
-        resolveVar(e->name.lexeme, e->name.line);
-    }
-    else if (auto* e = dynamic_cast<AssignExpr*>(expr)) {
-        checkExpr(e->value.get());
-        resolveVar(e->name.lexeme, e->name.line);
-    }
-    else if (auto* e = dynamic_cast<CallExpr*>(expr)) {
-        checkExpr(e->callee.get());
-        for (auto& arg : e->args) checkExpr(arg.get());
-    }
-    else if (auto* e = dynamic_cast<IndexGetExpr*>(expr)) {
-        checkExpr(e->object.get());
-        checkExpr(e->index.get());
-    }
-    else if (auto* e = dynamic_cast<IndexSetExpr*>(expr)) {
-        checkExpr(e->object.get());
-        checkExpr(e->index.get());
-        checkExpr(e->value.get());
-    }
-    // LiteralExpr: 검사 없음
+void Checker::visitGrouping(GroupingExpr& e) {
+    e.expression->acceptVoid(*this);
+}
+
+void Checker::visitUnary(UnaryExpr& e) {
+    e.right->acceptVoid(*this);
+}
+
+void Checker::visitBinary(BinaryExpr& e) {
+    e.left->acceptVoid(*this); e.right->acceptVoid(*this);
+}
+
+void Checker::visitVariable(VariableExpr& e) {
+    resolveVar(e.name.lexeme, e.name.line);
+}
+
+void Checker::visitAssign(AssignExpr& e) {
+    e.value->acceptVoid(*this);
+    resolveVar(e.name.lexeme, e.name.line);
+}
+
+void Checker::visitCallExpr(CallExpr& e) {
+    e.callee->acceptVoid(*this);
+    for (auto& arg : e.args) arg->acceptVoid(*this);
+}
+
+void Checker::visitIndexGetExpr(IndexGetExpr& e) {
+    e.object->acceptVoid(*this);
+    e.index->acceptVoid(*this);
+}
+
+void Checker::visitIndexSetExpr(IndexSetExpr& e) {
+    e.object->acceptVoid(*this);
+    e.index->acceptVoid(*this);
+    e.value->acceptVoid(*this);
 }
 
 // ── 스코프 관리 ────────────────────────────────────────────────────
@@ -137,9 +142,7 @@ void Checker::endScope()   { m_scopes.pop_back(); }
 void Checker::declare(const Token& name) {
     auto& scope = m_scopes.back();
     if (scope.count(name.lexeme))
-        throw CheckError("[라인 " + std::to_string(name.line)
-            + "] 의미 오류: 이미 이 스코프에 같은 이름의 변수가 있습니다. ('"
-            + name.lexeme + "')");
+        throw CheckError(checkErr(name.line, "이미 이 스코프에 같은 이름의 변수가 있습니다. ('" + name.lexeme + "')"));
     scope[name.lexeme] = false;
 }
 
@@ -152,11 +155,9 @@ void Checker::resolveVar(const std::string& name, int line) {
         auto it = m_scopes[i].find(name);
         if (it != m_scopes[i].end()) {
             if (!it->second)
-                throw CheckError("[라인 " + std::to_string(line)
-                    + "] 의미 오류: 자신의 초기화식에서 지역변수를 읽을 수 없습니다. ('"
-                    + name + "')");
+                throw CheckError(checkErr(line, "자신의 초기화식에서 지역변수를 읽을 수 없습니다. ('" + name + "')"));
             return;
         }
     }
-    // 스코프에 없으면 전역 변수로 간주 — 런타임에서 RuntimeError로 처리
+    throw CheckError(checkErr(line, "선언되지 않은 변수입니다. ('" + name + "')"));
 }

@@ -12,21 +12,43 @@ static constexpr auto UNIMPLEMENTED_EXPR   = "미구현 표현식 타입";
 static constexpr auto UNIMPLEMENTED_UNARY  = "미구현 단항 연산자";
 static constexpr auto UNIMPLEMENTED_BINARY = "미구현 이항 연산자";
 
+static std::string runtimeErr(int line, const std::string& msg) {
+    return "[라인 " + std::to_string(line) + "] 런타임 오류: " + msg;
+}
+static bool isExactlyZero(double d) noexcept { return d == 0.0; }
+
 std::pair<std::vector<Value>*, int> resolveArrayAccess(
         const Value& obj, const Value& idx, int line) {
     if (!std::holds_alternative<ArrayType>(obj))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 인덱스 접근은 배열만 지원합니다.");
+        throw RuntimeError(runtimeErr(line, "인덱스 접근은 배열만 지원합니다."));
     if (!std::holds_alternative<double>(idx))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 인덱스는 반드시 숫자여야 합니다.");
+        throw RuntimeError(runtimeErr(line, "인덱스는 반드시 숫자여야 합니다."));
     auto* arr = std::get<ArrayType>(obj).get();
     int   i   = static_cast<int>(std::get<double>(idx));
     if (i < 0 || i >= static_cast<int>(arr->size()))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 인덱스 범위를 벗어났습니다. ("
-            + std::to_string(i) + ")");
+        throw RuntimeError(runtimeErr(line, "인덱스 범위를 벗어났습니다. (" + std::to_string(i) + ")"));
     return {arr, i};
+}
+
+std::string stringifyDouble(double d) {
+    if (std::isfinite(d) && d == std::floor(d))
+        return std::to_string(static_cast<long long>(d));
+    std::ostringstream oss;
+    oss << d;
+    return oss.str();
+}
+
+std::string stringifyArray(const ArrayType& arr,
+                           const std::function<std::string(const Value&)>& recurse) {
+    if (!arr) return "[]";
+    std::ostringstream oss;
+    oss << "[";
+    for (std::size_t i = 0; i < arr->size(); ++i) {
+        if (i) oss << ", ";
+        oss << recurse((*arr)[i]);
+    }
+    oss << "]";
+    return oss.str();
 }
 
 struct ScopeGuard {
@@ -41,9 +63,78 @@ struct ScopeGuard {
 Interpreter::Interpreter()
     : m_currentEnv(std::make_shared<Environment>()) {
     m_currentEnv->define("Array", Value{std::make_shared<ArrayBuiltin>()});
+    m_scopeStack.push_back(m_currentEnv.get());  // 전역 스코프를 스택에 등록
+    initBinaryOps();
+}
+
+void Interpreter::initBinaryOps() {
+    using T = TokenType;
+    m_binaryOps[static_cast<int>(T::PLUS)] = [this](const Value& l, const Value& r, int line) -> Value {
+        if (std::holds_alternative<double>(l) && std::holds_alternative<double>(r))
+            return std::get<double>(l) + std::get<double>(r);
+        if (std::holds_alternative<std::string>(l) && std::holds_alternative<std::string>(r))
+            return std::get<std::string>(l) + std::get<std::string>(r);
+        throw RuntimeError(runtimeErr(line, "피연산자는 두 숫자 또는 두 문자열이어야 합니다."));
+    };
+    m_binaryOps[static_cast<int>(T::MINUS)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        return std::get<double>(l) - std::get<double>(r);
+    };
+    m_binaryOps[static_cast<int>(T::STAR)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        return std::get<double>(l) * std::get<double>(r);
+    };
+    m_binaryOps[static_cast<int>(T::SLASH)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        const double dr = std::get<double>(r);
+        if (isExactlyZero(dr))
+            throw RuntimeError(runtimeErr(line, "0으로 나눌 수 없습니다."));
+        return std::get<double>(l) / dr;
+    };
+    m_binaryOps[static_cast<int>(T::PERCENT)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        const double dr = std::get<double>(r);
+        if (isExactlyZero(dr))
+            throw RuntimeError(runtimeErr(line, "0으로 나눌 수 없습니다."));
+        return std::fmod(std::get<double>(l), dr);
+    };
+    m_binaryOps[static_cast<int>(T::GREATER)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        return std::get<double>(l) > std::get<double>(r);
+    };
+    m_binaryOps[static_cast<int>(T::GREATER_EQUAL)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        return std::get<double>(l) >= std::get<double>(r);
+    };
+    m_binaryOps[static_cast<int>(T::LESS)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        return std::get<double>(l) < std::get<double>(r);
+    };
+    m_binaryOps[static_cast<int>(T::LESS_EQUAL)] = [this](const Value& l, const Value& r, int line) -> Value {
+        checkNumericPair(l, r, line);
+        return std::get<double>(l) <= std::get<double>(r);
+    };
+    m_binaryOps[static_cast<int>(T::EQUAL_EQUAL)] = [](const Value& l, const Value& r, int) -> Value {
+        return Value{l == r};
+    };
+    m_binaryOps[static_cast<int>(T::BANG_EQUAL)] = [](const Value& l, const Value& r, int) -> Value {
+        return Value{!(l == r)};
+    };
 }
 
 // ── 공개 진입점 ────────────────────────────────────────────────────
+
+void Interpreter::rebuildScopeStackFromClosure(Environment* closure) {
+    // 클로저 env 체인을 global → closure 순으로 재구성
+    std::vector<Environment*> chain;
+    auto* cur = closure;
+    while (cur) {
+        chain.push_back(cur);
+        cur = cur->enclosing().get();
+    }
+    std::reverse(chain.begin(), chain.end());  // global이 index 0
+    m_scopeStack = std::move(chain);
+}
 
 void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
     for (const auto& s : stmts) execute(*s);
@@ -63,6 +154,9 @@ void Interpreter::execute(Stmt& stmt) {
 void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
                                 std::shared_ptr<Environment> env) {
     ScopeGuard guard(m_currentEnv, std::move(env));
+    m_scopeStack.push_back(m_currentEnv.get());
+    struct StackGuard { std::vector<Environment*>& s; ~StackGuard() { s.pop_back(); } }
+        stackGuard{m_scopeStack};
     for (const auto& s : stmts) execute(*s);
 }
 
@@ -87,74 +181,19 @@ Value Interpreter::visitUnary(UnaryExpr& e) {
 }
 
 Value Interpreter::visitBinary(BinaryExpr& e) {
+    if (m_opSpy) m_opSpy->m_binaryOpCount++;
     Value l = evaluate(*e.left);
     Value r = evaluate(*e.right);
-    const int line = e.op.line;
-    switch (e.op.type) {
-        case TokenType::PLUS:
-            if (std::holds_alternative<double>(l) && std::holds_alternative<double>(r))
-                return std::get<double>(l) + std::get<double>(r);
-            if (std::holds_alternative<std::string>(l) && std::holds_alternative<std::string>(r))
-                return std::get<std::string>(l) + std::get<std::string>(r);
-            throw RuntimeError("[라인 " + std::to_string(line)
-                + "] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.");
-        case TokenType::MINUS: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            return dl - dr;
-        }
-        case TokenType::STAR: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            return dl * dr;
-        }
-        case TokenType::SLASH: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            if (dr == 0.0)
-                throw RuntimeError("[라인 " + std::to_string(line)
-                    + "] 런타임 오류: 0으로 나눌 수 없습니다.");
-            return dl / dr;
-        }
-        case TokenType::PERCENT: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            if (dr == 0.0)
-                throw RuntimeError("[라인 " + std::to_string(line)
-                    + "] 런타임 오류: 0으로 나눌 수 없습니다.");
-            return std::fmod(dl, dr);
-        }
-        case TokenType::GREATER: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            return dl > dr;
-        }
-        case TokenType::GREATER_EQUAL: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            return dl >= dr;
-        }
-        case TokenType::LESS: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            return dl < dr;
-        }
-        case TokenType::LESS_EQUAL: {
-            checkNumericPair(l, r, line);
-            const double dl = std::get<double>(l), dr = std::get<double>(r);
-            return dl <= dr;
-        }
-        case TokenType::EQUAL_EQUAL: return Value{l == r};
-        case TokenType::BANG_EQUAL:  return Value{!(l == r)};
-        default: break;
-    }
+    auto it = m_binaryOps.find(static_cast<int>(e.op.type));
+    if (it != m_binaryOps.end()) return it->second(l, r, e.op.line);
     throw RuntimeError(UNIMPLEMENTED_BINARY);
 }
 
 std::vector<std::string> Interpreter::globalNames() const {
     std::vector<std::string> result;
-    result.reserve(m_currentEnv->m_values.size());
-    for (const auto& [name, val] : m_currentEnv->m_values)
+    const auto& vals = m_currentEnv->values();
+    result.reserve(vals.size());
+    for (const auto& [name, val] : vals)
         result.push_back(name);
     return result;
 }
@@ -167,17 +206,26 @@ std::optional<int> Interpreter::lookupBinding(const Expr* expr) const {
 }
 
 Value Interpreter::visitVariable(VariableExpr& e) {
-    if (auto dist = lookupBinding(&e))
-        return m_currentEnv->getAt(*dist, e.name.lexeme);
+    if (auto dist = lookupBinding(&e)) {
+        if (m_spy) m_spy->m_bindingHits++;
+        // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
+        int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
+        return m_scopeStack[idx]->values().at(e.name.lexeme);
+    }
+    if (m_spy) m_spy->m_chainWalks++;
     return m_currentEnv->get(e.name);
 }
 
 Value Interpreter::visitAssign(AssignExpr& e) {
     Value v = evaluate(*e.value);
     if (auto dist = lookupBinding(&e)) {
-        m_currentEnv->assignAt(*dist, e.name.lexeme, v);
+        if (m_spy) m_spy->m_bindingHits++;
+        // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
+        int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
+        m_scopeStack[idx]->values()[e.name.lexeme] = v;
         return v;
     }
+    if (m_spy) m_spy->m_chainWalks++;
     m_currentEnv->assign(e.name, v);
     return v;
 }
@@ -210,6 +258,9 @@ void Interpreter::visitForStmt(ForStmt& s) {
     if (!s.m_body)
         throw RuntimeError("런타임 오류: ForStmt body가 null입니다.");
     ScopeGuard guard(m_currentEnv, std::make_shared<Environment>(m_currentEnv));
+    m_scopeStack.push_back(m_currentEnv.get());
+    struct StackGuard { std::vector<Environment*>& s; ~StackGuard() { s.pop_back(); } }
+        stackGuard{m_scopeStack};
     if (s.m_initializer) execute(*s.m_initializer);
     while (true) {
         if (s.m_condition && !isTruthy(evaluate(*s.m_condition))) break;
@@ -227,8 +278,7 @@ void Interpreter::checkNumericPair(const Value& l, const Value& r, int line) con
 
 void Interpreter::checkNumericOperand(const Value& v, int line) const {
     if (!std::holds_alternative<double>(v))
-        throw RuntimeError("[라인 " + std::to_string(line)
-            + "] 런타임 오류: 피연산자는 반드시 숫자여야 합니다.");
+        throw RuntimeError(runtimeErr(line, "피연산자는 반드시 숫자여야 합니다."));
 }
 
 bool Interpreter::isTruthy(const Value& v) const {
@@ -247,16 +297,14 @@ Value Interpreter::visitCallExpr(CallExpr& e) {
     Value callee = evaluate(*e.callee);
 
     if (!std::holds_alternative<std::shared_ptr<ICallable>>(callee))
-        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
-            + "] 런타임 오류: 함수가 아닌 대상을 호출했습니다.");
+        throw RuntimeError(runtimeErr(e.paren.line, "함수가 아닌 대상을 호출했습니다."));
 
     auto fn = std::get<std::shared_ptr<ICallable>>(callee);
 
     if (static_cast<int>(e.args.size()) != fn->arity())
-        throw RuntimeError("[라인 " + std::to_string(e.paren.line)
-            + "] 런타임 오류: 인자 개수 불일치. 기대: "
+        throw RuntimeError(runtimeErr(e.paren.line, "인자 개수 불일치. 기대: "
             + std::to_string(fn->arity())
-            + ", 실제: " + std::to_string(e.args.size()));
+            + ", 실제: " + std::to_string(e.args.size())));
 
     std::vector<Value> args;
     for (auto& arg : e.args) args.push_back(evaluate(*arg));
@@ -286,31 +334,15 @@ Value Interpreter::visitIndexSetExpr(IndexSetExpr& e) {
 }
 
 std::string Interpreter::stringify(const Value& v) const {
-    if (std::holds_alternative<std::monostate>(v)) return "null";
-    if (std::holds_alternative<bool>(v)) return std::get<bool>(v) ? "true" : "false";
-    if (std::holds_alternative<double>(v)) {
-        double d = std::get<double>(v);
-        if (std::isfinite(d) && d == std::floor(d))
-            return std::to_string(static_cast<long long>(d));
-        std::ostringstream oss;
-        oss << d;
-        return oss.str();
-    }
+    if (std::holds_alternative<std::monostate>(v))              return "null";
+    if (std::holds_alternative<bool>(v))                        return std::get<bool>(v) ? "true" : "false";
+    if (std::holds_alternative<double>(v))                      return stringifyDouble(std::get<double>(v));
     if (std::holds_alternative<std::shared_ptr<ICallable>>(v)) {
         auto& fn = std::get<std::shared_ptr<ICallable>>(v);
         return fn ? "<fn " + fn->name() + ">" : "<fn>";
     }
-    if (std::holds_alternative<ArrayType>(v)) {
-        auto& arr = std::get<ArrayType>(v);
-        if (!arr) return "[]";
-        std::ostringstream oss;
-        oss << "[";
-        for (std::size_t i = 0; i < arr->size(); ++i) {
-            if (i) oss << ", ";
-            oss << stringify((*arr)[i]);
-        }
-        oss << "]";
-        return oss.str();
-    }
+    if (std::holds_alternative<ArrayType>(v))
+        return stringifyArray(std::get<ArrayType>(v),
+                              [this](const Value& e) { return stringify(e); });
     return std::get<std::string>(v);
 }

@@ -1,4 +1,22 @@
 #include "ConstantFolder.h"
+#include <cmath>
+
+ConstantFolder::ConstantFolder() { initFoldOps(); }
+
+void ConstantFolder::initFoldOps() {
+    using T = TokenType;
+    m_foldOps[static_cast<int>(T::PLUS)]  = [](double a, double b) -> std::optional<double> { return a + b; };
+    m_foldOps[static_cast<int>(T::MINUS)] = [](double a, double b) -> std::optional<double> { return a - b; };
+    m_foldOps[static_cast<int>(T::STAR)]  = [](double a, double b) -> std::optional<double> { return a * b; };
+    m_foldOps[static_cast<int>(T::SLASH)] = [](double a, double b) -> std::optional<double> {
+        if (b == 0.0) return std::nullopt;  // 0 나누기는 런타임에 위임
+        return a / b;
+    };
+    m_foldOps[static_cast<int>(T::PERCENT)] = [](double a, double b) -> std::optional<double> {
+        if (b == 0.0) return std::nullopt;
+        return std::fmod(a, b);
+    };
+}
 
 std::vector<StmtPtr> ConstantFolder::optimize(std::vector<StmtPtr> stmts) {
     for (auto& s : stmts) s->accept(*this);
@@ -6,6 +24,20 @@ std::vector<StmtPtr> ConstantFolder::optimize(std::vector<StmtPtr> stmts) {
 }
 
 ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
+    // GroupingExpr: 내부를 폴딩 후 결과가 LiteralExpr이면 GroupingExpr 제거
+    if (auto* group = dynamic_cast<GroupingExpr*>(expr.get())) {
+        group->expression = foldExpr(std::move(group->expression));
+        if (dynamic_cast<LiteralExpr*>(group->expression.get()))
+            return std::move(group->expression);  // GroupingExpr 벗겨냄
+        return expr;
+    }
+
+    // AssignExpr: 우변만 폴딩 (좌변은 변수명이므로 건드리지 않음)
+    if (auto* assign = dynamic_cast<AssignExpr*>(expr.get())) {
+        assign->value = foldExpr(std::move(assign->value));
+        return expr;
+    }
+
     auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
     if (!bin) return expr;
 
@@ -20,14 +52,10 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
         std::holds_alternative<double>(rr->value)) {
         double a = std::get<double>(ll->value);
         double b = std::get<double>(rr->value);
-        switch (bin->op.type) {
-            case TokenType::PLUS:  return std::make_unique<LiteralExpr>(Value{a + b});
-            case TokenType::MINUS: return std::make_unique<LiteralExpr>(Value{a - b});
-            case TokenType::STAR:  return std::make_unique<LiteralExpr>(Value{a * b});
-            case TokenType::SLASH:
-                if (b != 0.0) return std::make_unique<LiteralExpr>(Value{a / b});
-                break;
-            default: break;
+        auto it = m_foldOps.find(static_cast<int>(bin->op.type));
+        if (it != m_foldOps.end()) {
+            auto result = it->second(a, b);
+            if (result) return std::make_unique<LiteralExpr>(Value{*result});
         }
     }
     return expr;

@@ -106,9 +106,6 @@
     <ClInclude Include="src\parser\TokenStream.h">
       <Filter>src\parser</Filter>
     </ClInclude>
-    <ClInclude Include="src\parser\ParserProxy.h">
-      <Filter>src\parser</Filter>
-    </ClInclude>
     <ClInclude Include="src\checker\Checker.h">
       <Filter>src\checker</Filter>
     </ClInclude>
@@ -190,6 +187,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="test\CheckerTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\ConstantFolderTest.cpp">
       <Filter>test</Filter>
     </ClCompile>
     <ClCompile Include="test\EnvironmentTest.cpp">
