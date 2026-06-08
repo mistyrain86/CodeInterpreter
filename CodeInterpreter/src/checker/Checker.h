@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -29,7 +29,6 @@ public:
     void visitReturnStmt  (ReturnStmt&)   override;
 
     // VoidExprVisitor
-    void visitLiteral     (LiteralExpr&)   override {}
     void visitGrouping    (GroupingExpr&)  override;
     void visitUnary       (UnaryExpr&)     override;
     void visitBinary      (BinaryExpr&)    override;
