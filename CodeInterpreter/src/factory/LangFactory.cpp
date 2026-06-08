@@ -44,8 +44,11 @@ void LangFactory::bindAndCheck(const std::vector<StmtPtr>& stmts) {
     Resolver resolver;
     BindingMap bindings = resolver.resolve(stmts);
     m_interpreter->setBindings(&bindings);
+    struct Guard {
+        IInterpreter* p;
+        ~Guard() { p->setBindings(nullptr); }
+    } guard{ m_interpreter.get() };
     m_checker->check(stmts);
-    m_interpreter->setBindings(nullptr);
 }
 
 void LangFactory::syncGlobals() {
