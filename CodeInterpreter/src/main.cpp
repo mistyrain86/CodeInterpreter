@@ -22,8 +22,8 @@ int main() {
         std::cout << "       Factory 모드 선택         \n";
         std::cout << "=================================\n";
         std::cout << " 1. REPL 모드\n";
-        std::cout << " 2. 파일 실행 모드 (run)\n";
-        std::cout << " 3. 디버그 모드 (debug)\n";
+        std::cout << " 2. 파일 실행 모드\n";
+        std::cout << " 3. 디버그 모드\n";
         std::cout << " 4. 종료\n";
         std::cout << "=================================\n";
         std::cout << "원하는 모드의 번호를 입력하세요: ";
@@ -49,9 +49,6 @@ int main() {
             break;
 
         case 2:
-            std::cout << "\n아직 미구현된 기능입니다.\n\n";
-            break;
-
             std::cout << "실행할 파일명을 입력하세요 (예: test.txt): ";
             std::cin >> filename;
             std::cout << filename << " 파일을 실행합니다...\n\n";
