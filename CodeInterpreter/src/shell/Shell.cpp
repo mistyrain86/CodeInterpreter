@@ -58,7 +58,7 @@ void Shell::runFile(const std::string& path) {
     ss << file.rdbuf();
 
     LangFactory factory;
-    runWithErrors(factory, ss.str(), [](int code) { std::exit(code); });
+    factory.runWithRecovery(ss.str());
 }
 
 void Shell::runDebug(const std::string& path) {

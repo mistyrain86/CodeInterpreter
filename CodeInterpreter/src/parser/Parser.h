@@ -12,6 +12,12 @@ public:
     Parser();
     std::vector<StmtPtr> parse(std::vector<Token> tokens) override;
 
+    // 증분 파싱 API (FILE 모드용): prepare → hasMore/parseOne 반복
+    void    prepare(std::vector<Token> tokens);
+    bool    hasMore() const;
+    StmtPtr parseOne();   // 다음 statement 하나 파싱; 실패 시 ParseError throw
+
+
 private:
     TokenStream m_stream;  // vector<Token> → 커서 인터페이스 적응
 
@@ -19,6 +25,8 @@ private:
     using StmtParserFn = std::function<StmtPtr()>;
     std::unordered_map<int, StmtParserFn> m_stmtDispatch;
     void initDispatch();
+
+    void synchronize();  // 패닉 모드 복구: 다음 statement 경계까지 스킵 (미래 확장용)
 
     // ── 문장 파서 ──────────────────────────────────────────────
     StmtPtr  parseStatement();

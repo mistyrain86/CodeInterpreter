@@ -18,11 +18,37 @@ Parser::Parser() {
     initDispatch();
 }
 
+// 기존 동작 유지 — 첫 ParseError에서 즉시 throw
 std::vector<StmtPtr> Parser::parse(std::vector<Token> tokens) {
-    m_stream.load(std::move(tokens));   // TokenStream(Adapter)에 위임
+    m_stream.load(std::move(tokens));
     std::vector<StmtPtr> stmts;
     while (!isAtEnd()) stmts.push_back(parseStatement());
     return stmts;
+}
+
+// 증분 파싱 API
+void    Parser::prepare(std::vector<Token> tokens) { m_stream.load(std::move(tokens)); }
+bool    Parser::hasMore() const                    { return !isAtEnd(); }
+StmtPtr Parser::parseOne()                         { return parseStatement(); }
+
+// 오류 발생 시 다음 statement 경계까지 토큰을 스킵 (패닉 모드 복구)
+void Parser::synchronize() {
+    advance();
+    while (!isAtEnd()) {
+        if (previous().type == TokenType::SEMICOLON) return;
+        switch (peek().type) {
+            case TokenType::KW_VAR:
+            case TokenType::KW_PRINT:
+            case TokenType::KW_IF:
+            case TokenType::KW_FOR:
+            case TokenType::KW_FUNC:
+            case TokenType::KW_RETURN:
+            case TokenType::LEFT_BRACE:
+                return;
+            default:
+                advance();
+        }
+    }
 }
 
 // Command 패턴: 토큰 타입으로 파서 함수를 조회해 디스패치

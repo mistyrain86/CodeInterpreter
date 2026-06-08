@@ -21,6 +21,7 @@ public:
     void setOptimizer(std::unique_ptr<IOptimizer> optimizer);
 
     void run(const std::string& source);
+    void runWithRecovery(const std::string& source);  // statement별 실행, 에러 무시하고 계속
 
     IInterpreter* getInterpreter() const { return m_interpreter.get(); }
 
