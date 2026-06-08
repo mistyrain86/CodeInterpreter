@@ -23,25 +23,30 @@ static std::string typeName(const Value& v) {
 
 Debugger::Debugger(const std::string& path) : m_path(path) {}
 
-// ── 디버그 루프 진입 ──────────────────────────────────────────────────
 void Debugger::run() {
-    // 1. 파일 읽기
     std::ifstream file(m_path);
     if (!file.is_open()) {
         std::cerr << "[오류] 파일을 찾을 수 없습니다: " << m_path << "\n";
         return;
     }
-    std::string ln;
-    while (std::getline(file, ln)) m_sourceLines.push_back(ln);
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    run(ss.str(), std::cin);
+}
 
-    // 2. 파이프라인 구성 + StmtHook 등록 (factory는 청크 간 상태 공유)
+void Debugger::run(const std::string& source, std::istream& cmdIn) {
+    m_sourceLines.clear();
+    std::istringstream lineStream(source);
+    std::string ln;
+    while (std::getline(lineStream, ln)) m_sourceLines.push_back(ln);
+
     LangFactory factory;
     IInterpreter* interpIface = factory.getInterpreter();
     auto*         interp      = dynamic_cast<Interpreter*>(interpIface);
     if (!interp) return;
 
-    interpIface->setStmtHook([this, interp](Stmt& stmt) {
-        onBeforeStmt(stmt, *interp);
+    interpIface->setStmtHook([this, interp, &cmdIn](Stmt& stmt) {
+        onBeforeStmt(stmt, *interp, cmdIn);
     });
 
     // 3. 시작 메시지 출력
@@ -90,7 +95,7 @@ void Debugger::run() {
 }
 
 // ── Stmt 실행 직전 호출되는 Hook ────────────────────────────────────
-void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
+void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp, std::istream& cmdIn) {
     int  line         = stmt.getLine();
     if (line == 0) return;                                    // BlockStmt 등 건너뜀
 
@@ -126,7 +131,7 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp) {
     while (true) {
         std::cout << "> ";
         std::cout.flush();
-        if (!std::getline(std::cin, input)) return;
+        if (!std::getline(cmdIn, input)) return;
 
         if (input == "step") {
             m_stepMode  = true;

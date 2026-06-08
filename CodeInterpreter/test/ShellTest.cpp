@@ -1,22 +1,9 @@
 #include <gtest/gtest.h>
-#include <fstream>
 #include <sstream>
 #include "Shell.h"
 #include "TestUtils.h"
 
-static const std::string SHELL_CF  = "._shell_test.cf";
-static const std::string SHELL_CF2 = "._shell_test2.cf";
-
-static void writeFile(const std::string& path, const std::string& content) {
-    std::ofstream f(path);
-    f << content;
-}
-
-class ShellFileFixture : public ::testing::Test {
-protected:
-    void SetUp()    override { writeFile(SHELL_CF, "print 42;\n"); }
-    void TearDown() override { std::remove(SHELL_CF.c_str()); }
-};
+// ── REPL 픽스처 (stdin 리다이렉트) ────────────────────────────────────
 
 class ShellReplFixture : public ::testing::Test {
 protected:
@@ -32,89 +19,122 @@ protected:
     }
 };
 
-TEST_F(ShellFileFixture, RunFile_PrintsOutput) {
+// ── runFromSource 테스트 (파일 불필요) ───────────────────────────────
+
+TEST(ShellFromSource, PrintsOutput) {
     Shell shell;
-    std::string out = captureOutput([&]{ shell.runFile(SHELL_CF); });
+    std::string out = captureOutput([&]{
+        shell.runFromSource("print 42;", "test.cf");
+    });
     EXPECT_NE(out.find("42"), std::string::npos);
 }
 
-TEST_F(ShellFileFixture, RunFile_PrintsStartMessages) {
+TEST(ShellFromSource, PrintsStartMessages) {
     Shell shell;
-    std::string out = captureOutput([&]{ shell.runFile(SHELL_CF); });
+    std::string out = captureOutput([&]{
+        shell.runFromSource("print 1;", "myfile.cf");
+    });
     EXPECT_NE(out.find("FILE"), std::string::npos);
+    EXPECT_NE(out.find("myfile.cf"), std::string::npos);
 }
 
-TEST(ShellFileTest, RunFile_MultiChunk_BothChunksRun) {
-    writeFile(SHELL_CF2, "print 1;\n\nprint 2;\n");
+TEST(ShellFromSource, MultiChunk_BothChunksRun) {
     Shell shell;
-    std::string out = captureOutput([&]{ shell.runFile(SHELL_CF2); });
+    std::string out = captureOutput([&]{
+        shell.runFromSource("print 1;\n\nprint 2;\n", "test.cf");
+    });
     EXPECT_NE(out.find("1"), std::string::npos);
     EXPECT_NE(out.find("2"), std::string::npos);
-    std::remove(SHELL_CF2.c_str());
 }
 
-TEST(ShellFileTest, RunFile_ErrorChunk_ContinuesGracefully) {
-    writeFile(SHELL_CF2, "print undeclaredVar;\n");
+TEST(ShellFromSource, ParseError_StopsChunk) {
     Shell shell;
-    EXPECT_NO_THROW(captureOutput([&]{ shell.runFile(SHELL_CF2); }));
-    std::remove(SHELL_CF2.c_str());
+    EXPECT_NO_THROW(captureOutput([&]{
+        shell.runFromSource("print 1 2;\n", "test.cf");
+    }));
 }
 
-TEST_F(ShellReplFixture, RunRepl_ExitCommand) {
+TEST(ShellFromSource, RuntimeError_StopsChunk) {
+    Shell shell;
+    EXPECT_NO_THROW(captureOutput([&]{
+        shell.runFromSource("print undeclaredVar;\n", "test.cf");
+    }));
+}
+
+TEST(ShellFromSource, CheckError_StopsChunk) {
+    Shell shell;
+    EXPECT_NO_THROW(captureOutput([&]{
+        shell.runFromSource("{ var a = a; }\n", "test.cf");
+    }));
+}
+
+TEST(ShellFromSource, LexerError_StopsChunk) {
+    Shell shell;
+    EXPECT_NO_THROW(captureOutput([&]{
+        shell.runFromSource("@invalid;\n", "test.cf");
+    }));
+}
+
+TEST(ShellFromSource, FunctionAndArray) {
+    Shell shell;
+    std::string out = captureOutput([&]{
+        shell.runFromSource(
+            "func add(a, b) { return a + b; }\n"
+            "print add(3, 7);\n",
+            "test.cf");
+    });
+    EXPECT_NE(out.find("10"), std::string::npos);
+}
+
+// ── runRepl 테스트 (stdin 리다이렉트) ────────────────────────────────
+
+TEST_F(ShellReplFixture, ExitCommand) {
     setInput("exit\n");
     std::string out = captureOutput([]{ Shell().runRepl(); });
     EXPECT_NE(out.find("REPL"), std::string::npos);
 }
 
-TEST_F(ShellReplFixture, RunRepl_QuitCommand) {
+TEST_F(ShellReplFixture, QuitCommand) {
     setInput("quit\n");
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-TEST_F(ShellReplFixture, RunRepl_EmptyLine_Skipped) {
+TEST_F(ShellReplFixture, EmptyLine_Skipped) {
     setInput("\nexit\n");
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-TEST_F(ShellReplFixture, RunRepl_ExecutesCode) {
+TEST_F(ShellReplFixture, ExecutesCode) {
     setInput("print 99;\nexit\n");
     std::string out = captureOutput([]{ Shell().runRepl(); });
     EXPECT_NE(out.find("99"), std::string::npos);
 }
 
-TEST_F(ShellReplFixture, RunRepl_StatePreservedAcrossLines) {
+TEST_F(ShellReplFixture, StatePreservedAcrossLines) {
     setInput("var x = 10;\nprint x;\nexit\n");
     std::string out = captureOutput([]{ Shell().runRepl(); });
     EXPECT_NE(out.find("10"), std::string::npos);
 }
 
-TEST_F(ShellReplFixture, RunRepl_ParseError_ContinuesRepl) {
+TEST_F(ShellReplFixture, ParseError_ContinuesRepl) {
     setInput("print 1 2;\nexit\n");
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-TEST_F(ShellReplFixture, RunRepl_RuntimeError_ContinuesRepl) {
+TEST_F(ShellReplFixture, RuntimeError_ContinuesRepl) {
     setInput("print undeclaredVar;\nexit\n");
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-TEST_F(ShellReplFixture, RunRepl_CheckError_ContinuesRepl) {
+TEST_F(ShellReplFixture, CheckError_ContinuesRepl) {
     setInput("{ var a = a; }\nexit\n");
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-TEST_F(ShellReplFixture, RunRepl_LexerError_ContinuesRepl) {
+TEST_F(ShellReplFixture, LexerError_ContinuesRepl) {
     setInput("@invalid;\nexit\n");
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-TEST(ShellDebugTest, RunDebug_ExitImmediately) {
-    writeFile(SHELL_CF2, "print 1;\n");
-    std::istringstream input("exit\n");
-    auto* oldCin = std::cin.rdbuf(input.rdbuf());
-    EXPECT_NO_THROW(captureOutput([]{
-        Shell().runDebug("._shell_test2.cf");
-    }));
-    std::cin.rdbuf(oldCin);
-    std::remove(SHELL_CF2.c_str());
-}
+// ── runDebug 연기 ─────────────────────────────────────────────────────
+// runDebug는 Debugger::run()을 통해 DebuggerTest에서 검증
