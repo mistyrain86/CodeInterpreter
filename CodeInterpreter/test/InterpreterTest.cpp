@@ -472,7 +472,7 @@ protected:
         stmts.push_back(printStmt(std::move(expr)));
         m_result = m_folder.optimize(std::move(stmts));
         auto* ps  = dynamic_cast<PrintStmt*>(m_result[0].get());
-        auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
+        auto* lit = dynamic_cast<LiteralExpr*>(ps->m_expression.get());
         EXPECT_NE(lit, nullptr) << "표현식이 LiteralExpr로 폴딩되지 않았습니다";
         if (!lit) return 0.0;
         return std::get<double>(lit->value);
@@ -484,7 +484,7 @@ protected:
         stmts.push_back(printStmt(std::move(expr)));
         m_result = m_folder.optimize(std::move(stmts));
         auto* ps = dynamic_cast<PrintStmt*>(m_result[0].get());
-        return dynamic_cast<LiteralExpr*>(ps->expression.get()) != nullptr;
+        return dynamic_cast<LiteralExpr*>(ps->m_expression.get()) != nullptr;
     }
 };
 
@@ -518,7 +518,7 @@ TEST(ConstantFolderTest, Fold_VarStmt_Initializer) {
     stmts.push_back(varDecl("x", bin(litNum(2), TokenType::STAR, "*", litNum(3))));
     auto result = folder.optimize(std::move(stmts));
     auto* vs  = dynamic_cast<VarStmt*>(result[0].get());
-    auto* lit = dynamic_cast<LiteralExpr*>(vs->initializer.get());
+    auto* lit = dynamic_cast<LiteralExpr*>(vs->m_initializer.get());
     ASSERT_NE(lit, nullptr);
     EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 6.0);
 }

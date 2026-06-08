@@ -15,43 +15,43 @@ void Resolver::resolveStmts(const std::vector<StmtPtr>& stmts) {
 
 void Resolver::resolveStmt(Stmt& stmt) {
     if (auto* s = dynamic_cast<VarStmt*>(&stmt)) {
-        declare(s->name);
-        if (s->initializer) resolveExpr(*s->initializer);
-        define(s->name);
+        declare(s->m_name);
+        if (s->m_initializer) resolveExpr(*s->m_initializer);
+        define(s->m_name);
     }
     else if (auto* s = dynamic_cast<FunctionStmt*>(&stmt)) {
-        declare(s->name); define(s->name);
+        declare(s->m_name); define(s->m_name);
         m_functionDepth++;
         beginScope();
-        for (auto& p : s->params) { declare(p); define(p); }
-        resolveStmts(s->body);
+        for (auto& p : s->m_params) { declare(p); define(p); }
+        resolveStmts(s->m_body);
         endScope();
         m_functionDepth--;
     }
     else if (auto* s = dynamic_cast<ReturnStmt*>(&stmt)) {
-        if (s->value) resolveExpr(*s->value);
+        if (s->m_value) resolveExpr(*s->m_value);
     }
     else if (auto* s = dynamic_cast<BlockStmt*>(&stmt)) {
-        beginScope(); resolveStmts(s->statements); endScope();
+        beginScope(); resolveStmts(s->m_statements); endScope();
     }
     else if (auto* s = dynamic_cast<IfStmt*>(&stmt)) {
-        resolveExpr(*s->condition);
-        resolveStmt(*s->thenBranch);
-        if (s->elseBranch) resolveStmt(*s->elseBranch);
+        resolveExpr(*s->m_condition);
+        resolveStmt(*s->m_thenBranch);
+        if (s->m_elseBranch) resolveStmt(*s->m_elseBranch);
     }
     else if (auto* s = dynamic_cast<ForStmt*>(&stmt)) {
         beginScope();
-        if (s->initializer) resolveStmt(*s->initializer);
-        if (s->condition)   resolveExpr(*s->condition);
-        if (s->increment)   resolveExpr(*s->increment);
-        if (s->body)        resolveStmt(*s->body);
+        if (s->m_initializer) resolveStmt(*s->m_initializer);
+        if (s->m_condition)   resolveExpr(*s->m_condition);
+        if (s->m_increment)   resolveExpr(*s->m_increment);
+        if (s->m_body)        resolveStmt(*s->m_body);
         endScope();
     }
     else if (auto* s = dynamic_cast<PrintStmt*>(&stmt)) {
-        resolveExpr(*s->expression);
+        resolveExpr(*s->m_expression);
     }
     else if (auto* s = dynamic_cast<ExprStmt*>(&stmt)) {
-        resolveExpr(*s->expression);
+        resolveExpr(*s->m_expression);
     }
 }
 

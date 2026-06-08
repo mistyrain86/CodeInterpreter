@@ -185,36 +185,36 @@ Value Interpreter::visitAssign(AssignExpr& e) {
 // ── StmtVisitor 구현 ───────────────────────────────────────────────
 
 void Interpreter::visitExprStmt(ExprStmt& s) {
-    evaluate(*s.expression);
+    evaluate(*s.m_expression);
 }
 
 void Interpreter::visitPrintStmt(PrintStmt& s) {
-    std::cout << stringify(evaluate(*s.expression)) << "\n";
+    std::cout << stringify(evaluate(*s.m_expression)) << "\n";
 }
 
 void Interpreter::visitVarStmt(VarStmt& s) {
-    Value v = s.initializer ? evaluate(*s.initializer) : Value{std::monostate{}};
-    m_currentEnv->define(s.name.lexeme, std::move(v));
+    Value v = s.m_initializer ? evaluate(*s.m_initializer) : Value{std::monostate{}};
+    m_currentEnv->define(s.m_name.lexeme, std::move(v));
 }
 
 void Interpreter::visitBlockStmt(BlockStmt& s) {
-    executeBlock(s.statements, std::make_shared<Environment>(m_currentEnv));
+    executeBlock(s.m_statements, std::make_shared<Environment>(m_currentEnv));
 }
 
 void Interpreter::visitIfStmt(IfStmt& s) {
-    if (isTruthy(evaluate(*s.condition))) execute(*s.thenBranch);
-    else if (s.elseBranch)               execute(*s.elseBranch);
+    if (isTruthy(evaluate(*s.m_condition))) execute(*s.m_thenBranch);
+    else if (s.m_elseBranch)               execute(*s.m_elseBranch);
 }
 
 void Interpreter::visitForStmt(ForStmt& s) {
-    if (!s.body)
+    if (!s.m_body)
         throw RuntimeError("런타임 오류: ForStmt body가 null입니다.");
     ScopeGuard guard(m_currentEnv, std::make_shared<Environment>(m_currentEnv));
-    if (s.initializer) execute(*s.initializer);
+    if (s.m_initializer) execute(*s.m_initializer);
     while (true) {
-        if (s.condition && !isTruthy(evaluate(*s.condition))) break;
-        execute(*s.body);
-        if (s.increment) evaluate(*s.increment);
+        if (s.m_condition && !isTruthy(evaluate(*s.m_condition))) break;
+        execute(*s.m_body);
+        if (s.m_increment) evaluate(*s.m_increment);
     }
 }
 
@@ -240,7 +240,7 @@ bool Interpreter::isTruthy(const Value& v) const {
 
 void Interpreter::visitFunctionStmt(FunctionStmt& s) {
     auto fn = std::make_shared<LangFunction>(s, m_currentEnv);
-    m_currentEnv->define(s.name.lexeme, Value{fn});
+    m_currentEnv->define(s.m_name.lexeme, Value{fn});
 }
 
 Value Interpreter::visitCallExpr(CallExpr& e) {
@@ -265,7 +265,7 @@ Value Interpreter::visitCallExpr(CallExpr& e) {
 }
 
 void Interpreter::visitReturnStmt(ReturnStmt& s) {
-    Value val = s.value ? evaluate(*s.value) : Value{std::monostate{}};
+    Value val = s.m_value ? evaluate(*s.m_value) : Value{std::monostate{}};
     throw ReturnSignal(std::move(val));
 }
 
