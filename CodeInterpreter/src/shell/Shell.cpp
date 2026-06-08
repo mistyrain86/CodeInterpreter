@@ -54,11 +54,33 @@ void Shell::runFile(const std::string& path) {
     }
     std::cout << "CodeFab Interpreter (FILE 모드)\n";
     std::cout << "[FILE] 소스코드 로딩: " << path << "\n";
-    std::ostringstream ss;
-    ss << file.rdbuf();
+
+    // 빈 줄 기준으로 청크 분리 후 실행 — 오류 발생 시 출력 후 종료
+    std::vector<std::string> lines;
+    std::string ln;
+    while (std::getline(file, ln)) lines.push_back(ln);
 
     LangFactory factory;
-    runWithErrors(factory, ss.str(), [](int code) { std::exit(code); });
+    bool hasError = false;
+    std::ostringstream current;
+    int chunkStart = 0;
+
+    for (int i = 0; i <= (int)lines.size(); i++) {
+        if (hasError) break;
+        bool isBlank = (i == (int)lines.size()) ||
+                       lines[i].find_first_not_of(" \t\r\n") == std::string::npos;
+        if (isBlank) {
+            if (!current.str().empty()) {
+                std::string source(chunkStart, '\n');
+                source += current.str();
+                runWithErrors(factory, source, [&](int) { hasError = true; });
+                current.str(""); current.clear();
+            }
+            chunkStart = i + 1;
+        } else {
+            current << lines[i] << '\n';
+        }
+    }
 }
 
 void Shell::runDebug(const std::string& path) {
