@@ -24,9 +24,11 @@ struct ExprStmt : Stmt {
 };
 
 struct PrintStmt : Stmt {
+    int     line = 0;
     ExprPtr expression;
-    explicit PrintStmt(ExprPtr e) : expression(std::move(e)) {}
+    explicit PrintStmt(ExprPtr e, int ln = 0) : expression(std::move(e)), line(ln) {}
     void accept(StmtVisitor& v) override { v.visitPrintStmt(*this); }
+    int  getLine() const override { return line; }
 };
 
 struct VarStmt : Stmt {
@@ -45,27 +47,33 @@ struct BlockStmt : Stmt {
 };
 
 struct IfStmt : Stmt {
+    int     line = 0;
     ExprPtr condition;
     StmtPtr thenBranch;
     StmtPtr elseBranch;
-    IfStmt(ExprPtr c, StmtPtr t, StmtPtr e)
+    IfStmt(ExprPtr c, StmtPtr t, StmtPtr e, int ln = 0)
         : condition(std::move(c))
         , thenBranch(std::move(t))
-        , elseBranch(std::move(e)) {}
+        , elseBranch(std::move(e))
+        , line(ln) {}
     void accept(StmtVisitor& v) override { v.visitIfStmt(*this); }
+    int  getLine() const override { return line; }
 };
 
 struct ForStmt : Stmt {
+    int     line = 0;
     StmtPtr initializer;
     ExprPtr condition;
     ExprPtr increment;
     StmtPtr body;
-    ForStmt(StmtPtr i, ExprPtr c, ExprPtr inc, StmtPtr b)
+    ForStmt(StmtPtr i, ExprPtr c, ExprPtr inc, StmtPtr b, int ln = 0)
         : initializer(std::move(i))
         , condition(std::move(c))
         , increment(std::move(inc))
-        , body(std::move(b)) {}
+        , body(std::move(b))
+        , line(ln) {}
     void accept(StmtVisitor& v) override { v.visitForStmt(*this); }
+    int  getLine() const override { return line; }
 };
 
 // ── Chapter 2: 함수 선언 / return ─────────────────────────────────

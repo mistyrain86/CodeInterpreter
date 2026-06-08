@@ -59,10 +59,14 @@ public:
     using StmtHook = std::function<void(Stmt&)>;
     void setStmtHook(StmtHook hook) { m_stmtHook = std::move(hook); }
 
+    // 디버거용: 현재 execute() 호출 깊이 (1=최상위, 2=블록 내부, ...)
+    int executeDepth() const { return m_executeDepth; }
+
 private:
     std::shared_ptr<Environment> m_currentEnv;
-    const BindingMap*            m_bindings  = nullptr;
+    const BindingMap*            m_bindings     = nullptr;
     StmtHook                     m_stmtHook;
+    int                          m_executeDepth = 0;
     void        checkNumericOperand(const Value& val, int line) const;
     void        checkNumericPair(const Value& l, const Value& r, int line) const;
     std::optional<int> lookupBinding(const Expr* expr) const;
