@@ -196,22 +196,28 @@ void Debugger::processCommand(const std::string& input, Interpreter& interp) {
 // ── 개별 커맨드 구현 ──────────────────────────────────────────────────
 
 void Debugger::cmdBreak(int line) {
-    m_breakpoints.insert(line);
+    if (!m_breakpoints.insert(line).second) {
+        std::cout << "[DEBUG] " << line << "번째 줄에 이미 breakpoint가 존재합니다.\n";
+        return;
+    }
     std::cout << "[DEBUG] " << line << "번째 줄에 breakpoint 설정\n";
 }
 
 void Debugger::cmdRemove(int line) {
-    m_breakpoints.erase(line);
+    if (m_breakpoints.erase(line) == 0) {
+        std::cout << "[DEBUG] " << line << "번째 줄에 설정된 breakpoint가 없습니다.\n";
+        return;
+    }
     std::cout << "[DEBUG] " << line << "번째 줄 breakpoint 제거\n";
 }
 
 void Debugger::cmdBreakpoints() {
     if (m_breakpoints.empty()) {
-        std::cout << "설정된 breakpoint 없음\n";
+        std::cout << "[DEBUG] " << "설정된 breakpoint가 없습니다.\n";
         return;
     }
     std::cout << "[Breakpoints]\n";
-    for (int bp : m_breakpoints) std::cout << "  줄 " << bp << "\n";
+    for (int bp : m_breakpoints) std::cout << "   Line " << bp << "\n";
 }
 
 void Debugger::cmdWatch(const std::string& var) {
@@ -226,22 +232,15 @@ void Debugger::cmdUnwatch(const std::string& var) {
 
 void Debugger::cmdWatched(Interpreter& interp) {
     if (m_watches.empty()) {
-        std::cout << "감시 중인 변수 없음\n";
+        std::cout << "[WATCH] 감시 중인 변수가 없습니다.\n";
         return;
     }
-    for (const auto& var : m_watches) {
-        try {
-            Token t{TokenType::IDENTIFIER, var, std::monostate{}, 0};
-            Value v = interp.currentEnv()->get(t);
-            std::cout << "[WATCH] " << var << " = " << interp.stringify(v) << "\n";
-        } catch (...) {
-            std::cout << "[WATCH] " << var << " = (미정의)\n";
-        }
-    }
+
+    printWatches(interp);
 }
 
 void Debugger::cmdInspect(Interpreter& interp) {
-    std::cout << "-- 현재 스코프 변수 ----------\n";
+    std::cout << "----- 현재 스코프 변수 -----\n";
 
     // env 체인: currentEnv(로컬) → ... → global(enclosing==nullptr)
     std::vector<const Environment*> chain;
