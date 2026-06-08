@@ -174,7 +174,6 @@
     <ClInclude Include="src\lexer\Lexer.h" />
     <ClInclude Include="src\parser\Parser.h" />
     <ClInclude Include="src\parser\TokenStream.h" />
-    <ClInclude Include="src\parser\ParserProxy.h" />
     <ClInclude Include="src\checker\Checker.h" />
     <ClInclude Include="src\checker\Resolver.h" />
     <ClInclude Include="src\interpreter\ArrayBuiltin.h" />

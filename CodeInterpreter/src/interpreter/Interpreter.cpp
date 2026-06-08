@@ -130,7 +130,7 @@ void Interpreter::rebuildScopeStackFromClosure(Environment* closure) {
     auto* cur = closure;
     while (cur) {
         chain.push_back(cur);
-        cur = cur->m_enclosing.get();
+        cur = cur->enclosing().get();
     }
     std::reverse(chain.begin(), chain.end());  // global이 index 0
     m_scopeStack = std::move(chain);
@@ -190,8 +190,9 @@ Value Interpreter::visitBinary(BinaryExpr& e) {
 
 std::vector<std::string> Interpreter::globalNames() const {
     std::vector<std::string> result;
-    result.reserve(m_currentEnv->m_values.size());
-    for (const auto& [name, val] : m_currentEnv->m_values)
+    const auto& vals = m_currentEnv->values();
+    result.reserve(vals.size());
+    for (const auto& [name, val] : vals)
         result.push_back(name);
     return result;
 }
@@ -208,7 +209,7 @@ Value Interpreter::visitVariable(VariableExpr& e) {
         if (m_spy) m_spy->m_bindingHits++;
         // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
         int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
-        return m_scopeStack[idx]->m_values.at(e.name.lexeme);
+        return m_scopeStack[idx]->values().at(e.name.lexeme);
     }
     if (m_spy) m_spy->m_chainWalks++;
     return m_currentEnv->get(e.name);
@@ -220,7 +221,7 @@ Value Interpreter::visitAssign(AssignExpr& e) {
         if (m_spy) m_spy->m_bindingHits++;
         // O(1): 평탄화 스코프 스택 배열 인덱스로 직접 접근 (체인 순회 없음)
         int idx = static_cast<int>(m_scopeStack.size()) - 1 - *dist;
-        m_scopeStack[idx]->m_values[e.name.lexeme] = v;
+        m_scopeStack[idx]->values()[e.name.lexeme] = v;
         return v;
     }
     if (m_spy) m_spy->m_chainWalks++;
