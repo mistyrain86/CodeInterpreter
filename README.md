@@ -1,9 +1,10 @@
 # CodeFab — Custom Language Interpreter
 
 C++20 기반의 커스텀 인터프리터 프로젝트입니다.
-Lexer → Parser → Checker → Interpreter 4단계 파이프라인으로 동작합니다.
+Lexer → Parser → Optimizer → Checker → Interpreter 5단계 파이프라인으로 동작합니다.
 
 ---
+
 ## 👥 팀 소개
 
 **팀명:** Don't Touch
@@ -42,104 +43,153 @@ PLAN 수립  →  PLAN 검증  →  기능별 순차 구현
 
 ---
 
----
-
-## 빌드
-
-Visual Studio 2022에서 `CodeInterpreter.slnx`를 열고 **Release | x64** 로 빌드합니다.
-
-> **Debug 빌드**는 GoogleMock 테스트 러너로 진입하므로, 인터프리터 실행은 **Release** 빌드를 사용하세요.
-
-빌드 후 실행 파일 위치: `CodeInterpreter\Release\CodeInterpreter.exe`
-
----
-
 ## 실행 방법
 
-### 1. 인터랙티브 모드 (REPL)
+실행 파일에 전달하는 **인자(args)** 에 따라 동작 모드가 결정됩니다.
 
-터미널에서 실행 파일을 직접 실행하면 대화형 프롬프트가 나타납니다.
+```
+CodeInterpreter.exe                    → REPL 모드 (인자 없음)
+CodeInterpreter.exe run <파일경로>     → 파일 실행 모드
+CodeInterpreter.exe debug <파일경로>  → 디버그 모드
+```
+
+> `run` · `debug` 는 **CLI 인자**이며 언어 키워드가 아닙니다.
+
+### 언어 키워드
+
+아래 단어들은 예약어로, 변수명으로 사용할 수 없습니다.
+
+```
+var  print  if  else  for  true  false  func  return
+```
+
+**키워드에 해당하지 않는 모든 식별자는 변수명으로 인식됩니다.**
+
+---
+
+### 1. REPL 모드
+
+인자 없이 실행하면 대화형 프롬프트가 시작됩니다.
 
 ```
 CodeInterpreter.exe
 ```
 
 ```
-CodeFab Interpreter
-여러 줄 입력 후 빈 줄을 입력하면 실행됩니다. 종료: Ctrl+Z (Windows) / Ctrl+D (Linux)
->>> var x = 10;
-... print x + 5;
-...
+CodeFab Interpreter (REPL 모드)
+종료: exit 또는 quit
+> var x = 10;
+> print x + 5;
 15
->>>
+> exit
 ```
 
-| 프롬프트 | 의미 |
-|---------|------|
-| `>>> ` | 새 입력 대기 |
-| `... ` | 이전 줄에서 이어받는 중 |
+- 프롬프트 `> ` 가 나타나면 CodeFab 코드를 한 줄 입력하고 Enter를 누르면 **즉시 실행**됩니다.
+- **전역 변수와 함수는 세션이 끝날 때까지 유지됩니다.**
+- `exit` 또는 `quit` 입력 시 종료됩니다.
+- 별도 `help` 명령은 없으며, 이 README가 사용 가이드입니다.
 
-- **빈 줄** 입력 → 누적된 코드 실행
-- **Ctrl+Z** (Windows) / **Ctrl+D** (Linux) → 종료
-
-여러 줄 프로그램 예시:
+**상태 유지 예시:**
 
 ```
->>> var x = "global";
-... {
-...   var x = "inner";
-...   print x;
-... }
-... print x;
-...
-inner
-global
->>>
+> func greet(name) { return "안녕, " + name; }
+> var msg = greet("CodeFab");
+> print msg;
+안녕, CodeFab
 ```
 
 ---
 
-### 2. 파이프 모드
+### 2. 파일 실행 모드
 
-소스 코드를 파이프로 전달하면 한 번에 실행합니다.
+`.cf` 파일을 작성한 후 `run` 인자와 함께 실행합니다.
 
-```bat
-echo "print 1 + 2 * 3;" | CodeInterpreter.exe
-:: 출력: 7
+```
+CodeInterpreter.exe run scripts/hello.cf
 ```
 
-```bat
-echo "var x = 10; var y = 20; print x + y;" | CodeInterpreter.exe
-:: 출력: 30
-```
+**`hello.cf` 예시:**
 
----
-
-### 3. 파일 입력 모드
-
-소스 코드를 파일에 저장한 후 리디렉션으로 실행합니다.
-
-**`program.cf` 예시:**
 ```
 var a = 5;
 var b = 3;
 print a + b;
+
 if (a > b) {
     print "a가 더 큽니다";
 }
+
 for (var i = 0; i < 3; i = i + 1) {
     print i;
 }
+
+func factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+print factorial(5);
 ```
 
-```bat
-CodeInterpreter.exe < program.cf
-:: 출력:
-:: 8
-:: a가 더 큽니다
-:: 0
-:: 1
-:: 2
+```
+CodeFab Interpreter (FILE 모드)
+[FILE] 소스코드 로딩: scripts/hello.cf
+8
+a가 더 큽니다
+0
+1
+2
+120
+```
+
+---
+
+### 3. 디버그 모드
+
+`debug` 인자와 함께 실행하면 문장(Stmt) 단위로 실행을 제어할 수 있습니다.
+
+```
+CodeInterpreter.exe debug scripts/debug_test.cf
+```
+
+```
+CodeFab Interpreter (DEBUG 모드)
+종료: exit 또는 quit
+[DEBUG] 소스코드 로딩: scripts/debug_test.cf
+[DEBUG] 1번째 줄에서 정지 -> var a = 3;
+>
+```
+
+정지 시 `> ` 프롬프트에 아래 커맨드를 입력합니다.
+
+| 커맨드 | 설명 |
+|--------|------|
+| `step` | 다음 문장에서 정지 (블록 내부 진입) |
+| `next` | 다음 문장에서 정지 (블록 내부 건너뜀) |
+| `continue` | 다음 breakpoint까지 실행 |
+| `break <줄>` | 해당 줄에 breakpoint 설정 |
+| `remove <줄>` | 해당 줄 breakpoint 해제 |
+| `Breakpoints` | 설정된 breakpoint 목록 출력 |
+| `watch <변수>` | 변수 감시 등록 (정지마다 자동 출력) |
+| `unwatch <변수>` | 변수 감시 해제 |
+| `watched` | 감시 중인 변수 목록과 현재 값 출력 |
+| `inspect` | 현재 스코프 전체 변수/값/타입 출력 |
+| `exit` / `quit` | 디버그 세션 종료 |
+
+> **알 수 없는 커맨드**를 입력하면 전체 커맨드 목록이 출력됩니다.
+
+**사용 예시:**
+
+```
+[DEBUG] 12번째 줄에서 정지 -> var a = 3;
+> watch a
+[WATCH] 'a' 감시 등록
+> step
+[DEBUG] 13번째 줄에서 정지 -> var b = 7;
+[WATCH] a = 3
+> inspect
+-- 현재 스코프 변수 ----------
+[전역] a = 3 (Number)
+> continue
 ```
 
 ---
@@ -153,17 +203,18 @@ CodeInterpreter.exe < program.cf
 | 숫자 | `3`, `3.14`, `-1` | 정수는 `.0` 없이 출력 (`5.0` → `5`) |
 | 문자열 | `"hello"` | 큰따옴표로 감쌈 |
 | 불리언 | `true` / `false` | 소문자 키워드 |
-| nil | 초기화 없는 var | `nil`로 출력 |
+| null | 초기화 없는 var, return 없는 함수 반환값 | `null`로 출력 |
 
 ### 연산자 및 우선순위
 
 ```
-단항(-,!)  >  곱셈/나눗셈(*,/)  >  덧셈/뺄셈(+,-)  >  비교(<,<=,>,>=)  >  동등(==,!=)
+단항(-,!)  >  곱셈/나눗셈/나머지(*,/,%)  >  덧셈/뺄셈(+,-)  >  비교(<,<=,>,>=)  >  동등(==,!=)
 ```
 
 | 분류 | 연산자 | 예시 | 결과 |
 |------|--------|------|------|
-| 산술 | `+` `-` `*` `/` | `1 + 2 * 3` | `7` |
+| 산술 | `+` `-` `*` `/` `%` | `1 + 2 * 3` | `7` |
+| 나머지 | `%` | `10 % 3` | `1` |
 | 단항 | `-` `!` | `!true` | `false` |
 | 비교 | `<` `<=` `>` `>=` | `3 > 5` | `false` |
 | 동등 | `==` `!=` | `1 == 1` | `true` |
@@ -173,8 +224,50 @@ CodeInterpreter.exe < program.cf
 
 ```
 var x = 10;     // 선언 및 초기화
-var y;          // nil로 초기화
+var y;          // null로 초기화
 x = x + 1;     // 재할당
+```
+
+### 함수
+
+```
+// 함수 선언
+func add(a, b) {
+    return a + b;
+}
+print add(3, 7);    // 10
+
+// return 없는 함수는 null 반환
+func noop() { var x = 1; }
+print noop();       // null
+
+// 재귀
+func factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+print factorial(5); // 120
+
+// 클로저 (외부 변수 캡처)
+var x = 10;
+func getX() { return x; }
+print getX();       // 10
+```
+
+### 배열
+
+```
+var arr = Array(5);     // 크기 5짜리 배열 (초기값 null)
+arr[0] = 10;
+arr[1] = 20;
+print arr[0];           // 10
+print arr[1];           // 20
+
+// for 루프와 함께 사용
+for (var i = 0; i < 5; i = i + 1) {
+    arr[i] = i * 2;
+}
+print arr[3];           // 6
 ```
 
 ### 제어 흐름
@@ -198,11 +291,11 @@ var x = "global";
     var x = "inner";   // 별개의 변수 (shadowing)
     print x;           // inner
 }
-print x;               // global  ← 블록 밖은 영향 없음
+print x;               // global
 
 var count = 0;
 {
-    count = count + 1; // 바깥 변수 수정은 가능
+    count = count + 1; // 바깥 변수 수정 가능
 }
 print count;           // 1
 ```
@@ -217,14 +310,15 @@ print count;           // 1
 
 ## 에러 처리
 
-에러 발생 시 stderr에 메시지를 출력하고, 파이프/파일 모드에서는 아래 종료 코드를 반환합니다.
+에러 발생 시 stderr에 메시지를 출력합니다.
+파일 실행 모드에서는 에러 종류에 따라 비정상 종료됩니다.
 
-| 단계 | 에러 종류 | exit 코드 | 출력 예시 |
-|------|---------|---------|---------|
-| Lexer | 어휘 오류 | 4 | `[오류] [라인 1] 어휘 오류: 인식할 수 없는 문자 '@'` |
-| Parser | 구문 오류 | 1 | `[구문 오류] [라인 1] 구문 오류: ...` |
-| Checker | 의미 오류 | 2 | `[의미 오류] [라인 1] 의미 오류: ...` |
-| Interpreter | 런타임 오류 | 3 | `[런타임 오류] [라인 1] 런타임 오류: ...` |
+| 단계 | 에러 종류 | 출력 형식 |
+|------|---------|---------|
+| Lexer | 어휘 오류 | `[오류] [라인 N] 어휘 오류: ...` |
+| Parser | 구문 오류 | `[구문 오류] [라인 N] 구문 오류: ...` |
+| Checker | 의미 오류 | `[의미 오류] [라인 N] 의미 오류: ...` |
+| Interpreter | 런타임 오류 | `[런타임 오류] [라인 N] 런타임 오류: ...` |
 
 ### 주요 에러 케이스
 
@@ -248,42 +342,14 @@ print notDefined;
 // 런타임 오류: 타입 불일치
 print 1 + "HI";
 → [런타임 오류] 피연산자는 두 숫자 또는 두 문자열이어야 합니다.
+
+// 런타임 오류: 0으로 나누기
+print 10 / 0;
+→ [런타임 오류] 0으로 나눌 수 없습니다.
+
+// 런타임 오류: 배열 범위 초과
+var arr = Array(3); print arr[5];
+→ [런타임 오류] 인덱스 범위를 벗어났습니다. (5)
 ```
 
 > **참고:** 전역 스코프에서의 중복 `var` 선언은 에러가 아닌 덮어쓰기로 처리됩니다.
-
----
-
-## 테스트 실행
-
-**Debug | x64** 빌드 후 실행하면 139개 단위/통합 테스트가 자동으로 수행됩니다.
-
-```
-CodeInterpreter\Debug\CodeInterpreter.exe
-```
-
-```
-[==========] 139 tests from 11 test suites ran.
-[  PASSED  ] 139 tests.
-```
-
----
-
-## 프로젝트 구조
-
-```
-CodeInterpreter/
-├── Token.h / Value.h              # 공통 타입
-├── Expr.h / Stmt.h                # AST 노드
-├── Lexer.h/cpp                    # 어휘 분석
-├── Parser.h/cpp                   # 구문 분석
-├── Checker.h/cpp                  # 정적 의미 분석
-├── Environment.h/cpp              # 변수 환경 (스코프 체이닝)
-├── Interpreter.h/cpp              # 실행 엔진
-├── LangFactory.h/cpp              # 파이프라인 조립 (DI)
-├── ParseError.h / CheckError.h / RuntimeError.h
-├── Mocks.h / TestUtils.h          # 테스트 인프라
-├── *Test.cpp                      # 컴포넌트별 테스트
-├── TestMain.cpp                   # 테스트 진입점 (Debug)
-└── main.cpp                       # 인터프리터 진입점 (Release)
-```
