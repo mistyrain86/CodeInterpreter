@@ -143,13 +143,12 @@ void Checker::beginScope() { m_scopes.emplace_back(); }
 void Checker::endScope()   { m_scopes.pop_back(); }
 
 void Checker::declare(const Token& name) {
-    auto& scope = m_scopes.back();
-    if (scope.count(name.lexeme))
-        throw CheckError(checkErr(name.line, "이미 이 스코프에 같은 이름의 변수가 있습니다. ('" + name.lexeme + "')"));
-    // 전역 레벨에서 이미 선언된 변수 재선언 금지
-    // (m_scopes.size()==2: check()의 두 beginScope에 의한 전역 레벨,
-    //  m_inUserCode: 내부 빌트인 선언이 아닌 사용자 코드)
-    if (m_inUserCode && m_scopes.size() == 2 && m_knownGlobals.count(name.lexeme))
+    auto& scope      = m_scopes.back();
+    bool  inScope    = scope.count(name.lexeme) > 0;
+    // 전역 레벨(beginScope 2회)에서 이미 선언된 전역 변수 재선언
+    bool  globalRedecl = m_inUserCode && m_scopes.size() == 2
+                      && m_knownGlobals.count(name.lexeme) > 0;
+    if (inScope || globalRedecl)
         throw CheckError(checkErr(name.line, "이미 이 스코프에 같은 이름의 변수가 있습니다. ('" + name.lexeme + "')"));
     scope[name.lexeme] = false;
 }
