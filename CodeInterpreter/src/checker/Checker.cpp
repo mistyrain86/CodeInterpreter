@@ -33,8 +33,6 @@ void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
     for (const auto& s : stmts) s->accept(*this);
 }
 
-// ── StmtVisitor 구현 ───────────────────────────────────────────────
-
 void Checker::visitVarStmt(VarStmt& s) {
     declare(s.m_name);
     if (s.m_initializer) s.m_initializer->acceptVoid(*this);
@@ -98,8 +96,6 @@ void Checker::visitReturnStmt(ReturnStmt& s) {
     if (s.m_value) s.m_value->acceptVoid(*this);
 }
 
-// ── VoidExprVisitor 구현 ───────────────────────────────────────────
-
 void Checker::visitGrouping(GroupingExpr& e) {
     e.expression->acceptVoid(*this);
 }
@@ -136,8 +132,6 @@ void Checker::visitIndexSetExpr(IndexSetExpr& e) {
     e.index->acceptVoid(*this);
     e.value->acceptVoid(*this);
 }
-
-// ── 스코프 관리 ────────────────────────────────────────────────────
 
 void Checker::beginScope() { m_scopes.emplace_back(); }
 void Checker::endScope()   { m_scopes.pop_back(); }

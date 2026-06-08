@@ -12,7 +12,6 @@ class Resolver : public StmtVisitor, public VoidExprVisitor {
 public:
     BindingMap resolve(const std::vector<StmtPtr>& stmts);
 
-    // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
     void visitPrintStmt   (PrintStmt&)    override;
     void visitVarStmt     (VarStmt&)      override;
@@ -22,7 +21,6 @@ public:
     void visitFunctionStmt(FunctionStmt&) override;
     void visitReturnStmt  (ReturnStmt&)   override;
 
-    // VoidExprVisitor
     void visitGrouping    (GroupingExpr&)  override;
     void visitUnary       (UnaryExpr&)     override;
     void visitBinary      (BinaryExpr&)    override;

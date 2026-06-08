@@ -11,7 +11,6 @@
 #include <iostream>
 #include <sstream>
 
-// 값 타입 이름 반환
 static std::string typeName(const Value& v) {
     if (std::holds_alternative<std::monostate>(v))             return "Nil";
     if (std::holds_alternative<double>(v))                     return "Number";
@@ -49,13 +48,10 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
         onBeforeStmt(stmt, *interp, cmdIn);
     });
 
-    // 3. 시작 메시지 출력
     std::cout << "CodeFab Interpreter (DEBUG 모드)\n";
     std::cout << "종료: exit 또는 quit\n";
     std::cout << "[DEBUG] 소스코드 로딩: " << m_path << "\n";
 
-    // 4. 빈 줄 기준으로 청크 분리 후 순서대로 실행
-    // 오류 발생 시 메시지 출력 후 실행 종료
     // 각 청크 앞에 빈 줄 prefix를 붙여 파서의 줄 번호를 유지
     bool hasError = false;
     auto runChunk = [&](int startLine, const std::string& chunk) {
@@ -94,7 +90,6 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
     std::cout << "[DEBUG] 실행 완료\n";
 }
 
-// ── Stmt 실행 직전 호출되는 Hook ────────────────────────────────────
 void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp, std::istream& cmdIn) {
     int  line         = stmt.getLine();
     if (line == 0) return;                                    // BlockStmt 등 건너뜀
@@ -105,20 +100,17 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp, std::istream& cmdIn
     }
     m_lastStmtLine = line;
 
-    // 정지 조건 판단
     if (!atBreakpoint) {
-        if (!m_stepMode) return;                              // continue 모드
-        if (interp.executeDepth() > m_nextDepth) return;     // next: 더 깊은 stmt 건너뜀
+        if (!m_stepMode) return;
+        if (interp.executeDepth() > m_nextDepth) return;
     }
 
-    // 해당 줄 소스 텍스트 (앞 공백 제거)
     std::string srcLine;
     if (line > 0 && line <= (int)m_sourceLines.size()) {
         srcLine = m_sourceLines[line - 1];
         srcLine.erase(0, srcLine.find_first_not_of(" \t"));
     }
 
-    // 정지 알림
     if (atBreakpoint)
         std::cout << "[DEBUG] " << line << "번째 줄에서 정지 (breakpoint) -> " << srcLine << "\n";
     else
@@ -126,7 +118,6 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp, std::istream& cmdIn
 
     printWatches(interp);
 
-    // 커맨드 루프 — step/next/continue/exit/quit 입력 시 탈출
     std::string input;
     while (true) {
         std::cout << "> ";
@@ -156,7 +147,6 @@ void Debugger::onBeforeStmt(Stmt& stmt, Interpreter& interp, std::istream& cmdIn
     }
 }
 
-// ── 커맨드 디스패처 ───────────────────────────────────────────────────
 void Debugger::processCommand(const std::string& input, Interpreter& interp) {
     if (input.empty()) return;
     if (input.size() > 6 && input.substr(0, 6) == "break ") {
@@ -197,8 +187,6 @@ void Debugger::processCommand(const std::string& input, Interpreter& interp) {
         std::cout << "  exit / quit     디버그 세션 종료\n";
     }
 }
-
-// ── 개별 커맨드 구현 ──────────────────────────────────────────────────
 
 void Debugger::cmdBreak(int line) {
     if (!m_breakpoints.insert(line).second) {
@@ -247,7 +235,6 @@ void Debugger::cmdWatched(Interpreter& interp) {
 void Debugger::cmdInspect(Interpreter& interp) {
     std::cout << "----- 현재 스코프 변수 -----\n";
 
-    // env 체인: currentEnv(로컬) → ... → global(enclosing==nullptr)
     std::vector<const Environment*> chain;
     const Environment* cur = interp.currentEnv().get();
     while (cur) {
@@ -255,7 +242,6 @@ void Debugger::cmdInspect(Interpreter& interp) {
         cur = cur->enclosing().get();
     }
 
-    // chain[0] = 가장 안쪽(로컬), chain[last] = 전역
     for (int i = 0; i < (int)chain.size(); i++) {
         bool        isGlobal = (i == (int)chain.size() - 1);
         std::string label    = isGlobal ? "[전역]" : "[로컬]";

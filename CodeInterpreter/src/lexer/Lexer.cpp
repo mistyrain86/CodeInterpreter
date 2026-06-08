@@ -104,7 +104,7 @@ void Lexer::scanString() {
         throw std::runtime_error("[라인 " + std::to_string(m_line) + "] 어휘 오류: 문자열이 닫히지 않았습니다.");
     }
 
-    advance(); // 닫는 따옴표('\"') 소비
+    advance();
 
     constexpr size_t quoteLength = 1;
     size_t stringLength = m_currentIdx - m_startIdx - (quoteLength * 2);
@@ -117,7 +117,7 @@ void Lexer::scanNumber() {
     advanceDigits();
 
     if (peek() == '.' && peekNext()) {
-        advance(); // '.' 소비
+        advance();
         advanceDigits();
     }
 

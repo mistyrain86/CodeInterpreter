@@ -12,8 +12,6 @@ void Resolver::resolveStmts(const std::vector<StmtPtr>& stmts) {
     for (auto& s : stmts) s->accept(*this);
 }
 
-// ── StmtVisitor 구현 ───────────────────────────────────────────────
-
 void Resolver::visitVarStmt(VarStmt& s) {
     declare(s.m_name);
     if (s.m_initializer) s.m_initializer->acceptVoid(*this);
@@ -61,7 +59,7 @@ void Resolver::visitExprStmt(ExprStmt& s) {
     s.m_expression->acceptVoid(*this);
 }
 
-// ── VoidExprVisitor 구현 ───────────────────────────────────────────
+
 
 void Resolver::visitVariable(VariableExpr& e) {
     resolveLocal(e, e.name.lexeme);
@@ -99,7 +97,7 @@ void Resolver::visitIndexSetExpr(IndexSetExpr& e) {
     e.value->acceptVoid(*this);
 }
 
-// ── 스코프 관리 ────────────────────────────────────────────────────
+
 
 void Resolver::resolveLocal(Expr& expr, const std::string& name) {
     for (int i = (int)m_scopes.size() - 1; i >= 0; i--) {

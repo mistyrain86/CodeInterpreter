@@ -18,7 +18,6 @@ public:
     void check(const std::vector<StmtPtr>& stmts) override;
     void registerGlobal(const std::string& name) override;
 
-    // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
     void visitPrintStmt   (PrintStmt&)    override;
     void visitVarStmt     (VarStmt&)      override;
@@ -28,7 +27,6 @@ public:
     void visitFunctionStmt(FunctionStmt&) override;
     void visitReturnStmt  (ReturnStmt&)   override;
 
-    // VoidExprVisitor
     void visitGrouping    (GroupingExpr&)  override;
     void visitUnary       (UnaryExpr&)     override;
     void visitBinary      (BinaryExpr&)    override;

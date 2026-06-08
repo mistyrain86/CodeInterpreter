@@ -76,7 +76,6 @@ TEST_F(LangFactoryMockFixture, CheckerError_StopsBeforeInterpreter) {
     EXPECT_THROW(factory->run(""), CheckError);
 }
 
-// ── Real Lexer + Real Parser + Real Checker 통합 픽스처 ─────────
 class LangFactoryIntegrationFixture : public ::testing::Test {
 protected:
     MockInterpreter* mi = nullptr;
@@ -152,7 +151,6 @@ TEST_F(LangFactoryIntegrationFixture, Complex_VarAndArith_Integration) {
     EXPECT_NO_THROW(factory->run("var a = 1; var b = 2; print a + b;"));
 }
 
-// Lexer 특화 테스트
 TEST_F(LangFactoryIntegrationFixture, StringLiteral_EndToEnd) {
     EXPECT_CALL(*mi, interpret(_)).Times(1);
     EXPECT_NO_THROW(factory->run("print \"hello\";"));

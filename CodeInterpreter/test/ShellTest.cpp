@@ -3,8 +3,6 @@
 #include "Shell.h"
 #include "TestUtils.h"
 
-// ── REPL 픽스처 (stdin 리다이렉트) ────────────────────────────────────
-
 class ShellReplFixture : public ::testing::Test {
 protected:
     std::istringstream m_input;
@@ -18,8 +16,6 @@ protected:
         if (m_oldCin) std::cin.rdbuf(m_oldCin);
     }
 };
-
-// ── runFromSource 테스트 (파일 불필요) ───────────────────────────────
 
 TEST(ShellFromSource, PrintsOutput) {
     Shell shell;
@@ -86,8 +82,6 @@ TEST(ShellFromSource, FunctionAndArray) {
     EXPECT_NE(out.find("10"), std::string::npos);
 }
 
-// ── runRepl 테스트 (stdin 리다이렉트) ────────────────────────────────
-
 TEST_F(ShellReplFixture, ExitCommand) {
     setInput("exit\n");
     std::string out = captureOutput([]{ Shell().runRepl(); });
@@ -136,5 +130,4 @@ TEST_F(ShellReplFixture, LexerError_ContinuesRepl) {
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-// ── runDebug 연기 ─────────────────────────────────────────────────────
-// runDebug는 Debugger::run()을 통해 DebuggerTest에서 검증
+

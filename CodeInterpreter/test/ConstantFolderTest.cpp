@@ -6,9 +6,6 @@
 #include "Resolver.h"
 #include "TestUtils.h"
 
-// ── Fixture 기반 단위 TC (upstream) ──────────────────────────────────
-
-
 class ConstantFolderFixture : public ::testing::Test {
 protected:
     ConstantFolder       m_folder;
@@ -75,7 +72,6 @@ TEST(ConstantFolderTest, Fold_VarStmt_Initializer) {
 }
 
 TEST_F(ConstantFolderFixture, RunResult) {
-    // (3 + 4) * 2 → 폴딩 후 LiteralExpr(14) → 실행 결과 14
     std::vector<StmtPtr> stmts;
     stmts.push_back(printStmt(
         binaryExpr(binaryExpr(litNum(3), TokenType::PLUS, "+", litNum(4)),
@@ -84,9 +80,6 @@ TEST_F(ConstantFolderFixture, RunResult) {
     EXPECT_EQ(runAll(std::move(folded)), "14\n");
 }
 
-// ── Test Double 기반 TC (상수 합치기 최적화 검증) ────────────────────
-
-// 파싱 + 폴딩(옵션) + 리졸브
 static std::pair<std::vector<StmtPtr>, BindingMap>
 parseOptAndResolve(const std::string& source, bool fold) {
     Lexer  lexer;
@@ -102,7 +95,6 @@ parseOptAndResolve(const std::string& source, bool fold) {
     return { std::move(stmts), std::move(bindings) };
 }
 
-// 실행하고 binary op 횟수 반환
 static int countBinaryOps(const std::string& source, bool fold) {
     auto [stmts, bindings] = parseOptAndResolve(source, fold);
     Interpreter::OpSpy opSpy;
@@ -113,8 +105,6 @@ static int countBinaryOps(const std::string& source, bool fold) {
     return opSpy.m_binaryOpCount;
 }
 
-// TC: AST 수준 검증
-// ConstantFolder가 상수 표현식을 단일 LiteralExpr로 교체했는지 확인
 TEST(ConstantFolderTest, FoldsConstExpr_ToLiteral) {
     const std::string source = R"(
 var total = 0;
@@ -139,9 +129,6 @@ for (var i = 0; i < 1; i = i + 1) {
     EXPECT_EQ(std::get<double>(folded->value), 5.0) << "폴딩 결과가 5.0이어야 한다";
 }
 
-// TC: 이진 연산 횟수 검증
-// 상수 폴딩 전: 루프 N회 동안 상수 표현식의 10개 연산이 N번 반복
-// 상수 폴딩 후: 상수 표현식 연산이 0회 (리터럴로 대체됨)
 TEST(ConstantFolderTest, ConstExpr_BinaryOpsReduced) {
     constexpr int LOOP_COUNT         = 5;
     constexpr int CONST_OPS_PER_ITER = 10;
@@ -161,7 +148,6 @@ for (var i = 0; i < 5; i = i + 1) {
         << LOOP_COUNT << "회 반복 → " << LOOP_COUNT * CONST_OPS_PER_ITER << "회 감소해야 한다";
 }
 
-// TC: 결과 정확성 검증 — 폴딩 여부와 관계없이 동일한 결과를 내야 한다
 TEST(ConstantFolderTest, ConstExpr_CorrectResult) {
     const std::string source = R"(
 var total = 0;

@@ -13,7 +13,6 @@ public:
     ConstantFolder();
     std::vector<StmtPtr> optimize(std::vector<StmtPtr> stmts) override;
 
-    // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
     void visitPrintStmt   (PrintStmt&)    override;
     void visitVarStmt     (VarStmt&)      override;

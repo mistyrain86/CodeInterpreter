@@ -5,10 +5,6 @@
 #include "ParseError.h"
 #include "Token.h"
 
-// ── Adapter 패턴 ───────────────────────────────────────────
-// std::vector<Token>(Adaptee)를 Parser가 요구하는
-// 커서(cursor) 인터페이스(Target)로 변환한다.
-// Parser는 인덱스 산술 없이 문법 분석 로직에만 집중할 수 있다.
 class TokenStream {
 public:
     TokenStream() = default;
