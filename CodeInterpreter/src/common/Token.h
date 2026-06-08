@@ -4,31 +4,26 @@
 #include <variant>
 
 enum class TokenType {
-    // 구분자
     LEFT_PAREN, RIGHT_PAREN,
     LEFT_BRACE, RIGHT_BRACE,
-    LEFT_BRACKET, RIGHT_BRACKET,  // 배열 인덱스 [ ]
+    LEFT_BRACKET, RIGHT_BRACKET,
     SEMICOLON,
-    COMMA,                         // 함수 인자 구분자
+    COMMA,
 
-    // 산술 연산자
     PLUS, MINUS, STAR, SLASH, PERCENT,
 
-    // 비교 / 논리 연산자
     BANG, BANG_EQUAL,
     EQUAL, EQUAL_EQUAL,
     LESS, LESS_EQUAL,
     GREATER, GREATER_EQUAL,
 
-    // 리터럴
     IDENTIFIER, STRING, NUMBER,
 
-    // 키워드
     KW_VAR, KW_PRINT,
     KW_IF, KW_ELSE,
     KW_FOR,
     KW_TRUE, KW_FALSE,
-    KW_FUNC, KW_RETURN,            // 함수 선언 / 반환
+    KW_FUNC, KW_RETURN,
 
     END_OF_FILE
 };

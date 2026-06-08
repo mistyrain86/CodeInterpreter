@@ -63,7 +63,7 @@ struct ScopeGuard {
 Interpreter::Interpreter()
     : m_currentEnv(std::make_shared<Environment>()) {
     m_currentEnv->define("Array", Value{std::make_shared<ArrayBuiltin>()});
-    m_scopeStack.push_back(m_currentEnv.get());  // 전역 스코프를 스택에 등록
+    m_scopeStack.push_back(m_currentEnv.get());
     initBinaryOps();
 }
 
@@ -122,8 +122,6 @@ void Interpreter::initBinaryOps() {
     };
 }
 
-// ── 공개 진입점 ────────────────────────────────────────────────────
-
 void Interpreter::rebuildScopeStackFromClosure(Environment* closure) {
     // 클로저 env 체인을 global → closure 순으로 재구성
     std::vector<Environment*> chain;
@@ -132,7 +130,7 @@ void Interpreter::rebuildScopeStackFromClosure(Environment* closure) {
         chain.push_back(cur);
         cur = cur->enclosing().get();
     }
-    std::reverse(chain.begin(), chain.end());  // global이 index 0
+    std::reverse(chain.begin(), chain.end());
     m_scopeStack = std::move(chain);
 }
 
@@ -159,8 +157,6 @@ void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
         stackGuard{m_scopeStack};
     for (const auto& s : stmts) execute(*s);
 }
-
-// ── ExprVisitor 구현 ───────────────────────────────────────────────
 
 Value Interpreter::visitLiteral(LiteralExpr& e) {
     return e.value;
@@ -230,8 +226,6 @@ Value Interpreter::visitAssign(AssignExpr& e) {
     return v;
 }
 
-// ── StmtVisitor 구현 ───────────────────────────────────────────────
-
 void Interpreter::visitExprStmt(ExprStmt& s) {
     evaluate(*s.m_expression);
 }
@@ -268,8 +262,6 @@ void Interpreter::visitForStmt(ForStmt& s) {
         if (s.m_increment) evaluate(*s.m_increment);
     }
 }
-
-// ── 헬퍼 ──────────────────────────────────────────────────────────
 
 void Interpreter::checkNumericPair(const Value& l, const Value& r, int line) const {
     checkNumericOperand(l, line);

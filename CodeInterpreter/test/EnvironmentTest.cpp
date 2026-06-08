@@ -36,7 +36,6 @@ TEST_F(EnvironmentFixture, Assign_Undefined_Throws) {
     EXPECT_THROW(env.assign(makeIdent("x"), Value{1.0}), std::runtime_error);
 }
 
-// TASK-D02: 스코프 체인 테스트
 class ScopeFixture : public ::testing::Test {
 protected:
     std::shared_ptr<Environment> global = std::make_shared<Environment>();

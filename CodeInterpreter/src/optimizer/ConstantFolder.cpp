@@ -28,7 +28,7 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
     if (auto* group = dynamic_cast<GroupingExpr*>(expr.get())) {
         group->expression = foldExpr(std::move(group->expression));
         if (dynamic_cast<LiteralExpr*>(group->expression.get()))
-            return std::move(group->expression);  // GroupingExpr 벗겨냄
+            return std::move(group->expression);
         return expr;
     }
 
@@ -60,8 +60,6 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
     }
     return expr;
 }
-
-// ── StmtVisitor 구현 ───────────────────────────────────────────────
 
 void ConstantFolder::visitExprStmt(ExprStmt& s) {
     s.m_expression = foldExpr(std::move(s.m_expression));

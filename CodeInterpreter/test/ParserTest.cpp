@@ -14,7 +14,6 @@ static std::vector<StmtPtr> parse(std::vector<Token> tokens) {
     return Parser().parse(std::move(tokens));
 }
 
-// ── 단위 테스트 ───────────────────────────────────────────
 TEST(ParserUnit, StringLiteral) {
     auto stmts = parse(TokenStreamBuilder().string("hi").semicolon().eof().build());
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
@@ -147,7 +146,6 @@ TEST(ParserUnit, InvalidAssignTarget_Throws) {
         .number(1.0).plus().number(2.0).equal().number(3.0).semicolon().eof().build()), ParseError);
 }
 
-// ── Ch.2 함수 선언 테스트 ─────────────────────────────────────
 TEST(ParserIntegration, FunctionDecl_NoParams) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func greet() { print \"hi\"; }");
@@ -194,7 +192,6 @@ TEST(ParserIntegration, FunctionDecl_Name) {
     EXPECT_EQ(fn->m_body.size(), 0u);
 }
 
-// ── Ch.2 함수 호출 테스트 ─────────────────────────────────────
 TEST(ParserIntegration, CallExpr_NoArgs) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("greet();");
@@ -232,7 +229,6 @@ TEST(ParserIntegration, CallExpr_NestedCall) {
     EXPECT_NE(dynamic_cast<CallExpr*>(outer->args[0].get()), nullptr);
 }
 
-// ── Ch.2 return 문 테스트 ─────────────────────────────────────
 TEST(ParserIntegration, ReturnStmt_WithValue) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { return 5; }");
@@ -262,7 +258,6 @@ TEST(ParserIntegration, ReturnStmt_Keyword) {
     EXPECT_EQ(ret->m_keyword.lexeme, "return");
 }
 
-// ── Ch.3 배열 인덱스 테스트 ───────────────────────────────────
 TEST(ParserIntegration, IndexGetExpr) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[0];");
@@ -298,7 +293,6 @@ TEST(ParserIntegration, IndexSetExpr_WithExpr) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(set->value.get()), nullptr);
 }
 
-// ── Ch.2/3 에러 케이스 테스트 ────────────────────────────────
 TEST(ParserIntegration, FunctionDecl_MissingName_Throws) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func () { }");
@@ -321,7 +315,6 @@ TEST(ParserIntegration, IndexExpr_EmptyIndex_Throws) {
 }
 
 TEST(ParserUnit, Precedence_MulBeforeAdd) {
-    // 1 + 2 * 3 → right 쪽이 Binary(*)
     auto stmts = parse(TokenStreamBuilder()
         .number(1.0).plus().number(2.0).star().number(3.0).semicolon().eof().build());
     auto* add = dynamic_cast<BinaryExpr*>(
@@ -333,7 +326,6 @@ TEST(ParserUnit, Precedence_MulBeforeAdd) {
     EXPECT_EQ(mul->op.type, TokenType::STAR);
 }
 TEST(ParserUnit, LeftAssociativity) {
-    // 10 - 4 - 3 → left 쪽이 Binary(-)
     auto stmts = parse(TokenStreamBuilder()
         .number(10.0).minus().number(4.0).minus().number(3.0).semicolon().eof().build());
     auto* outer = dynamic_cast<BinaryExpr*>(
@@ -349,9 +341,6 @@ TEST(ParserUnit, Comparison_Less) {
     ASSERT_NE(bin, nullptr);
     EXPECT_EQ(bin->op.type, TokenType::LESS);
 }
-
-// ── Real Lexer 통합 테스트 ────────────────────────────────
-// Lexer(실제) + Parser(실제) / Checker·Interpreter는 Mock으로 격리
 
 class RealLexerParserFixture : public ::testing::Test {
 protected:
@@ -394,9 +383,6 @@ TEST_F(RealLexerParserFixture, ParseError_MissingSemicolon_Throws) {
     EXPECT_THROW(m_factory->run("print 5"), ParseError);
 }
 
-// ── TokenStreamBuilder 활용 예시 ─────────────────────────
-// 기존 t()/semi()/eof() 방식 대비 문법 흐름이 코드에 바로 드러난다.
-
 TEST(ParserUnit, NumberLiteral) {
     auto tokens = TokenStreamBuilder().number(5.0).semicolon().eof().build();
     auto stmts  = Parser().parse(std::move(tokens));
@@ -429,7 +415,6 @@ TEST(ParserUnit, VarDecl) {
 }
 
 TEST(ParserUnit, ForLoop) {
-    // for (var i = 0; i < 3; i = i + 1) print i;
     auto tokens = TokenStreamBuilder()
         .kwFor().lparen()
             .kwVar().identifier("i").equal().number(0.0).semicolon()

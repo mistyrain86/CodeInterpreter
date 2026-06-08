@@ -1,6 +1,5 @@
 #pragma once
 
-// 전방 선언
 struct ExprStmt;
 struct PrintStmt;
 struct VarStmt;

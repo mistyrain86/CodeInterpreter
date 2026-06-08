@@ -21,7 +21,6 @@ public:
     Interpreter();
     void interpret(const std::vector<StmtPtr>& stmts) override;
 
-    // ExprVisitor
     Value visitLiteral     (LiteralExpr&)   override;
     Value visitGrouping    (GroupingExpr&)  override;
     Value visitUnary       (UnaryExpr&)     override;
@@ -32,7 +31,6 @@ public:
     Value visitIndexGetExpr(IndexGetExpr&)  override;
     Value visitIndexSetExpr(IndexSetExpr&)  override;
 
-    // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
     void visitPrintStmt   (PrintStmt&)    override;
     void visitVarStmt     (VarStmt&)      override;
@@ -42,7 +40,6 @@ public:
     void visitFunctionStmt(FunctionStmt&) override;
     void visitReturnStmt  (ReturnStmt&)   override;
 
-    // 외부 공개 (LangFunction 등에서 활용)
     Value       evaluate(Expr& expr);
     void        execute(Stmt& stmt);
     void        executeBlock(const std::vector<StmtPtr>& stmts,

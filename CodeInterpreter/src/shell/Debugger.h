@@ -35,7 +35,7 @@ private:
     void cmdBreakpoints();
     void cmdWatch     (const std::string& var);
     void cmdUnwatch   (const std::string& var);
-    void cmdWatched   (Interpreter& interp);   // 감시 변수 목록 + 현재 값
-    void cmdInspect   (Interpreter& interp);   // 스코프 전체 변수 + 값 + 타입
-    void printWatches (Interpreter& interp);   // 정지 시 자동 출력
+    void cmdWatched   (Interpreter& interp);
+    void cmdInspect   (Interpreter& interp);
+    void printWatches (Interpreter& interp);
 };

@@ -11,21 +11,16 @@
 
 using ::testing::_;
 
-// ── CheckerUnit: AST 직접 구성 단위 테스트 ───────────────────────
-
-// (빈 프로그램) → 예외 없이 통과
 TEST(CheckerUnit, EmptyProgram_NoThrow) {
     EXPECT_NO_THROW(Checker().check({}));
 }
 
-// var a = 10; → 전역 선언 정상 통과
 TEST(CheckerUnit, GlobalVarDecl_NoThrow) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(varDecl("a", litNum(10.0)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// { var a = "hi"; var a = 3.0; } → 같은 블록 중복 선언 → CheckError
 TEST(CheckerUnit, DuplicateLocalVar_Throws) {
     std::vector<StmtPtr> block;
     block.push_back(varDecl("a", litStr("hi"), 1));
@@ -35,7 +30,6 @@ TEST(CheckerUnit, DuplicateLocalVar_Throws) {
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
-// { var myVar = 1.0; var myVar = 2.0; } → 에러 메시지에 변수명 포함
 TEST(CheckerUnit, DuplicateLocal_ErrorContainsName) {
     std::vector<StmtPtr> block;
     block.push_back(varDecl("myVar", litNum(1.0), 1));
@@ -48,7 +42,6 @@ TEST(CheckerUnit, DuplicateLocal_ErrorContainsName) {
     }
 }
 
-// var x = 1.0; { var x = 2.0; } → 전역-블록 섀도잉 허용
 TEST(CheckerUnit, SameName_DifferentScope_NoThrow) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(varDecl("x", litNum(1.0)));
@@ -58,7 +51,6 @@ TEST(CheckerUnit, SameName_DifferentScope_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// { var x = 1; { var x = 2; } } → 중첩 블록 섀도잉 허용
 TEST(CheckerUnit, NestedBlock_Shadowing_NoThrow) {
     std::vector<StmtPtr> inner;
     inner.push_back(varDecl("x", litNum(2.0)));
@@ -70,7 +62,6 @@ TEST(CheckerUnit, NestedBlock_Shadowing_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// var a = 1.0; var a = 2.0; → 전역 중복 선언 → CheckError
 TEST(CheckerUnit, DuplicateGlobal_Throws) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(varDecl("a", litNum(1.0)));
@@ -78,7 +69,6 @@ TEST(CheckerUnit, DuplicateGlobal_Throws) {
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
-// var a = 1.0; print x; → 미선언 변수 참조 → CheckError
 TEST(CheckerUnit, UndeclaredVar_Throws) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(varDecl("a", litNum(1.0)));
@@ -86,7 +76,6 @@ TEST(CheckerUnit, UndeclaredVar_Throws) {
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
-// print missing; → 에러 메시지에 변수명 포함
 TEST(CheckerUnit, UndeclaredVar_ErrorContainsName) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(printStmt(std::make_unique<VariableExpr>(makeIdent("missing", 1))));
@@ -96,7 +85,6 @@ TEST(CheckerUnit, UndeclaredVar_ErrorContainsName) {
     }
 }
 
-// { var a = a; } → 자기 참조 초기화 → CheckError
 TEST(CheckerUnit, SelfReferenceInInit_Throws) {
     Token a = makeIdent("a", 1);
     std::vector<StmtPtr> block;
@@ -107,7 +95,6 @@ TEST(CheckerUnit, SelfReferenceInInit_Throws) {
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
-// { var a = 5.0; var b = a + 1.0; } → 정의된 변수 참조 정상 통과
 TEST(CheckerUnit, ValidInit_NoThrow) {
     Token a    = makeIdent("a", 1);
     Token b    = makeIdent("b", 2);
@@ -122,7 +109,6 @@ TEST(CheckerUnit, ValidInit_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// var a = 1.0; { print(a); } → 내부 블록에서 외부 변수 참조 허용
 TEST(CheckerUnit, NestedScope_OuterAccessible) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(varDecl("a", litNum(1.0)));
@@ -132,7 +118,6 @@ TEST(CheckerUnit, NestedScope_OuterAccessible) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// for (var i = 0; i < 3; i = i + 1) { print(i); } → for 루프 변수 참조 정상
 TEST(CheckerUnit, ForLoopVar_InBody_NoThrow) {
     Token i  = makeIdent("i");
     Token lt = Token{ TokenType::LESS, "<", std::monostate{}, 1 };
@@ -149,7 +134,6 @@ TEST(CheckerUnit, ForLoopVar_InBody_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// if (true) { var x = 1.0; } → then 브랜치 내 변수 선언 정상
 TEST(CheckerUnit, IfBranch_NoThrow) {
     std::vector<StmtPtr> thenB;
     thenB.push_back(varDecl("x", litNum(1.0)));
@@ -159,14 +143,12 @@ TEST(CheckerUnit, IfBranch_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// visitVarStmt L18 FALSE: 초기화 식 없는 변수 선언
 TEST(CheckerUnit, VarNoInitializer_NoThrow) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(std::make_unique<VarStmt>(makeIdent("a", 1), nullptr));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// visitIfStmt L31 TRUE: else 분기 존재
 TEST(CheckerUnit, IfElseBranch_NoThrow) {
     std::vector<StmtPtr> thenB, elseB;
     thenB.push_back(varDecl("x", litNum(1.0)));
@@ -177,14 +159,12 @@ TEST(CheckerUnit, IfElseBranch_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// visitForStmt L36-39 FALSE: initializer·condition·increment·body 모두 null
 TEST(CheckerUnit, ForAllNullFields_NoThrow) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(std::make_unique<ForStmt>(0, nullptr, nullptr, nullptr, nullptr));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// visitExprStmt L47: 단독 표현식 구문
 TEST(CheckerUnit, ExprStmt_NoThrow) {
     Token plus = Token{ TokenType::PLUS, "+", std::monostate{}, 1 };
     std::vector<StmtPtr> stmts;
@@ -193,7 +173,6 @@ TEST(CheckerUnit, ExprStmt_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// visitFunctionStmt L54: 파라미터 없는 함수 → for 루프 body 미실행
 TEST(CheckerUnit, FunctionNoParams_NoThrow) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(std::make_unique<FunctionStmt>(
@@ -201,7 +180,6 @@ TEST(CheckerUnit, FunctionNoParams_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// visitReturnStmt L77 FALSE: 반환값 없는 return (return;)
 TEST(CheckerUnit, ReturnNoValue_InFunction_NoThrow) {
     std::vector<StmtPtr> body;
     body.push_back(std::make_unique<ReturnStmt>(makeIdent("return", 2), nullptr));
@@ -211,7 +189,6 @@ TEST(CheckerUnit, ReturnNoValue_InFunction_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// checkExpr L87: GroupingExpr → (1.0)
 TEST(CheckerUnit, GroupingExpr_NoThrow) {
     std::vector<StmtPtr> stmts;
     stmts.push_back(std::make_unique<ExprStmt>(
@@ -219,7 +196,6 @@ TEST(CheckerUnit, GroupingExpr_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// checkExpr L90: UnaryExpr → -1.0
 TEST(CheckerUnit, UnaryExpr_NoThrow) {
     Token minus = Token{ TokenType::MINUS, "-", std::monostate{}, 1 };
     std::vector<StmtPtr> stmts;
@@ -228,7 +204,6 @@ TEST(CheckerUnit, UnaryExpr_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// checkExpr L101: CallExpr args 없음 → for 루프 body 미실행
 TEST(CheckerUnit, CallExprNoArgs_NoThrow) {
     Token paren = Token{ TokenType::RIGHT_PAREN, ")", std::monostate{}, 1 };
     std::vector<StmtPtr> stmts;
@@ -240,7 +215,6 @@ TEST(CheckerUnit, CallExprNoArgs_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// checkExpr L103: CallExpr args 있음 → for 루프 body 실행
 TEST(CheckerUnit, CallExprWithArgs_NoThrow) {
     Token paren = Token{ TokenType::RIGHT_PAREN, ")", std::monostate{}, 1 };
     std::vector<ExprPtr> args;
@@ -254,7 +228,6 @@ TEST(CheckerUnit, CallExprWithArgs_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// checkExpr L106: IndexGetExpr → arr[0]
 TEST(CheckerUnit, IndexGetExpr_NoThrow) {
     Token bracket = Token{ TokenType::LEFT_BRACKET, "[", std::monostate{}, 1 };
     std::vector<StmtPtr> stmts;
@@ -266,7 +239,6 @@ TEST(CheckerUnit, IndexGetExpr_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// checkExpr L110: IndexSetExpr → arr[0] = 99.0
 TEST(CheckerUnit, IndexSetExpr_NoThrow) {
     Token bracket = Token{ TokenType::LEFT_PAREN, "[", std::monostate{}, 1 };
     std::vector<StmtPtr> stmts;
@@ -277,8 +249,6 @@ TEST(CheckerUnit, IndexSetExpr_NoThrow) {
             bracket, litNum(0.0), litNum(99.0))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
-
-// ── CheckerMock: Mock Lexer·Parser 통합 테스트 ───────────────────
 
 class CheckerMockFixture : public ::testing::Test {
 protected:
@@ -301,7 +271,6 @@ protected:
     }
 };
 
-// MockParser → { var a = 1; var a = 2; } → CheckError, Interpreter 미호출
 TEST_F(CheckerMockFixture, DuplicateVar_MockParser_Throws) {
     EXPECT_CALL(*m_mpRaw, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
@@ -316,7 +285,6 @@ TEST_F(CheckerMockFixture, DuplicateVar_MockParser_Throws) {
     EXPECT_THROW(m_factory->run(""), CheckError);
 }
 
-// MockParser → var a = 10.0; → Checker 통과, Interpreter 1회 호출
 TEST_F(CheckerMockFixture, ValidCode_MockParser_NoThrow) {
     EXPECT_CALL(*m_mpRaw, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
@@ -327,8 +295,6 @@ TEST_F(CheckerMockFixture, ValidCode_MockParser_NoThrow) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
     EXPECT_NO_THROW(m_factory->run(""));
 }
-
-// ── CheckerRealParser: 실제 Lexer·Parser 통합 테스트 ─────────────
 
 class CheckerIntegrationFixture : public ::testing::Test {
 protected:
@@ -344,31 +310,25 @@ protected:
     }
 };
 
-// { var a = 1; var a = 2; } → CheckError, Interpreter 미호출
 TEST_F(CheckerIntegrationFixture, DuplicateVar_Throws) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
     EXPECT_THROW(m_factory->run("{ var a = 1; var a = 2; }"), CheckError);
 }
 
-// var a = 10; → Checker 통과, Interpreter 1회 호출
 TEST_F(CheckerIntegrationFixture, ValidVarDecl_NoThrow) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
     EXPECT_NO_THROW(m_factory->run("var a = 10;"));
 }
 
-// { var a = a; } → 자기 참조 → CheckError, Interpreter 미호출
 TEST_F(CheckerIntegrationFixture, SelfRefInit_Throws) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
     EXPECT_THROW(m_factory->run("{ var a = a; }"), CheckError);
 }
 
-// var x = 1; { var x = 2; } → 섀도잉 허용, Interpreter 1회 호출
 TEST_F(CheckerIntegrationFixture, Shadowing_NoThrow) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
     EXPECT_NO_THROW(m_factory->run("var x = 1; { var x = 2; }"));
 }
-
-// ── CheckerTest: 함수·return 의미 검사 / ResolverTest: 변수 바인딩 ──
 
 class CheckerRealFixture : public ::testing::Test {
 protected:
@@ -378,37 +338,31 @@ protected:
     Resolver m_resolver;
 };
 
-// func foo(a, a) { } → 파라미터 중복 → CheckError
 TEST_F(CheckerRealFixture, DuplicateParam_Throws) {
     auto stmts = m_parser.parse(m_lexer.tokenize("func foo(a, a) { }"));
     EXPECT_THROW(m_checker.check(stmts), CheckError);
 }
 
-// return 5; → 함수 외부 return → CheckError
 TEST_F(CheckerRealFixture, ReturnOutsideFunction_Throws) {
     auto stmts = m_parser.parse(m_lexer.tokenize("return 5;"));
     EXPECT_THROW(m_checker.check(stmts), CheckError);
 }
 
-// func add(a, b) { return a; } → 정상 함수 선언 통과
 TEST_F(CheckerRealFixture, ValidFunction_NoThrow) {
     auto stmts = m_parser.parse(m_lexer.tokenize("func add(a, b) { return a; }"));
     EXPECT_NO_THROW(m_checker.check(stmts));
 }
 
-// var x = 1; print x; → 전역 변수는 BindingMap에 등록되지 않음
 TEST_F(CheckerRealFixture, GlobalVar_NotInBindings) {
     auto bindings = m_resolver.resolve(m_parser.parse(m_lexer.tokenize("var x = 1; print x;")));
     EXPECT_TRUE(bindings.empty());
 }
 
-// { var x = 1; print x; } → 로컬 변수는 BindingMap에 distance=0으로 등록
 TEST_F(CheckerRealFixture, LocalVar_InBindings) {
     auto bindings = m_resolver.resolve(m_parser.parse(m_lexer.tokenize("{ var x = 1; print x; }")));
     EXPECT_FALSE(bindings.empty());
 }
 
-// ExprStmt 단독 문장 분석 경로
 TEST(CheckerUnit, ExprStmt_Variable_Checked) {
     Checker c;
     std::vector<StmtPtr> stmts;
@@ -417,7 +371,6 @@ TEST(CheckerUnit, ExprStmt_Variable_Checked) {
     EXPECT_NO_THROW(c.check(stmts));
 }
 
-// UnaryExpr 분석 경로
 TEST(CheckerUnit, UnaryExpr_Bang_Checked) {
     Checker c;
     std::vector<StmtPtr> stmts;
@@ -428,7 +381,6 @@ TEST(CheckerUnit, UnaryExpr_Bang_Checked) {
     EXPECT_NO_THROW(c.check(stmts));
 }
 
-// GroupingExpr 분석 경로
 TEST(CheckerUnit, GroupingExpr_Checked) {
     Checker c;
     std::vector<StmtPtr> stmts;

@@ -77,7 +77,6 @@ struct ForStmt : Stmt {
     int  getLine() const override { return m_line; }
 };
 
-// ── Chapter 2: 함수 선언 / return ─────────────────────────────────
 struct FunctionStmt : Stmt {
     Token                m_name;
     std::vector<Token>   m_params;

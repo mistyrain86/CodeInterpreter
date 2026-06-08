@@ -62,7 +62,7 @@ struct AssignExpr : Expr {
 
 struct CallExpr : Expr {
     ExprPtr              callee;
-    Token                paren;   // 닫는 ')', 에러 리포트용
+    Token                paren;
     std::vector<ExprPtr> args;
     CallExpr(ExprPtr callee, Token paren, std::vector<ExprPtr> args)
         : callee(std::move(callee))

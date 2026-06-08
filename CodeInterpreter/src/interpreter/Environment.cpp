@@ -12,7 +12,7 @@ Value Environment::get(const Token& name) const {
     auto it = m_values.find(name.lexeme);
     if (it != m_values.end()) return it->second;
     if (m_enclosing) {
-        s_chainSteps++;  // 현재 스코프에 없어 상위로 이동
+        s_chainSteps++;
         return m_enclosing->get(name);
     }
     throw RuntimeError(makeUndefinedVarMessage(name));
@@ -28,7 +28,7 @@ void Environment::assign(const Token& name, Value value) {
 Value Environment::getAt(int distance, const std::string& name) const {
     const Environment* env = this;
     for (int i = 0; i < distance; i++) {
-        s_getAtHops++;  // 포인터 순회 1회
+        s_getAtHops++;
         env = env->m_enclosing.get();
     }
     return env->m_values.at(name);
@@ -44,7 +44,7 @@ void Environment::printAll(int depth) const {
     if (m_enclosing) m_enclosing->printAll(depth + 1);
     std::string scope = (depth == 0) ? "[전역]" : "[로컬]";
     for (auto& [k, v] : m_values)
-        std::cout << scope << " " << k << "\n";  // D의 stringify 호출로 교체 가능
+        std::cout << scope << " " << k << "\n";
 }
 
 std::string Environment::makeUndefinedVarMessage(const Token& name) const {

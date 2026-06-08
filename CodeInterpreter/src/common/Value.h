@@ -11,11 +11,11 @@ using ArrayType = std::shared_ptr<std::vector<struct Value>>;
 
 struct Value : std::variant<
     std::monostate,                // null
-    double,                        // 숫자
-    std::string,                   // 문자열
-    bool,                          // 불리언
-    ArrayType,                     // 배열   (Phase: 정적 배열)
-    std::shared_ptr<ICallable>     // 함수   (Phase: function)
+    double,
+    std::string,
+    bool,
+    ArrayType,
+    std::shared_ptr<ICallable>
 > {
     using variant::variant;
     using variant::operator=;
