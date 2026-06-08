@@ -79,7 +79,7 @@ TEST_F(DebuggerFixture, WatchAndUnwatch) {
 
 TEST_F(DebuggerFixture, WatchedEmpty) {
     std::string out = run(SIMPLE, "watched\nexit\n");
-    EXPECT_NE(out.find("없음"), std::string::npos);
+    EXPECT_NE(out.find("없습니다"), std::string::npos);
 }
 
 TEST_F(DebuggerFixture, WatchUndefinedVar_ShowsMijeong) {
@@ -104,7 +104,7 @@ TEST_F(DebuggerFixture, BreakpointAndInspect) {
 
 TEST_F(DebuggerFixture, BreakpointsEmpty) {
     std::string out = run(SIMPLE, "Breakpoints\nexit\n");
-    EXPECT_NE(out.find("없음"), std::string::npos);
+    EXPECT_NE(out.find("없습니다"), std::string::npos);
 }
 
 // ── 커맨드 오류 처리 ───────────────────────────────────────────────────
