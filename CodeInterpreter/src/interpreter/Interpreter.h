@@ -67,6 +67,11 @@ private:
     const BindingMap*            m_bindings     = nullptr;
     StmtHook                     m_stmtHook;
     int                          m_executeDepth = 0;
+
+    using BinaryOpFn = std::function<Value(const Value&, const Value&, int)>;
+    std::unordered_map<int, BinaryOpFn> m_binaryOps;
+    void initBinaryOps();
+
     void        checkNumericOperand(const Value& val, int line) const;
     void        checkNumericPair(const Value& l, const Value& r, int line) const;
     std::optional<int> lookupBinding(const Expr* expr) const;
