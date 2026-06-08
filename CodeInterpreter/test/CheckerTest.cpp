@@ -330,7 +330,7 @@ TEST_F(CheckerMockFixture, ValidCode_MockParser_NoThrow) {
 
 // ── CheckerRealParser: 실제 Lexer·Parser 통합 테스트 ─────────────
 
-class CheckerRealParserFixture : public ::testing::Test {
+class CheckerIntegrationFixture : public ::testing::Test {
 protected:
     MockInterpreter* m_miRaw = nullptr;
     std::unique_ptr<LangFactory> m_factory;
@@ -345,25 +345,25 @@ protected:
 };
 
 // { var a = 1; var a = 2; } → CheckError, Interpreter 미호출
-TEST_F(CheckerRealParserFixture, DuplicateVar_Throws) {
+TEST_F(CheckerIntegrationFixture, DuplicateVar_Throws) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
     EXPECT_THROW(m_factory->run("{ var a = 1; var a = 2; }"), CheckError);
 }
 
 // var a = 10; → Checker 통과, Interpreter 1회 호출
-TEST_F(CheckerRealParserFixture, ValidVarDecl_NoThrow) {
+TEST_F(CheckerIntegrationFixture, ValidVarDecl_NoThrow) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
     EXPECT_NO_THROW(m_factory->run("var a = 10;"));
 }
 
 // { var a = a; } → 자기 참조 → CheckError, Interpreter 미호출
-TEST_F(CheckerRealParserFixture, SelfRefInit_Throws) {
+TEST_F(CheckerIntegrationFixture, SelfRefInit_Throws) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
     EXPECT_THROW(m_factory->run("{ var a = a; }"), CheckError);
 }
 
 // var x = 1; { var x = 2; } → 섀도잉 허용, Interpreter 1회 호출
-TEST_F(CheckerRealParserFixture, Shadowing_NoThrow) {
+TEST_F(CheckerIntegrationFixture, Shadowing_NoThrow) {
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
     EXPECT_NO_THROW(m_factory->run("var x = 1; { var x = 2; }"));
 }

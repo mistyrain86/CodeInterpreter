@@ -5,10 +5,6 @@
 static Token opTok(TokenType t, std::string lex, int line = 1) {
     return Token{t, std::move(lex), std::monostate{}, line};
 }
-static ExprPtr bin(ExprPtr l, TokenType op, std::string lex, ExprPtr r) {
-    return std::make_unique<BinaryExpr>(
-        std::move(l), Token{op, std::move(lex), std::monostate{}, 1}, std::move(r));
-}
 
 class InterpreterFixture : public ::testing::Test {
 protected:
@@ -17,7 +13,7 @@ protected:
     std::string run(StmtPtr stmt) {
         std::vector<StmtPtr> stmts;
         stmts.push_back(std::move(stmt));
-        return captureOutput([&]{ Interpreter().interpret(stmts); });
+        return captureOutput([&]{ m_interp.interpret(stmts); });
     }
     std::string runAll(std::vector<StmtPtr> stmts) {
         return captureOutput([&]{ m_interp.interpret(stmts); });
@@ -49,39 +45,39 @@ TEST_F(InterpreterFixture, UnaryMinus_OnString_Throws) {
 }
 
 // 이항 연산
-TEST_F(InterpreterFixture, Add)   { EXPECT_EQ(run(printStmt(bin(litNum(3),  TokenType::PLUS,  "+", litNum(4)))),  "7\n");  }
-TEST_F(InterpreterFixture, Sub)   { EXPECT_EQ(run(printStmt(bin(litNum(10), TokenType::MINUS, "-", litNum(3)))),  "7\n");  }
-TEST_F(InterpreterFixture, Mul)   { EXPECT_EQ(run(printStmt(bin(litNum(3),  TokenType::STAR,  "*", litNum(4)))),  "12\n"); }
-TEST_F(InterpreterFixture, Div)   { EXPECT_EQ(run(printStmt(bin(litNum(8),  TokenType::SLASH, "/", litNum(2)))),  "4\n");  }
+TEST_F(InterpreterFixture, Add)   { EXPECT_EQ(run(printStmt(binaryExpr(litNum(3),  TokenType::PLUS,  "+", litNum(4)))),  "7\n");  }
+TEST_F(InterpreterFixture, Sub)   { EXPECT_EQ(run(printStmt(binaryExpr(litNum(10), TokenType::MINUS, "-", litNum(3)))),  "7\n");  }
+TEST_F(InterpreterFixture, Mul)   { EXPECT_EQ(run(printStmt(binaryExpr(litNum(3),  TokenType::STAR,  "*", litNum(4)))),  "12\n"); }
+TEST_F(InterpreterFixture, Div)   { EXPECT_EQ(run(printStmt(binaryExpr(litNum(8),  TokenType::SLASH, "/", litNum(2)))),  "4\n");  }
 TEST_F(InterpreterFixture, StrConcat) {
-    EXPECT_EQ(run(printStmt(bin(litStr("Hi"), TokenType::PLUS, "+", litStr("!")))), "Hi!\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litStr("Hi"), TokenType::PLUS, "+", litStr("!")))), "Hi!\n");
 }
 TEST_F(InterpreterFixture, CmpLess_True) {
-    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::LESS,          "<",  litNum(2)))), "true\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litNum(1), TokenType::LESS,          "<",  litNum(2)))), "true\n");
 }
 TEST_F(InterpreterFixture, CmpLessEqual_True) {
-    EXPECT_EQ(run(printStmt(bin(litNum(2), TokenType::LESS_EQUAL,    "<=", litNum(2)))), "true\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litNum(2), TokenType::LESS_EQUAL,    "<=", litNum(2)))), "true\n");
 }
 TEST_F(InterpreterFixture, CmpGreater_False) {
-    EXPECT_EQ(run(printStmt(bin(litNum(3), TokenType::GREATER,       ">",  litNum(5)))), "false\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litNum(3), TokenType::GREATER,       ">",  litNum(5)))), "false\n");
 }
 TEST_F(InterpreterFixture, CmpGreaterEqual_True) {
-    EXPECT_EQ(run(printStmt(bin(litNum(5), TokenType::GREATER_EQUAL, ">=", litNum(5)))), "true\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litNum(5), TokenType::GREATER_EQUAL, ">=", litNum(5)))), "true\n");
 }
 TEST_F(InterpreterFixture, CmpEqualEqual_True) {
-    EXPECT_EQ(run(printStmt(bin(litNum(3), TokenType::EQUAL_EQUAL,   "==", litNum(3)))), "true\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litNum(3), TokenType::EQUAL_EQUAL,   "==", litNum(3)))), "true\n");
 }
 TEST_F(InterpreterFixture, CmpBangEqual_True) {
-    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::BANG_EQUAL,    "!=", litNum(2)))), "true\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litNum(1), TokenType::BANG_EQUAL,    "!=", litNum(2)))), "true\n");
 }
 TEST_F(InterpreterFixture, TypeMismatch_Throws) {
     std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ExprStmt>(bin(litNum(1), TokenType::PLUS, "+", litStr("HI"))));
+    s.push_back(std::make_unique<ExprStmt>(binaryExpr(litNum(1), TokenType::PLUS, "+", litStr("HI"))));
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 TEST_F(InterpreterFixture, DivByZero_Throws) {
     std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ExprStmt>(bin(litNum(1), TokenType::SLASH, "/", litNum(0))));
+    s.push_back(std::make_unique<ExprStmt>(binaryExpr(litNum(1), TokenType::SLASH, "/", litNum(0))));
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 
@@ -114,7 +110,7 @@ TEST_F(InterpreterFixture, BlockScope_Isolation) {
     inner.push_back(printStmt(varRef("x")));
     s.push_back(blockStmt(std::move(inner)));
     s.push_back(printStmt(varRef("x")));
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    captureOutput([&]{ EXPECT_THROW(m_interp.interpret(s), RuntimeError); });
 }
 TEST_F(InterpreterFixture, IfTrue) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(0, litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
@@ -140,7 +136,7 @@ TEST_F(InterpreterFixture, UnaryBang_OnString) {
 }
 TEST_F(InterpreterFixture, GroupingExpr_Eval) {
     EXPECT_EQ(run(printStmt(
-        std::make_unique<GroupingExpr>(bin(litNum(3), TokenType::PLUS, "+", litNum(4))))),
+        std::make_unique<GroupingExpr>(binaryExpr(litNum(3), TokenType::PLUS, "+", litNum(4))))),
         "7\n");
 }
 TEST_F(InterpreterFixture, VarDecl_NoInitializer) {
@@ -150,10 +146,10 @@ TEST_F(InterpreterFixture, VarDecl_NoInitializer) {
     EXPECT_EQ(runAll(std::move(s)), "null\n");
 }
 TEST_F(InterpreterFixture, EqualEqual_SameString) {
-    EXPECT_EQ(run(printStmt(bin(litStr("a"), TokenType::EQUAL_EQUAL, "==", litStr("a")))), "true\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litStr("a"), TokenType::EQUAL_EQUAL, "==", litStr("a")))), "true\n");
 }
 TEST_F(InterpreterFixture, BangEqual_DifferentTypes) {
-    EXPECT_EQ(run(printStmt(bin(litNum(1), TokenType::BANG_EQUAL, "!=", litStr("1")))), "true\n");
+    EXPECT_EQ(run(printStmt(binaryExpr(litNum(1), TokenType::BANG_EQUAL, "!=", litStr("1")))), "true\n");
 }
 
 TEST_F(InterpreterFixture, ForLoop_0to2) {
@@ -210,7 +206,7 @@ TEST_F(InterpreterFixture, Function_Params_And_Return) {
     std::vector<Token> params = { makeIdent("a"), makeIdent("b") };
     std::vector<StmtPtr> body;
     body.push_back(std::make_unique<ReturnStmt>(
-        retTok(), bin(varRef("a"), TokenType::PLUS, "+", varRef("b"))));
+        retTok(), binaryExpr(varRef("a"), TokenType::PLUS, "+", varRef("b"))));
 
     std::vector<StmtPtr> s;
     s.push_back(std::make_unique<FunctionStmt>(
