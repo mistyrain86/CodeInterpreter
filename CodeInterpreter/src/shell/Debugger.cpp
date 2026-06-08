@@ -4,10 +4,21 @@
 #include "CheckError.h"
 #include "RuntimeError.h"
 #include "Token.h"
+#include "Value.h"
 #include <climits>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
+// 값 타입 이름 반환
+static std::string typeName(const Value& v) {
+    if (std::holds_alternative<std::monostate>(v))             return "Nil";
+    if (std::holds_alternative<double>(v))                     return "Number";
+    if (std::holds_alternative<std::string>(v))                return "String";
+    if (std::holds_alternative<bool>(v))                       return "Boolean";
+    if (std::holds_alternative<ArrayType>(v))                  return "Array";
+    return "Function";
+}
 
 Debugger::Debugger(const std::string& path) : m_path(path) {}
 
@@ -122,8 +133,8 @@ void Debugger::processCommand(const std::string& input, Interpreter& interp) {
     else if (input.size() > 8 && input.substr(0, 8) == "unwatch ") {
         cmdUnwatch(input.substr(8));
     }
-    else if (input == "watches") {
-        cmdWatches();
+    else if (input == "watched") {
+        cmdWatched(interp);
     }
     else if (input == "inspect") {
         cmdInspect(interp);
@@ -138,8 +149,8 @@ void Debugger::processCommand(const std::string& input, Interpreter& interp) {
         std::cout << "  Breakpoints     breakpoint 목록 출력\n";
         std::cout << "  watch <변수>    변수 감시 등록\n";
         std::cout << "  unwatch <변수>  변수 감시 해제\n";
-        std::cout << "  watches         감시 중인 변수 목록 출력\n";
-        std::cout << "  inspect         현재 스코프 전체 변수 출력\n";
+        std::cout << "  watched         감시 중인 변수 목록과 현재 값 출력\n";
+        std::cout << "  inspect         현재 스코프 전체 변수/값/타입 출력\n";
     }
 }
 
@@ -166,7 +177,7 @@ void Debugger::cmdBreakpoints() {
 
 void Debugger::cmdWatch(const std::string& var) {
     m_watches.insert(var);
-    std::cout << "[WATCH] " << var << " 감시 등록\n";
+    std::cout << "[WATCH] '" << var << "' 감시 등록\n";
 }
 
 void Debugger::cmdUnwatch(const std::string& var) {
@@ -174,18 +185,44 @@ void Debugger::cmdUnwatch(const std::string& var) {
     std::cout << "[WATCH] " << var << " 감시 해제\n";
 }
 
-void Debugger::cmdWatches() {
+void Debugger::cmdWatched(Interpreter& interp) {
     if (m_watches.empty()) {
         std::cout << "감시 중인 변수 없음\n";
         return;
     }
-    std::cout << "[감시 중인 변수]\n";
-    for (const auto& w : m_watches) std::cout << "  " << w << "\n";
+    for (const auto& var : m_watches) {
+        try {
+            Token t{TokenType::IDENTIFIER, var, std::monostate{}, 0};
+            Value v = interp.currentEnv()->get(t);
+            std::cout << "[WATCH] " << var << " = " << interp.stringify(v) << "\n";
+        } catch (...) {
+            std::cout << "[WATCH] " << var << " = (미정의)\n";
+        }
+    }
 }
 
 void Debugger::cmdInspect(Interpreter& interp) {
-    std::cout << "----------- 현재 스코프 변수 -----------\n";
-    interp.currentEnv()->printAll();
+    std::cout << "-- 현재 스코프 변수 ----------\n";
+
+    // env 체인: currentEnv(로컬) → ... → global(enclosing==nullptr)
+    std::vector<const Environment*> chain;
+    const Environment* cur = interp.currentEnv().get();
+    while (cur) {
+        chain.push_back(cur);
+        cur = cur->m_enclosing.get();
+    }
+
+    // chain[0] = 가장 안쪽(로컬), chain[last] = 전역
+    for (int i = 0; i < (int)chain.size(); i++) {
+        bool        isGlobal = (i == (int)chain.size() - 1);
+        std::string label    = isGlobal ? "[전역]" : "[로컬]";
+        for (const auto& [k, v] : chain[i]->m_values) {
+            if (k == "Array") continue;   // 내장 함수 제외
+            std::cout << label << " " << k
+                      << " = "  << interp.stringify(v)
+                      << " ("   << typeName(v) << ")\n";
+        }
+    }
 }
 
 void Debugger::printWatches(Interpreter& interp) {
