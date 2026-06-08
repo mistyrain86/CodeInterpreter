@@ -191,7 +191,6 @@ TEST_F(LexerFixture, ArrayAccess) {
     EXPECT_DOUBLE_EQ(std::get<double>(tokenArray[2].literal), 0.0);
 }
 
-// 커버리지 보강: '\r' (캐리지 리턴) break 경로
 TEST_F(LexerFixture, CarriageReturn_Ignored) {
     auto tokenArray = lexer.tokenize("var\r\na = 1;");
     EXPECT_EQ(tokenArray[0].type, TokenType::KW_VAR);

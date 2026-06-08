@@ -159,8 +159,6 @@ TEST(CheckerUnit, IfBranch_NoThrow) {
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-// ── 커버리지 보강 TC ──────────────────────────────────────────────
-
 // visitVarStmt L18 FALSE: 초기화 식 없는 변수 선언
 TEST(CheckerUnit, VarNoInitializer_NoThrow) {
     std::vector<StmtPtr> stmts;
@@ -397,8 +395,6 @@ TEST(ResolverTest, LocalVar_InBindings) {
     auto bindings = r.resolve(p.parse(l.tokenize("{ var x = 1; print x; }")));
     EXPECT_FALSE(bindings.empty());
 }
-
-// ── 커버리지 보강 ──────────────────────────────────────────────────
 
 // ExprStmt 단독 문장 분석 경로
 TEST(CheckerUnit, ExprStmt_Variable_Checked) {
