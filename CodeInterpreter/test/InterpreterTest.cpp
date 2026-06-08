@@ -119,10 +119,10 @@ TEST_F(InterpreterFixture, BlockScope_Isolation) {
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 TEST_F(InterpreterFixture, IfTrue) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0, litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
 }
 TEST_F(InterpreterFixture, IfFalse_GoesElse) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(litBool(false), printStmt(litStr("no")), printStmt(litStr("yes")))), "yes\n");
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0, litBool(false), printStmt(litStr("no")), printStmt(litStr("yes")))), "yes\n");
 }
 TEST_F(InterpreterFixture, UnaryBang_OnNil) {
     EXPECT_EQ(run(printStmt(
@@ -165,7 +165,7 @@ TEST_F(InterpreterFixture, ForLoop_0to2) {
     std::vector<StmtPtr> body;
     body.push_back(printStmt(std::make_unique<VariableExpr>(j)));
     std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ForStmt>(
+    s.push_back(std::make_unique<ForStmt>(0,
         varDecl("j", litNum(0.0)),
         std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), lt, litNum(3.0)),
         std::make_unique<AssignExpr>(j,
@@ -261,7 +261,7 @@ TEST_F(InterpreterFixture, Function_Recursive_Factorial) {
     // 함수 본문
     std::vector<StmtPtr> body;
     // if (n <= 1) return 1;
-    body.push_back(std::make_unique<IfStmt>(
+    body.push_back(std::make_unique<IfStmt>(0,
         std::make_unique<BinaryExpr>(
             std::make_unique<VariableExpr>(n), le, litNum(1.0)),
         std::make_unique<ReturnStmt>(retTok(), litNum(1.0)),
@@ -472,7 +472,7 @@ protected:
         stmts.push_back(printStmt(std::move(expr)));
         m_result = m_folder.optimize(std::move(stmts));
         auto* ps  = dynamic_cast<PrintStmt*>(m_result[0].get());
-        auto* lit = dynamic_cast<LiteralExpr*>(ps->expression.get());
+        auto* lit = dynamic_cast<LiteralExpr*>(ps->m_expression.get());
         EXPECT_NE(lit, nullptr) << "표현식이 LiteralExpr로 폴딩되지 않았습니다";
         if (!lit) return 0.0;
         return std::get<double>(lit->value);
@@ -484,7 +484,7 @@ protected:
         stmts.push_back(printStmt(std::move(expr)));
         m_result = m_folder.optimize(std::move(stmts));
         auto* ps = dynamic_cast<PrintStmt*>(m_result[0].get());
-        return dynamic_cast<LiteralExpr*>(ps->expression.get()) != nullptr;
+        return dynamic_cast<LiteralExpr*>(ps->m_expression.get()) != nullptr;
     }
 };
 
@@ -518,7 +518,7 @@ TEST(ConstantFolderTest, Fold_VarStmt_Initializer) {
     stmts.push_back(varDecl("x", bin(litNum(2), TokenType::STAR, "*", litNum(3))));
     auto result = folder.optimize(std::move(stmts));
     auto* vs  = dynamic_cast<VarStmt*>(result[0].get());
-    auto* lit = dynamic_cast<LiteralExpr*>(vs->initializer.get());
+    auto* lit = dynamic_cast<LiteralExpr*>(vs->m_initializer.get());
     ASSERT_NE(lit, nullptr);
     EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 6.0);
 }
@@ -536,23 +536,23 @@ TEST_F(InterpreterFixture, ConstantFolder_RunResult) {
 }
 
 TEST_F(InterpreterFixture, Truthy_Zero_IsFalse) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0,
         litNum(0.0), printStmt(litStr("yes")), nullptr)), "");
 }
 
 TEST_F(InterpreterFixture, Truthy_NonZero_IsTrue) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0,
         litNum(1.0), printStmt(litStr("yes")), nullptr)), "yes\n");
 }
 
 TEST_F(InterpreterFixture, Truthy_String_IsTrue) {
-    EXPECT_EQ(run(std::make_unique<IfStmt>(
+    EXPECT_EQ(run(std::make_unique<IfStmt>(0,
         litStr("hello"), printStmt(litStr("yes")), nullptr)), "yes\n");
 }
 
 TEST_F(InterpreterFixture, ForStmt_NullBody_Throws) {
     std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ForStmt>(
+    s.push_back(std::make_unique<ForStmt>(0,
         nullptr, nullptr, nullptr, nullptr));
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }

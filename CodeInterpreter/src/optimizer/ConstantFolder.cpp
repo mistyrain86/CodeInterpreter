@@ -45,31 +45,31 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
 // ── StmtVisitor 구현 ───────────────────────────────────────────────
 
 void ConstantFolder::visitExprStmt(ExprStmt& s) {
-    s.expression = foldExpr(std::move(s.expression));
+    s.m_expression = foldExpr(std::move(s.m_expression));
 }
 void ConstantFolder::visitPrintStmt(PrintStmt& s) {
-    s.expression = foldExpr(std::move(s.expression));
+    s.m_expression = foldExpr(std::move(s.m_expression));
 }
 void ConstantFolder::visitVarStmt(VarStmt& s) {
-    if (s.initializer) s.initializer = foldExpr(std::move(s.initializer));
+    if (s.m_initializer) s.m_initializer = foldExpr(std::move(s.m_initializer));
 }
 void ConstantFolder::visitBlockStmt(BlockStmt& s) {
-    for (auto& inner : s.statements) inner->accept(*this);
+    for (auto& inner : s.m_statements) inner->accept(*this);
 }
 void ConstantFolder::visitIfStmt(IfStmt& s) {
-    s.condition = foldExpr(std::move(s.condition));
-    s.thenBranch->accept(*this);
-    if (s.elseBranch) s.elseBranch->accept(*this);
+    s.m_condition = foldExpr(std::move(s.m_condition));
+    s.m_thenBranch->accept(*this);
+    if (s.m_elseBranch) s.m_elseBranch->accept(*this);
 }
 void ConstantFolder::visitForStmt(ForStmt& s) {
-    if (s.initializer) s.initializer->accept(*this);
-    if (s.condition)   s.condition  = foldExpr(std::move(s.condition));
-    if (s.increment)   s.increment  = foldExpr(std::move(s.increment));
-    if (s.body)        s.body->accept(*this);
+    if (s.m_initializer) s.m_initializer->accept(*this);
+    if (s.m_condition)   s.m_condition  = foldExpr(std::move(s.m_condition));
+    if (s.m_increment)   s.m_increment  = foldExpr(std::move(s.m_increment));
+    if (s.m_body)        s.m_body->accept(*this);
 }
 void ConstantFolder::visitFunctionStmt(FunctionStmt& s) {
-    for (auto& inner : s.body) inner->accept(*this);
+    for (auto& inner : s.m_body) inner->accept(*this);
 }
 void ConstantFolder::visitReturnStmt(ReturnStmt& s) {
-    if (s.value) s.value = foldExpr(std::move(s.value));
+    if (s.m_value) s.m_value = foldExpr(std::move(s.m_value));
 }

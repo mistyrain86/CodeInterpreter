@@ -7,6 +7,8 @@
 
 class Interpreter;
 
+struct DebugSessionExit {};  // exit/quit 커맨드 시 throw — 스택 정상 해제 후 종료
+
 // Ch.5 디버거 — Stmt 단위 stepping, watch, inspect, breakpoint
 class Debugger {
 public:
