@@ -189,3 +189,53 @@ print total;
     EXPECT_EQ(runAndCapture(false), "25\n") << "폴딩 없이 실행 결과가 25이어야 한다";
     EXPECT_EQ(runAndCapture(true),  "25\n") << "폴딩 후 실행 결과가 25이어야 한다";
 }
+
+TEST_F(ConstantFolderFixture, Fold_Percent) {
+    EXPECT_DOUBLE_EQ(foldToDouble(bin(litNum(10), TokenType::PERCENT, "%", litNum(3))), 1.0);
+}
+
+TEST_F(ConstantFolderFixture, NoFold_PercentByZero) {
+    EXPECT_FALSE(wasFolded(bin(litNum(10), TokenType::PERCENT, "%", litNum(0))));
+}
+
+TEST_F(ConstantFolderFixture, NoFold_GroupingWithVariable) {
+    auto grouping = std::make_unique<GroupingExpr>(
+        bin(varRef("x"), TokenType::PLUS, "+", litNum(1.0)));
+    EXPECT_FALSE(wasFolded(std::move(grouping)));
+}
+
+TEST(ConstantFolderTest, VisitIfStmt_FoldsCondition) {
+    ConstantFolder folder;
+    std::vector<StmtPtr> body;
+    body.push_back(printStmt(bin(litNum(2), TokenType::STAR, "*", litNum(3))));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<IfStmt>(0,
+        bin(litNum(1), TokenType::PLUS, "+", litNum(1)),
+        blockStmt(std::move(body)),
+        nullptr));
+    auto result = folder.optimize(std::move(stmts));
+    auto* ifs  = dynamic_cast<IfStmt*>(result[0].get());
+    ASSERT_NE(ifs, nullptr);
+    auto* cond = dynamic_cast<LiteralExpr*>(ifs->m_condition.get());
+    ASSERT_NE(cond, nullptr);
+    EXPECT_DOUBLE_EQ(std::get<double>(cond->value), 2.0);
+}
+
+TEST(ConstantFolderTest, VisitFunctionStmt_FoldsReturnBody) {
+    ConstantFolder folder;
+    Token retTok = Token{TokenType::KW_RETURN, "return", std::monostate{}, 1};
+    std::vector<StmtPtr> body;
+    body.push_back(std::make_unique<ReturnStmt>(
+        retTok, bin(litNum(2), TokenType::PLUS, "+", litNum(3))));
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("f"), std::vector<Token>{}, std::move(body)));
+    auto result = folder.optimize(std::move(stmts));
+    auto* fn  = dynamic_cast<FunctionStmt*>(result[0].get());
+    ASSERT_NE(fn, nullptr);
+    auto* ret = dynamic_cast<ReturnStmt*>(fn->m_body[0].get());
+    ASSERT_NE(ret, nullptr);
+    auto* lit = dynamic_cast<LiteralExpr*>(ret->m_value.get());
+    ASSERT_NE(lit, nullptr);
+    EXPECT_DOUBLE_EQ(std::get<double>(lit->value), 5.0);
+}

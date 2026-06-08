@@ -52,13 +52,19 @@ void Shell::runFile(const std::string& path) {
         std::cerr << "[오류] 파일을 찾을 수 없습니다: " << path << "\n";
         std::exit(1);
     }
-    std::cout << "CodeFab Interpreter (FILE 모드)\n";
-    std::cout << "[FILE] 소스코드 로딩: " << path << "\n";
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    runFromSource(ss.str(), path);
+}
 
-    // 빈 줄 기준으로 청크 분리 후 실행 — 오류 발생 시 출력 후 종료
+void Shell::runFromSource(const std::string& rawSource, const std::string& label) {
+    std::cout << "CodeFab Interpreter (FILE 모드)\n";
+    std::cout << "[FILE] 소스코드 로딩: " << label << "\n";
+
     std::vector<std::string> lines;
+    std::istringstream stream(rawSource);
     std::string ln;
-    while (std::getline(file, ln)) lines.push_back(ln);
+    while (std::getline(stream, ln)) lines.push_back(ln);
 
     LangFactory factory;
     bool hasError = false;

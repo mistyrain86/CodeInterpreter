@@ -192,7 +192,13 @@
     <ClCompile Include="test\ConstantFolderTest.cpp">
       <Filter>test</Filter>
     </ClCompile>
+    <ClCompile Include="test\DebuggerTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
     <ClCompile Include="test\EnvironmentTest.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="test\ShellTest.cpp">
       <Filter>test</Filter>
     </ClCompile>
     <ClCompile Include="test\IntegrationTest.cpp">

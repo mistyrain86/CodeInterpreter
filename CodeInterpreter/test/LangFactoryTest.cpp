@@ -8,6 +8,7 @@
 #include "Checker.h"
 #include "Lexer.h"
 #include "RuntimeError.h"
+#include "ConstantFolder.h"
 #include "TestUtils.h"
 
 using ::testing::_;
@@ -165,4 +166,16 @@ TEST_F(RealLexerFixture, LineComment_Ignored) {
 TEST_F(RealLexerFixture, UnexpectedChar_LexerError) {
     EXPECT_CALL(*mi, interpret(_)).Times(0);
     EXPECT_THROW(factory->run("@"), std::runtime_error);
+}
+
+TEST(LangFactoryFull, SetOptimizer_RunsOptimizer) {
+    LangFactory factory;
+    factory.setOptimizer(std::make_unique<ConstantFolder>());
+    EXPECT_EQ(captureOutput([&]{ factory.run("print 2 + 3;"); }), "5\n");
+}
+
+TEST(LangFactoryFull, SetOptimizer_ConstantFolding_ReducesBinaryOps) {
+    LangFactory factory;
+    factory.setOptimizer(std::make_unique<ConstantFolder>());
+    EXPECT_EQ(captureOutput([&]{ factory.run("print 10 * 10 + 5;"); }), "105\n");
 }

@@ -479,3 +479,34 @@ TEST_F(InterpreterFixture, ForStmt_NullBody_Throws) {
         nullptr, nullptr, nullptr, nullptr));
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
+
+TEST_F(InterpreterFixture, Percent_Modulo) {
+    Token pct = Token{TokenType::PERCENT, "%", std::monostate{}, 1};
+    EXPECT_EQ(run(printStmt(
+        std::make_unique<BinaryExpr>(litNum(10.0), pct, litNum(3.0)))),
+        "1\n");
+}
+
+TEST_F(InterpreterFixture, Percent_ModuloByZero_Throws) {
+    Token pct = Token{TokenType::PERCENT, "%", std::monostate{}, 1};
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<ExprStmt>(
+        std::make_unique<BinaryExpr>(litNum(10.0), pct, litNum(0.0))));
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}
+
+TEST_F(InterpreterFixture, Stringify_Array_Print) {
+    std::vector<StmtPtr> s;
+    s.push_back(varDecl("arr", arrayCreate(3.0)));
+    s.push_back(printStmt(varRef("arr")));
+    EXPECT_EQ(runAll(std::move(s)), "[null, null, null]\n");
+}
+
+TEST_F(InterpreterFixture, Stringify_Function_PrintsFnName) {
+    std::vector<StmtPtr> body;
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<FunctionStmt>(
+        makeIdent("greet"), std::vector<Token>{}, std::move(body)));
+    s.push_back(printStmt(varRef("greet")));
+    EXPECT_EQ(runAll(std::move(s)), "<fn greet>\n");
+}
