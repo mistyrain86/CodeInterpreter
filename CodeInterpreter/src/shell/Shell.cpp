@@ -14,15 +14,17 @@ void printPrompt(bool multiLine) {
     std::cout.flush();
 }
 
+enum ExitCode { ParseErrorCode, CheckErrorCode, RuntimeErrorCode, InternalErrorCode };
+
 void runWithErrors(LangFactory& factory, const std::string& source,
                    const std::function<void(int)>& onError) {
     try {
         factory.run(source);
     }
-    catch (const ParseError& e)         { std::cerr << "[구문 오류] "   << e.what() << "\n"; onError(1); }
-    catch (const CheckError& e)         { std::cerr << "[의미 오류] "   << e.what() << "\n"; onError(2); }
-    catch (const RuntimeError& e)       { std::cerr << "[런타임 오류] " << e.what() << "\n"; onError(3); }
-    catch (const std::runtime_error& e) { std::cerr << "[오류] "        << e.what() << "\n"; onError(4); }
+    catch (const ParseError& e)         { std::cerr << "[구문 오류] "   << e.what() << "\n"; onError(ParseErrorCode); }
+    catch (const CheckError& e)         { std::cerr << "[의미 오류] "   << e.what() << "\n"; onError(CheckErrorCode); }
+    catch (const RuntimeError& e)       { std::cerr << "[런타임 오류] " << e.what() << "\n"; onError(RuntimeErrorCode); }
+    catch (const std::runtime_error& e) { std::cerr << "[오류] "        << e.what() << "\n"; onError(InternalErrorCode); }
 }
 }
 
