@@ -43,7 +43,7 @@ public:
 
     const Token& consume(TokenType t, const std::string& msg) {
         if (check(t)) return advance();
-        throw error(peek(), msg);
+        throw error(previous(), msg);
     }
 
     ParseError error(const Token& tok, const std::string& msg) const {
