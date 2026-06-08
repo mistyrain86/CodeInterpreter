@@ -42,6 +42,7 @@ private:
     std::vector<std::map<std::string, bool>> m_scopes;
     std::unordered_set<std::string>          m_knownGlobals;
     int  m_functionDepth = 0;
+    bool m_inUserCode    = false;  // 사용자 코드 검사 중 여부 (전역 재선언 검사용)
 
     void checkStmts(const std::vector<StmtPtr>& stmts);
     void beginScope();

@@ -16,7 +16,10 @@ void Checker::check(const std::vector<StmtPtr>& stmts) {
     Token arrayBuiltin{TokenType::IDENTIFIER, "Array", std::monostate{}, 0};
     declare(arrayBuiltin);
     define(arrayBuiltin);
+
+    m_inUserCode = true;
     checkStmts(stmts);
+    m_inUserCode = false;
 
     endScope();
     endScope();
@@ -140,8 +143,12 @@ void Checker::beginScope() { m_scopes.emplace_back(); }
 void Checker::endScope()   { m_scopes.pop_back(); }
 
 void Checker::declare(const Token& name) {
-    auto& scope = m_scopes.back();
-    if (scope.count(name.lexeme))
+    auto& scope      = m_scopes.back();
+    bool  inScope    = scope.count(name.lexeme) > 0;
+    // 전역 레벨(beginScope 2회)에서 이미 선언된 전역 변수 재선언
+    bool  globalRedecl = m_inUserCode && m_scopes.size() == 2
+                      && m_knownGlobals.count(name.lexeme) > 0;
+    if (inScope || globalRedecl)
         throw CheckError(checkErr(name.line, "이미 이 스코프에 같은 이름의 변수가 있습니다. ('" + name.lexeme + "')"));
     scope[name.lexeme] = false;
 }
