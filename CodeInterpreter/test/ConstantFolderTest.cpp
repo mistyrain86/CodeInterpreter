@@ -187,26 +187,26 @@ print total;
 }
 
 TEST_F(ConstantFolderFixture, Fold_Percent) {
-    EXPECT_DOUBLE_EQ(foldToDouble(bin(litNum(10), TokenType::PERCENT, "%", litNum(3))), 1.0);
+    EXPECT_DOUBLE_EQ(foldToDouble(binaryExpr(litNum(10), TokenType::PERCENT, "%", litNum(3))), 1.0);
 }
 
 TEST_F(ConstantFolderFixture, NoFold_PercentByZero) {
-    EXPECT_FALSE(wasFolded(bin(litNum(10), TokenType::PERCENT, "%", litNum(0))));
+    EXPECT_FALSE(wasFolded(binaryExpr(litNum(10), TokenType::PERCENT, "%", litNum(0))));
 }
 
 TEST_F(ConstantFolderFixture, NoFold_GroupingWithVariable) {
     auto grouping = std::make_unique<GroupingExpr>(
-        bin(varRef("x"), TokenType::PLUS, "+", litNum(1.0)));
+        binaryExpr(varRef("x"), TokenType::PLUS, "+", litNum(1.0)));
     EXPECT_FALSE(wasFolded(std::move(grouping)));
 }
 
 TEST(ConstantFolderTest, VisitIfStmt_FoldsCondition) {
     ConstantFolder folder;
     std::vector<StmtPtr> body;
-    body.push_back(printStmt(bin(litNum(2), TokenType::STAR, "*", litNum(3))));
+    body.push_back(printStmt(binaryExpr(litNum(2), TokenType::STAR, "*", litNum(3))));
     std::vector<StmtPtr> stmts;
     stmts.push_back(std::make_unique<IfStmt>(0,
-        bin(litNum(1), TokenType::PLUS, "+", litNum(1)),
+        binaryExpr(litNum(1), TokenType::PLUS, "+", litNum(1)),
         blockStmt(std::move(body)),
         nullptr));
     auto result = folder.optimize(std::move(stmts));
@@ -222,7 +222,7 @@ TEST(ConstantFolderTest, VisitFunctionStmt_FoldsReturnBody) {
     Token retTok = Token{TokenType::KW_RETURN, "return", std::monostate{}, 1};
     std::vector<StmtPtr> body;
     body.push_back(std::make_unique<ReturnStmt>(
-        retTok, bin(litNum(2), TokenType::PLUS, "+", litNum(3))));
+        retTok, binaryExpr(litNum(2), TokenType::PLUS, "+", litNum(3))));
     std::vector<StmtPtr> stmts;
     stmts.push_back(std::make_unique<FunctionStmt>(
         makeIdent("f"), std::vector<Token>{}, std::move(body)));
