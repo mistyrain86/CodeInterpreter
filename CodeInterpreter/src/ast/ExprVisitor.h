@@ -1,7 +1,6 @@
 #pragma once
 #include "Value.h"
 
-// 전방 선언
 struct LiteralExpr;
 struct GroupingExpr;
 struct UnaryExpr;

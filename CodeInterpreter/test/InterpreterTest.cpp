@@ -50,7 +50,6 @@ TEST_F(InterpreterFixture, UnaryMinus_OnString_Throws) {
     EXPECT_THROW(interp.interpret(stmts), RuntimeError);
 }
 
-// 이항 연산
 TEST_F(InterpreterFixture, Add)   { EXPECT_EQ(run(printStmt(bin(litNum(3),  TokenType::PLUS,  "+", litNum(4)))),  "7\n");  }
 TEST_F(InterpreterFixture, Sub)   { EXPECT_EQ(run(printStmt(bin(litNum(10), TokenType::MINUS, "-", litNum(3)))),  "7\n");  }
 TEST_F(InterpreterFixture, Mul)   { EXPECT_EQ(run(printStmt(bin(litNum(3),  TokenType::STAR,  "*", litNum(4)))),  "12\n"); }
@@ -87,7 +86,6 @@ TEST_F(InterpreterFixture, DivByZero_Throws) {
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
 
-// 변수 & 제어흐름
 TEST_F(InterpreterFixture, VarDeclAndUse) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("a", litNum(10.0)));
@@ -149,7 +147,7 @@ TEST_F(InterpreterFixture, VarDecl_NoInitializer) {
     std::vector<StmtPtr> s;
     s.push_back(std::make_unique<VarStmt>(makeIdent("x"), nullptr));
     s.push_back(printStmt(varRef("x")));
-    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+    EXPECT_EQ(runAll(std::move(s)), "null\n");
 }
 TEST_F(InterpreterFixture, EqualEqual_SameString) {
     EXPECT_EQ(run(printStmt(bin(litStr("a"), TokenType::EQUAL_EQUAL, "==", litStr("a")))), "true\n");
@@ -174,7 +172,6 @@ TEST_F(InterpreterFixture, ForLoop_0to2) {
     EXPECT_EQ(runAll(std::move(s)), "0\n1\n2\n");
 }
 
-// ── 함수 헬퍼 ────────────────────────────────────────────────────
 static Token retTok(int line = 1) {
     return Token{TokenType::KW_RETURN, "return", std::monostate{}, line};
 }
@@ -182,8 +179,6 @@ static Token parenTok(int line = 1) {
     return Token{TokenType::RIGHT_PAREN, ")", std::monostate{}, line};
 }
 
-// func 선언 + 호출을 묶는 헬퍼
-// params: 파라미터 이름 목록, body: 함수 본문, args: 호출 인자
 static std::unique_ptr<CallExpr> makeCall(
         const std::string& name,
         std::vector<ExprPtr> args) {
@@ -191,9 +186,6 @@ static std::unique_ptr<CallExpr> makeCall(
         varRef(name), parenTok(), std::move(args));
 }
 
-// ── Ch.2 Function 테스트 ──────────────────────────────────────────
-
-// 기본: 인자 없는 함수 선언 및 호출
 TEST_F(InterpreterFixture, Function_NoParams_Call) {
     std::vector<StmtPtr> body;
     body.push_back(printStmt(litStr("hello func")));
@@ -206,9 +198,7 @@ TEST_F(InterpreterFixture, Function_NoParams_Call) {
     EXPECT_EQ(runAll(std::move(s)), "hello func\n");
 }
 
-// 기본: 파라미터 전달 및 return
 TEST_F(InterpreterFixture, Function_Params_And_Return) {
-    // func add(a, b) { return a + b; }
     std::vector<Token> params = { makeIdent("a"), makeIdent("b") };
     std::vector<StmtPtr> body;
     body.push_back(std::make_unique<ReturnStmt>(
@@ -218,7 +208,6 @@ TEST_F(InterpreterFixture, Function_Params_And_Return) {
     s.push_back(std::make_unique<FunctionStmt>(
         makeIdent("add"), std::move(params), std::move(body)));
 
-    // print add(3, 7);  → 10
     std::vector<ExprPtr> args;
     args.push_back(litNum(3.0));
     args.push_back(litNum(7.0));
@@ -227,53 +216,44 @@ TEST_F(InterpreterFixture, Function_Params_And_Return) {
     EXPECT_EQ(runAll(std::move(s)), "10\n");
 }
 
-// return 없는 함수 → nil 반환
 TEST_F(InterpreterFixture, Function_NoReturn_ReturnsNil) {
     std::vector<StmtPtr> body;
-    body.push_back(std::make_unique<ExprStmt>(litNum(42.0)));  // 아무것도 안 함
+    body.push_back(std::make_unique<ExprStmt>(litNum(42.0)));
 
     std::vector<StmtPtr> s;
     s.push_back(std::make_unique<FunctionStmt>(
         makeIdent("noop"), std::vector<Token>{}, std::move(body)));
     s.push_back(printStmt(makeCall("noop", {})));
 
-    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+    EXPECT_EQ(runAll(std::move(s)), "null\n");
 }
 
-// 재귀: 팩토리얼
 TEST_F(InterpreterFixture, Function_Recursive_Factorial) {
-    // func fact(n) { if (n <= 1) return 1; return n * fact(n-1); }
     Token n    = makeIdent("n");
     Token le   = Token{TokenType::LESS_EQUAL, "<=", std::monostate{}, 1};
     Token star = Token{TokenType::STAR, "*", std::monostate{}, 1};
     Token minus= Token{TokenType::MINUS, "-", std::monostate{}, 1};
 
-    // fact(n-1) 호출
     std::vector<ExprPtr> recArgs;
     recArgs.push_back(std::make_unique<BinaryExpr>(
         std::make_unique<VariableExpr>(n), minus, litNum(1.0)));
 
-    // n * fact(n-1)
     auto nTimesRec = std::make_unique<BinaryExpr>(
         std::make_unique<VariableExpr>(n), star,
         makeCall("fact", std::move(recArgs)));
 
-    // 함수 본문
     std::vector<StmtPtr> body;
-    // if (n <= 1) return 1;
     body.push_back(std::make_unique<IfStmt>(0,
         std::make_unique<BinaryExpr>(
             std::make_unique<VariableExpr>(n), le, litNum(1.0)),
         std::make_unique<ReturnStmt>(retTok(), litNum(1.0)),
         nullptr));
-    // return n * fact(n-1);
     body.push_back(std::make_unique<ReturnStmt>(retTok(), std::move(nTimesRec)));
 
     std::vector<StmtPtr> s;
     s.push_back(std::make_unique<FunctionStmt>(
         makeIdent("fact"), std::vector<Token>{n}, std::move(body)));
 
-    // print fact(5);  → 120
     std::vector<ExprPtr> args;
     args.push_back(litNum(5.0));
     s.push_back(printStmt(makeCall("fact", std::move(args))));
@@ -281,11 +261,7 @@ TEST_F(InterpreterFixture, Function_Recursive_Factorial) {
     EXPECT_EQ(runAll(std::move(s)), "120\n");
 }
 
-// 클로저: 바깥 스코프 변수 캡처
 TEST_F(InterpreterFixture, Function_Closure_CapturesOuter) {
-    // var x = 10;
-    // func getX() { return x; }
-    // print getX();  → 10
     std::vector<StmtPtr> body;
     body.push_back(std::make_unique<ReturnStmt>(retTok(), varRef("x")));
 
@@ -298,9 +274,6 @@ TEST_F(InterpreterFixture, Function_Closure_CapturesOuter) {
     EXPECT_EQ(runAll(std::move(s)), "10\n");
 }
 
-// ── 오류 케이스 (미션 요구사항) ───────────────────────────────────
-
-// 함수가 아닌 대상 호출
 TEST_F(InterpreterFixture, Function_CallNonCallable_Throws) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("x", litStr("hello")));
@@ -308,9 +281,7 @@ TEST_F(InterpreterFixture, Function_CallNonCallable_Throws) {
     EXPECT_THROW(runAll(std::move(s)), RuntimeError);
 }
 
-// 인자 개수 불일치
 TEST_F(InterpreterFixture, Function_ArityMismatch_Throws) {
-    // func foo(a, b, c) {}
     std::vector<Token> params = { makeIdent("a"), makeIdent("b"), makeIdent("c") };
     std::vector<StmtPtr> body;
 
@@ -318,7 +289,6 @@ TEST_F(InterpreterFixture, Function_ArityMismatch_Throws) {
     s.push_back(std::make_unique<FunctionStmt>(
         makeIdent("foo"), std::move(params), std::move(body)));
 
-    // foo(1, 2) → 인자 2개, 기대 3개
     std::vector<ExprPtr> args;
     args.push_back(litNum(1.0));
     args.push_back(litNum(2.0));
@@ -326,8 +296,6 @@ TEST_F(InterpreterFixture, Function_ArityMismatch_Throws) {
 
     EXPECT_THROW(m_interp.interpret(s), RuntimeError);
 }
-
-// ── Ch.3 Array 테스트 ────────────────────────────────────────────
 
 static Token bracketTok(int line = 1) {
     return Token{TokenType::LEFT_BRACKET, "[", std::monostate{}, line};
@@ -353,7 +321,7 @@ TEST_F(InterpreterFixture, Array_Create_And_Print) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("arr", arrayCreate(3.0)));
     s.push_back(printStmt(indexGet(varRef("arr"), litNum(0.0))));
-    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+    EXPECT_EQ(runAll(std::move(s)), "null\n");
 }
 
 TEST_F(InterpreterFixture, Array_Write_And_Read) {
@@ -459,14 +427,11 @@ TEST_F(InterpreterFixture, StaticBinding_Assign_SameResult) {
     m_interp.setBindings(nullptr);
 }
 
-// ── Ch.4 ConstantFolder 테스트 ────────────────────────────────────
-
 class ConstantFolderFixture : public ::testing::Test {
 protected:
     ConstantFolder       m_folder;
-    std::vector<StmtPtr> m_result;  // 수명 보장
+    std::vector<StmtPtr> m_result;  // foldToDouble/wasFolded의 AST 수명 보장
 
-    // 표현식을 폴딩한 결과가 double 리터럴이면 그 값을 반환
     double foldToDouble(ExprPtr expr) {
         std::vector<StmtPtr> stmts;
         stmts.push_back(printStmt(std::move(expr)));
@@ -478,7 +443,6 @@ protected:
         return std::get<double>(lit->value);
     }
 
-    // 표현식이 LiteralExpr로 폴딩됐는지 여부
     bool wasFolded(ExprPtr expr) {
         std::vector<StmtPtr> stmts;
         stmts.push_back(printStmt(std::move(expr)));
@@ -525,7 +489,6 @@ TEST(ConstantFolderTest, Fold_VarStmt_Initializer) {
 
 TEST_F(InterpreterFixture, ConstantFolder_RunResult) {
     ConstantFolder folder;
-    // (3 + 4) * 2 → 폴딩 후 LiteralExpr(14) → 실행 결과 14
     auto expr = bin(
         bin(litNum(3), TokenType::PLUS, "+", litNum(4)),
         TokenType::STAR, "*", litNum(2));

@@ -16,7 +16,6 @@ public:
     void check(const std::vector<StmtPtr>& stmts) override;
     void registerGlobal(const std::string& name);
 
-    // StmtVisitor
     void visitExprStmt    (ExprStmt&)     override;
     void visitPrintStmt   (PrintStmt&)    override;
     void visitVarStmt     (VarStmt&)      override;

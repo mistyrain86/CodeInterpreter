@@ -38,7 +38,7 @@ void Environment::printAll(int depth) const {
     if (m_enclosing) m_enclosing->printAll(depth + 1);
     std::string scope = (depth == 0) ? "[전역]" : "[로컬]";
     for (auto& [k, v] : m_values)
-        std::cout << scope << " " << k << "\n";  // D의 stringify 호출로 교체 가능
+        std::cout << scope << " " << k << "\n";
 }
 
 std::string Environment::makeUndefinedVarMessage(const Token& name) const {

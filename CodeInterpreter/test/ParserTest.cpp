@@ -10,7 +10,6 @@
 using ::testing::_;
 using ::testing::Return;
 
-// ── 단위 테스트 헬퍼 ──────────────────────────────────────
 static Token t(TokenType type, std::string lex,
                std::variant<std::monostate,double,std::string> lit = std::monostate{},
                int line = 1) {
@@ -23,7 +22,6 @@ static std::vector<StmtPtr> parse(std::vector<Token> tokens) {
     return Parser().parse(std::move(tokens));
 }
 
-// ── 단위 테스트 ───────────────────────────────────────────
 TEST(ParserUnit, NumberLiteral) {
     auto stmts = parse({t(TokenType::NUMBER,"5",5.0), semi(), eof()});
     auto* es  = dynamic_cast<ExprStmt*>(stmts[0].get());
@@ -184,7 +182,6 @@ TEST(ParserUnit, InvalidAssignTarget_Throws) {
                         t(TokenType::NUMBER,"3",3.0), semi(), eof()}), ParseError);
 }
 
-// ── Ch.2 함수 선언 테스트 ─────────────────────────────────────
 TEST(ParserTest, FunctionDecl_NoParams) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func greet() { print \"hi\"; }");
@@ -231,7 +228,6 @@ TEST(ParserTest, FunctionDecl_Name) {
     EXPECT_EQ(fn->m_body.size(), 0u);
 }
 
-// ── Ch.2 함수 호출 테스트 ─────────────────────────────────────
 TEST(ParserTest, CallExpr_NoArgs) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("greet();");
@@ -269,7 +265,6 @@ TEST(ParserTest, CallExpr_NestedCall) {
     EXPECT_NE(dynamic_cast<CallExpr*>(outer->args[0].get()), nullptr);
 }
 
-// ── Ch.2 return 문 테스트 ─────────────────────────────────────
 TEST(ParserTest, ReturnStmt_WithValue) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func f() { return 5; }");
@@ -299,7 +294,6 @@ TEST(ParserTest, ReturnStmt_Keyword) {
     EXPECT_EQ(ret->m_keyword.lexeme, "return");
 }
 
-// ── Ch.3 배열 인덱스 테스트 ───────────────────────────────────
 TEST(ParserTest, IndexGetExpr) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("arr[0];");
@@ -335,7 +329,6 @@ TEST(ParserTest, IndexSetExpr_WithExpr) {
     EXPECT_NE(dynamic_cast<BinaryExpr*>(set->value.get()), nullptr);
 }
 
-// ── Ch.2/3 에러 케이스 테스트 ────────────────────────────────
 TEST(ParserTest, FunctionDecl_MissingName_Throws) {
     Lexer lexer; Parser parser;
     auto tokens = lexer.tokenize("func () { }");
@@ -367,7 +360,6 @@ TEST(ParserUnit, Addition) {
     EXPECT_EQ(bin->op.type, TokenType::PLUS);
 }
 TEST(ParserUnit, Precedence_MulBeforeAdd) {
-    // 1 + 2 * 3 → right 쪽이 Binary(*)
     auto stmts = parse({t(TokenType::NUMBER,"1",1.0), t(TokenType::PLUS,"+"),
                         t(TokenType::NUMBER,"2",2.0), t(TokenType::STAR,"*"),
                         t(TokenType::NUMBER,"3",3.0), semi(), eof()});
@@ -380,7 +372,6 @@ TEST(ParserUnit, Precedence_MulBeforeAdd) {
     EXPECT_EQ(mul->op.type, TokenType::STAR);
 }
 TEST(ParserUnit, LeftAssociativity) {
-    // 10 - 4 - 3 → left 쪽이 Binary(-)
     auto stmts = parse({t(TokenType::NUMBER,"10",10.0), t(TokenType::MINUS,"-"),
                         t(TokenType::NUMBER,"4",4.0),   t(TokenType::MINUS,"-"),
                         t(TokenType::NUMBER,"3",3.0),   semi(), eof()});
@@ -398,8 +389,6 @@ TEST(ParserUnit, Comparison_Less) {
     EXPECT_EQ(bin->op.type, TokenType::LESS);
 }
 
-// ── Real Lexer 통합 테스트 ────────────────────────────────
-// Lexer(실제) + Parser(실제) / Checker·Interpreter는 Mock으로 격리
 TEST(RealLexerParser, NumberLiteral_PassesThrough) {
     auto mc = std::make_unique<MockChecker>();
     EXPECT_CALL(*mc, check(_)).Times(1);
@@ -444,9 +433,6 @@ TEST(RealLexerParser, ParseError_MissingSemicolon_Throws) {
     EXPECT_THROW(factory.run("print 5"), ParseError);
 }
 
-// ── TokenStreamBuilder 활용 예시 ─────────────────────────
-// 기존 t()/semi()/eof() 방식 대비 문법 흐름이 코드에 바로 드러난다.
-
 TEST(ParserBuilder, NumberLiteral) {
     auto tokens = TokenStreamBuilder().number(5.0).semicolon().eof().build();
     auto stmts  = Parser().parse(std::move(tokens));
@@ -479,7 +465,6 @@ TEST(ParserBuilder, VarDecl) {
 }
 
 TEST(ParserBuilder, ForLoop) {
-    // for (var i = 0; i < 3; i = i + 1) print i;
     auto tokens = TokenStreamBuilder()
         .kwFor().lparen()
             .kwVar().identifier("i").equal().number(0.0).semicolon()

@@ -24,8 +24,6 @@ void Checker::checkStmts(const std::vector<StmtPtr>& stmts) {
     for (const auto& s : stmts) s->accept(*this);
 }
 
-// ── StmtVisitor 구현 ───────────────────────────────────────────────
-
 void Checker::visitVarStmt(VarStmt& s) {
     declare(s.m_name);
     if (s.m_initializer) checkExpr(s.m_initializer.get());
@@ -93,8 +91,6 @@ void Checker::visitReturnStmt(ReturnStmt& s) {
     if (s.m_value) checkExpr(s.m_value.get());
 }
 
-// ── 표현식 분석 (dynamic_cast 유지 — void 반환) ──────────────────
-
 void Checker::checkExpr(Expr* expr) {
     assert(expr != nullptr);
     if (auto* e = dynamic_cast<BinaryExpr*>(expr)) {
@@ -126,10 +122,7 @@ void Checker::checkExpr(Expr* expr) {
         checkExpr(e->index.get());
         checkExpr(e->value.get());
     }
-    // LiteralExpr: 검사 없음
 }
-
-// ── 스코프 관리 ────────────────────────────────────────────────────
 
 void Checker::beginScope() { m_scopes.emplace_back(); }
 void Checker::endScope()   { m_scopes.pop_back(); }

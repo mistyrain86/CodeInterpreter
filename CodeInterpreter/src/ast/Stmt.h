@@ -77,7 +77,6 @@ struct ForStmt : Stmt {
     int  getLine() const override { return m_line; }
 };
 
-// ── Chapter 2: 함수 선언 / return ─────────────────────────────────
 struct FunctionStmt : Stmt {
     Token                m_name;
     std::vector<Token>   m_params;
@@ -92,7 +91,7 @@ struct FunctionStmt : Stmt {
 
 struct ReturnStmt : Stmt {
     Token   m_keyword;
-    ExprPtr m_value;    // nullptr 이면 return; (nil 반환)
+    ExprPtr m_value;    // nullptr 이면 return; (null 반환)
     ReturnStmt(Token keyword, ExprPtr value)
         : m_keyword(std::move(keyword)), m_value(std::move(value)) {}
     void accept(StmtVisitor& v) override { v.visitReturnStmt(*this); }

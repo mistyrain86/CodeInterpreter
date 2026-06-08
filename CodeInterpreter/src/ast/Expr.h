@@ -52,10 +52,9 @@ struct AssignExpr : Expr {
     Value accept(ExprVisitor& v) override { return v.visitAssign(*this); }
 };
 
-// ── Chapter 2: 함수 호출 ───────────────────────────────────────────
 struct CallExpr : Expr {
     ExprPtr              callee;
-    Token                paren;   // 닫는 ')', 에러 리포트용
+    Token                paren;
     std::vector<ExprPtr> args;
     CallExpr(ExprPtr callee, Token paren, std::vector<ExprPtr> args)
         : callee(std::move(callee))
@@ -64,7 +63,6 @@ struct CallExpr : Expr {
     Value accept(ExprVisitor& v) override { return v.visitCallExpr(*this); }
 };
 
-// ── Chapter 3: 배열 인덱스 ────────────────────────────────────────
 struct IndexGetExpr : Expr {
     ExprPtr object;
     Token   bracket;

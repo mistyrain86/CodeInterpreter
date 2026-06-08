@@ -33,8 +33,6 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
     return expr;
 }
 
-// ── StmtVisitor 구현 ───────────────────────────────────────────────
-
 void ConstantFolder::visitExprStmt(ExprStmt& s) {
     s.m_expression = foldExpr(std::move(s.m_expression));
 }

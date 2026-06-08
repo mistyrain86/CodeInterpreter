@@ -84,7 +84,6 @@ void Resolver::resolveExpr(Expr& expr) {
         resolveExpr(*e->index);
         resolveExpr(*e->value);
     }
-    // LiteralExpr: no-op
 }
 
 void Resolver::resolveLocal(Expr& expr, const std::string& name) {

@@ -43,8 +43,6 @@ Interpreter::Interpreter()
     m_currentEnv->define("Array", Value{std::make_shared<ArrayBuiltin>()});
 }
 
-// ── 공개 진입점 ────────────────────────────────────────────────────
-
 void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
     for (const auto& s : stmts) execute(*s);
 }
@@ -65,8 +63,6 @@ void Interpreter::executeBlock(const std::vector<StmtPtr>& stmts,
     ScopeGuard guard(m_currentEnv, std::move(env));
     for (const auto& s : stmts) execute(*s);
 }
-
-// ── ExprVisitor 구현 ───────────────────────────────────────────────
 
 Value Interpreter::visitLiteral(LiteralExpr& e) {
     return e.value;
@@ -182,8 +178,6 @@ Value Interpreter::visitAssign(AssignExpr& e) {
     return v;
 }
 
-// ── StmtVisitor 구현 ───────────────────────────────────────────────
-
 void Interpreter::visitExprStmt(ExprStmt& s) {
     evaluate(*s.m_expression);
 }
@@ -217,8 +211,6 @@ void Interpreter::visitForStmt(ForStmt& s) {
         if (s.m_increment) evaluate(*s.m_increment);
     }
 }
-
-// ── 헬퍼 ──────────────────────────────────────────────────────────
 
 void Interpreter::checkNumericPair(const Value& l, const Value& r, int line) const {
     checkNumericOperand(l, line);
@@ -286,7 +278,7 @@ Value Interpreter::visitIndexSetExpr(IndexSetExpr& e) {
 }
 
 std::string Interpreter::stringify(const Value& v) const {
-    if (std::holds_alternative<std::monostate>(v)) return "nil";
+    if (std::holds_alternative<std::monostate>(v)) return "null";
     if (std::holds_alternative<bool>(v)) return std::get<bool>(v) ? "true" : "false";
     if (std::holds_alternative<double>(v)) {
         double d = std::get<double>(v);
