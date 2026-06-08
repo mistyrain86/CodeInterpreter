@@ -92,7 +92,7 @@ struct FunctionStmt : Stmt {
 
 struct ReturnStmt : Stmt {
     Token   m_keyword;
-    ExprPtr m_value;    // nullptr 이면 return; (nil 반환)
+    ExprPtr m_value;    // nullptr 이면 return; (null 반환)
     ReturnStmt(Token keyword, ExprPtr value)
         : m_keyword(std::move(keyword)), m_value(std::move(value)) {}
     void accept(StmtVisitor& v) override { v.visitReturnStmt(*this); }

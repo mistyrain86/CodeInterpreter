@@ -147,7 +147,7 @@ TEST_F(InterpreterFixture, VarDecl_NoInitializer) {
     std::vector<StmtPtr> s;
     s.push_back(std::make_unique<VarStmt>(makeIdent("x"), nullptr));
     s.push_back(printStmt(varRef("x")));
-    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+    EXPECT_EQ(runAll(std::move(s)), "null\n");
 }
 TEST_F(InterpreterFixture, EqualEqual_SameString) {
     EXPECT_EQ(run(printStmt(bin(litStr("a"), TokenType::EQUAL_EQUAL, "==", litStr("a")))), "true\n");
@@ -225,7 +225,7 @@ TEST_F(InterpreterFixture, Function_Params_And_Return) {
     EXPECT_EQ(runAll(std::move(s)), "10\n");
 }
 
-// return 없는 함수 → nil 반환
+// return 없는 함수 → null 반환
 TEST_F(InterpreterFixture, Function_NoReturn_ReturnsNil) {
     std::vector<StmtPtr> body;
     body.push_back(std::make_unique<ExprStmt>(litNum(42.0)));  // 아무것도 안 함
@@ -235,7 +235,7 @@ TEST_F(InterpreterFixture, Function_NoReturn_ReturnsNil) {
         makeIdent("noop"), std::vector<Token>{}, std::move(body)));
     s.push_back(printStmt(makeCall("noop", {})));
 
-    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+    EXPECT_EQ(runAll(std::move(s)), "null\n");
 }
 
 // 재귀: 팩토리얼
@@ -351,7 +351,7 @@ TEST_F(InterpreterFixture, Array_Create_And_Print) {
     std::vector<StmtPtr> s;
     s.push_back(varDecl("arr", arrayCreate(3.0)));
     s.push_back(printStmt(indexGet(varRef("arr"), litNum(0.0))));
-    EXPECT_EQ(runAll(std::move(s)), "nil\n");
+    EXPECT_EQ(runAll(std::move(s)), "null\n");
 }
 
 TEST_F(InterpreterFixture, Array_Write_And_Read) {

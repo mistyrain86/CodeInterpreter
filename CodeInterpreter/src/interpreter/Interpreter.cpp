@@ -334,7 +334,7 @@ Value Interpreter::visitIndexSetExpr(IndexSetExpr& e) {
 }
 
 std::string Interpreter::stringify(const Value& v) const {
-    if (std::holds_alternative<std::monostate>(v))              return "nil";
+    if (std::holds_alternative<std::monostate>(v))              return "null";
     if (std::holds_alternative<bool>(v))                        return std::get<bool>(v) ? "true" : "false";
     if (std::holds_alternative<double>(v))                      return stringifyDouble(std::get<double>(v));
     if (std::holds_alternative<std::shared_ptr<ICallable>>(v)) {

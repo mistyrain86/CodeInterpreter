@@ -46,7 +46,7 @@ TEST(Ch2_Integration, NoReturnReturnsNull) {
     EXPECT_EQ(exec(
         "func noop() { var x = 1; }"
         "print noop();"),
-        "nil\n");
+        "null\n");
 }
 
 TEST(Ch2_Integration, RecursiveFactorial) {
@@ -133,11 +133,11 @@ TEST(Ch3_Integration, ArrayDynamicIndex) {
 }
 
 TEST(Ch3_Integration, ArrayInitialValueIsNull) {
-    // 생성 직후 원소는 nil
+    // 생성 직후 원소는 null
     EXPECT_EQ(exec(
         "var arr = Array(3);"
         "print arr[0];"),
-        "nil\n");
+        "null\n");
 }
 
 // ── Ch.3 에러 케이스 ──────────────────────────────────────────────
