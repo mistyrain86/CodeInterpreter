@@ -535,3 +535,28 @@ TEST_F(InterpreterFixture, ConstantFolder_RunResult) {
     auto folded = folder.optimize(std::move(stmts));
     EXPECT_EQ(runAll(std::move(folded)), "14\n");
 }
+
+// ── 커버리지 보강: isTruthy(double) 경로 ────────────────────────
+TEST_F(InterpreterFixture, Truthy_Zero_IsFalse) {
+    EXPECT_EQ(run(std::make_unique<IfStmt>(
+        litNum(0.0), printStmt(litStr("yes")), nullptr)), "");
+}
+
+TEST_F(InterpreterFixture, Truthy_NonZero_IsTrue) {
+    EXPECT_EQ(run(std::make_unique<IfStmt>(
+        litNum(1.0), printStmt(litStr("yes")), nullptr)), "yes\n");
+}
+
+// 커버리지 보강: isTruthy(string) → true 경로
+TEST_F(InterpreterFixture, Truthy_String_IsTrue) {
+    EXPECT_EQ(run(std::make_unique<IfStmt>(
+        litStr("hello"), printStmt(litStr("yes")), nullptr)), "yes\n");
+}
+
+// 커버리지 보강: ForStmt body null → RuntimeError
+TEST_F(InterpreterFixture, ForStmt_NullBody_Throws) {
+    std::vector<StmtPtr> s;
+    s.push_back(std::make_unique<ForStmt>(
+        nullptr, nullptr, nullptr, nullptr));
+    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+}
