@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <sstream>
 #include "Environment.h"
 
 static Token tok(std::string name, int line = 1) {
@@ -99,4 +100,49 @@ TEST_F(ScopeFixture, Assign_NotInAnyScope_Throws) {
     auto level1 = std::make_shared<Environment>();
     auto level2 = std::make_shared<Environment>(level1);
     EXPECT_THROW(level2->assign(tok("notDefined"), Value{1.0}), std::runtime_error);
+}
+
+class GetAtFixture : public ::testing::Test {
+protected:
+    std::shared_ptr<Environment> level0 = std::make_shared<Environment>();
+    std::shared_ptr<Environment> level1 = std::make_shared<Environment>(level0);
+    std::shared_ptr<Environment> level2 = std::make_shared<Environment>(level1);
+
+    void SetUp() override {
+        level0->define("a", Value{1.0});
+        level1->define("b", Value{2.0});
+        level2->define("c", Value{3.0});
+    }
+};
+
+TEST_F(GetAtFixture, GetAt_Distance0_CurrentScope) {
+    EXPECT_DOUBLE_EQ(std::get<double>(level2->getAt(0, "c")), 3.0);
+}
+
+TEST_F(GetAtFixture, GetAt_Distance1_ParentScope) {
+    EXPECT_DOUBLE_EQ(std::get<double>(level2->getAt(1, "b")), 2.0);
+}
+
+TEST_F(GetAtFixture, GetAt_Distance2_GrandparentScope) {
+    EXPECT_DOUBLE_EQ(std::get<double>(level2->getAt(2, "a")), 1.0);
+}
+
+TEST_F(GetAtFixture, AssignAt_Distance0_UpdatesCurrentScope) {
+    level2->assignAt(0, "c", Value{99.0});
+    EXPECT_DOUBLE_EQ(std::get<double>(level2->getAt(0, "c")), 99.0);
+}
+
+TEST_F(GetAtFixture, AssignAt_Distance1_UpdatesParentScope) {
+    level2->assignAt(1, "b", Value{77.0});
+    EXPECT_DOUBLE_EQ(std::get<double>(level1->getAt(0, "b")), 77.0);
+}
+
+TEST_F(EnvironmentFixture, PrintAll_OutputsVariables) {
+    env.define("x", Value{1.0});
+    env.define("y", Value{std::string("hello")});
+    std::ostringstream oss;
+    auto* old = std::cout.rdbuf(oss.rdbuf());
+    env.printAll();
+    std::cout.rdbuf(old);
+    EXPECT_NE(oss.str(), "");
 }
