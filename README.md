@@ -102,13 +102,13 @@ CodeFab Interpreter (REPL 모드)
 
 ### 2. 파일 실행 모드
 
-`.cf` 파일을 작성한 후 `run` 인자와 함께 실행합니다.
+소스 파일을 작성한 후 `run` 인자와 함께 실행합니다.
 
 ```
-CodeInterpreter.exe run scripts/hello.cf
+CodeInterpreter.exe run scripts/hello.txt
 ```
 
-**`hello.cf` 예시:**
+**`hello.txt` 예시:**
 
 ```
 var a = 5;
@@ -132,7 +132,7 @@ print factorial(5);
 
 ```
 CodeFab Interpreter (FILE 모드)
-[FILE] 소스코드 로딩: scripts/hello.cf
+[FILE] 소스코드 로딩: scripts/hello.txt
 8
 a가 더 큽니다
 0
@@ -148,14 +148,48 @@ a가 더 큽니다
 `debug` 인자와 함께 실행하면 문장(Stmt) 단위로 실행을 제어할 수 있습니다.
 
 ```
-CodeInterpreter.exe debug scripts/debug_test.cf
+CodeInterpreter.exe debug scripts/debug_test.txt
+```
+
+**`debug_test.txt` 예시:**
+
+```
+// debug_test.txt — 디버그 모드 테스트 예제
+// 실행: CodeInterpreter.exe debug scripts/debug_test.txt
+//
+// 권장 디버그 순서:
+//   1. step         → 한 줄씩 실행
+//   2. watch a      → 변수 a 감시 등록
+//   3. watch count  → 변수 count 감시 등록
+//   4. continue     → breakpoint까지 실행
+//   5. break 20     → 20번째 줄에 breakpoint
+//   6. inspect      → 현재 스코프 변수 전체 출력
+
+var a = 3;
+var b = 7;
+var result = a + b;
+print result;
+
+var count = 0;
+for (var i = 0; i < 5; i = i + 1) {
+    count = count + i;
+}
+print count;
+
+func greet(name) {
+    var message = "안녕하세요, " + name;
+    return message;
+}
+
+var msg = greet("CodeFab");
+print msg;
 ```
 
 ```
 CodeFab Interpreter (DEBUG 모드)
 종료: exit 또는 quit
-[DEBUG] 소스코드 로딩: scripts/debug_test.cf
-[DEBUG] 1번째 줄에서 정지 -> var a = 3;
+[DEBUG] 소스코드 로딩: scripts/debug_test.txt
+[DEBUG] 12번째 줄에서 정지 -> var a = 3;
 >
 ```
 
@@ -187,9 +221,10 @@ CodeFab Interpreter (DEBUG 모드)
 [DEBUG] 13번째 줄에서 정지 -> var b = 7;
 [WATCH] a = 3
 > inspect
--- 현재 스코프 변수 ----------
+----- 현재 스코프 변수 -----
 [전역] a = 3 (Number)
 > continue
+[DEBUG] 실행 완료
 ```
 
 ---
@@ -214,7 +249,6 @@ CodeFab Interpreter (DEBUG 모드)
 | 분류 | 연산자 | 예시 | 결과 |
 |------|--------|------|------|
 | 산술 | `+` `-` `*` `/` `%` | `1 + 2 * 3` | `7` |
-| 나머지 | `%` | `10 % 3` | `1` |
 | 단항 | `-` `!` | `!true` | `false` |
 | 비교 | `<` `<=` `>` `>=` | `3 > 5` | `false` |
 | 동등 | `==` `!=` | `1 == 1` | `true` |
@@ -320,36 +354,84 @@ print count;           // 1
 | Checker | 의미 오류 | `[의미 오류] [라인 N] 의미 오류: ...` |
 | Interpreter | 런타임 오류 | `[런타임 오류] [라인 N] 런타임 오류: ...` |
 
-### 주요 에러 케이스
+### 어휘 오류
 
 ```
-// 구문 오류: 세미콜론 누락
+"hello
+→ [오류] [라인 1] 어휘 오류: 문자열이 닫히지 않았습니다.
+
+@
+→ [오류] [라인 1] 어휘 오류: 인식할 수 없는 문자 '@'
+```
+
+### 구문 오류
+
+```
 print 1 + 2
-→ [구문 오류] 값 출력 뒤에 ';'가 필요합니다.
+→ [구문 오류] [라인 1] 구문 오류: 값 출력 뒤에 ';'가 필요합니다. ('2' 근처)
 
-// 의미 오류: 로컬 스코프 중복 선언
-{ var a = 1; var a = 2; }
-→ [의미 오류] 이미 이 스코프에 같은 이름의 변수가 있습니다. ('a')
+x + y = 1;
+→ [구문 오류] [라인 1] 구문 오류: 잘못된 할당 대상입니다. ('=' 근처)
 
-// 의미 오류: 자기 참조 초기화
-{ var a = a; }
-→ [의미 오류] 자신의 초기화식에서 지역변수를 읽을 수 없습니다. ('a')
-
-// 런타임 오류: 미정의 변수
-print notDefined;
-→ [런타임 오류] 미정의된 변수 'notDefined'.
-
-// 런타임 오류: 타입 불일치
-print 1 + "HI";
-→ [런타임 오류] 피연산자는 두 숫자 또는 두 문자열이어야 합니다.
-
-// 런타임 오류: 0으로 나누기
-print 10 / 0;
-→ [런타임 오류] 0으로 나눌 수 없습니다.
-
-// 런타임 오류: 배열 범위 초과
-var arr = Array(3); print arr[5];
-→ [런타임 오류] 인덱스 범위를 벗어났습니다. (5)
+func () { }
+→ [구문 오류] [라인 1] 구문 오류: 함수 이름이 필요합니다. ('func' 근처)
 ```
 
-> **참고:** 전역 스코프에서의 중복 `var` 선언은 에러가 아닌 덮어쓰기로 처리됩니다.
+### 의미 오류
+
+```
+{ var a = 1; var a = 2; }
+→ [의미 오류] [라인 1] 의미 오류: 이미 이 스코프에 같은 이름의 변수가 있습니다. ('a')
+
+{ var a = a; }
+→ [의미 오류] [라인 1] 의미 오류: 자신의 초기화식에서 지역변수를 읽을 수 없습니다. ('a')
+
+print notDeclared;
+→ [의미 오류] [라인 1] 의미 오류: 선언되지 않은 변수입니다. ('notDeclared')
+
+func f(a, a) { }
+→ [의미 오류] [라인 1] 의미 오류: 파라미터 이름이 중복됩니다. ('a')
+
+return 1;
+→ [의미 오류] [라인 1] 의미 오류: 함수 외부에서 return을 사용할 수 없습니다.
+```
+
+### 런타임 오류
+
+```
+print 1 + "HI";
+→ [런타임 오류] [라인 1] 런타임 오류: 피연산자는 두 숫자 또는 두 문자열이어야 합니다.
+
+print -true;
+→ [런타임 오류] [라인 1] 런타임 오류: 피연산자는 반드시 숫자여야 합니다.
+
+print 10 / 0;
+→ [런타임 오류] [라인 1] 런타임 오류: 0으로 나눌 수 없습니다.
+
+print 10 % 0;
+→ [런타임 오류] [라인 1] 런타임 오류: 0으로 나눌 수 없습니다.
+
+var x = 1; x();
+→ [런타임 오류] [라인 1] 런타임 오류: 함수가 아닌 대상을 호출했습니다.
+
+func f(a) { } f(1, 2);
+→ [런타임 오류] [라인 1] 런타임 오류: 인자 개수 불일치. 기대: 1, 실제: 2
+
+var arr = Array(3); print arr[5];
+→ [런타임 오류] [라인 1] 런타임 오류: 인덱스 범위를 벗어났습니다. (5)
+
+var arr = Array(3); print arr["x"];
+→ [런타임 오류] [라인 1] 런타임 오류: 인덱스는 반드시 숫자여야 합니다.
+
+var x = 1; print x[0];
+→ [런타임 오류] [라인 1] 런타임 오류: 인덱스 접근은 배열만 지원합니다.
+
+var arr = Array("hi");
+→ [런타임 오류] 런타임 오류: 배열 크기는 숫자여야 합니다.
+
+var arr = Array(-1);
+→ [런타임 오류] 런타임 오류: 배열 크기는 0 이상이어야 합니다.
+
+var arr = Array(2000000);
+→ [런타임 오류] 런타임 오류: 배열 크기가 너무 큽니다.
+```

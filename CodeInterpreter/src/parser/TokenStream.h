@@ -46,8 +46,7 @@ public:
         std::string loc = (tok.type == TokenType::END_OF_FILE)
             ? " (파일 끝)"
             : " ('" + tok.lexeme + "' 근처)";
-        return ParseError("[라인 " + std::to_string(tok.line)
-                          + "] 구문 오류: " + msg + loc);
+        return ParseError(ParseError::format(tok.line, msg) + loc);
     }
 
 private:
