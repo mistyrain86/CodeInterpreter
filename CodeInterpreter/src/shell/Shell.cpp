@@ -50,9 +50,13 @@ void Shell::runFile(const std::string& path) {
         std::cerr << e.what() << "\n";
         std::exit(1);
     }
+    runFileStream(file, path);
+}
+
+void Shell::runFileStream(std::istream& in, const std::string& label) {
     std::ostringstream ss;
-    for (const auto& l : lines) ss << l << '\n';
-    runFromSource(ss.str(), path);
+    ss << in.rdbuf();
+    runFromSource(ss.str(), label);
 }
 
 void Shell::runFromSource(const std::string& rawSource, const std::string& label) {

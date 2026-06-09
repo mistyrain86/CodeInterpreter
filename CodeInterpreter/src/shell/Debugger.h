@@ -15,6 +15,7 @@ public:
     explicit Debugger(const std::string& path);
 
     void run();
+    void run(std::istream& sourceIn, std::istream& cmdIn);
     void run(const std::string& source, std::istream& cmdIn);
 
 private:

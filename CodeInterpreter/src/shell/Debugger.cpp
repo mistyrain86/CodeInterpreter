@@ -24,9 +24,13 @@ void Debugger::run() {
         std::cerr << "[오류] 파일을 찾을 수 없습니다: " << m_path << "\n";
         return;
     }
+    run(file, std::cin);
+}
+
+void Debugger::run(std::istream& sourceIn, std::istream& cmdIn) {
     std::ostringstream ss;
-    ss << file.rdbuf();
-    run(ss.str(), std::cin);
+    ss << sourceIn.rdbuf();
+    run(ss.str(), cmdIn);
 }
 
 void Debugger::run(const std::string& source, std::istream& cmdIn) {
