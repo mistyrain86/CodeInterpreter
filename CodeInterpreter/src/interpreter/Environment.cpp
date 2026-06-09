@@ -49,5 +49,5 @@ void Environment::printAll(int depth) const {
 
 std::string Environment::makeUndefinedVarMessage(const Token& name) const {
     return "[라인 " + std::to_string(name.line)
-        + "] 런타임 오류: 미정의된 변수 '" + name.lexeme + "'.";
+        + "] 미정의된 변수 '" + name.lexeme + "'.";
 }
