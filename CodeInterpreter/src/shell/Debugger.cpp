@@ -54,6 +54,41 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
 
     // 각 청크 앞에 빈 줄 prefix를 붙여 파서의 줄 번호를 유지
     bool hasError = false;
+
+    // 커맨드 루프 헬퍼 (gap 정지 / 오류 전 정지 공용)
+    auto commandLoop = [&]() {
+        std::string input;
+        while (true) {
+            std::cout << "> ";
+            std::cout.flush();
+            if (!std::getline(cmdIn, input)) return;
+            if (input == "step")     { m_stepMode = true;  m_nextDepth = INT_MAX;               return; }
+            if (input == "next")     { m_stepMode = true;  m_nextDepth = interp->executeDepth(); return; }
+            if (input == "continue") { m_stepMode = false; m_nextDepth = 0;                     return; }
+            if (input == "exit" || input == "quit") {
+                std::cout << "[DEBUG] 디버그 세션을 종료합니다.\n";
+                throw DebugSessionExit{};
+            }
+            processCommand(input, *interp);
+        }
+    };
+
+    // step 모드에서 파싱 오류 발생 전 해당 줄에서 정지
+    auto stepPauseBeforeError = [&](int firstLine) {
+        if (!m_stepMode || interp->executeDepth() > m_nextDepth) return;
+        if (m_lastStmtLine >= firstLine) return;   // 이미 이 줄에서 멈췄으면 재발동 방지
+        std::string srcLine;
+        if (firstLine > 0 && firstLine <= (int)m_sourceLines.size()) {
+            srcLine = m_sourceLines[firstLine - 1];
+            srcLine.erase(0, srcLine.find_first_not_of(" \t"));
+        }
+        if (srcLine.empty()) srcLine = "(빈 줄)";
+        std::cout << "[DEBUG] " << firstLine << "번째 줄에서 정지 -> " << srcLine << "\n";
+        printWatches(*interp);
+        commandLoop();
+        m_lastStmtLine = firstLine;
+    };
+
     auto runChunk = [&](int startLine, const std::string& chunk) {
         std::string source(startLine, '\n');  // 줄 번호 offset 유지
         source += chunk;
@@ -61,10 +96,30 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
             factory.run(source);
         }
         catch (const DebugSessionExit&)    { throw; }
-        catch (const ParseError& e)        { std::cerr << "[구문 오류] "   << e.what() << "\n"; hasError = true; }
-        catch (const CheckError& e)        { std::cerr << "[의미 오류] "   << e.what() << "\n"; hasError = true; }
+        catch (const ParseError& e)        { stepPauseBeforeError(startLine + 1); std::cerr << "[구문 오류] "   << e.what() << "\n"; hasError = true; }
+        catch (const CheckError& e)        { stepPauseBeforeError(startLine + 1); std::cerr << "[의미 오류] "   << e.what() << "\n"; hasError = true; }
         catch (const RuntimeError& e)      { std::cerr << "[런타임 오류] " << e.what() << "\n"; hasError = true; }
         catch (const std::runtime_error& e){ std::cerr << "[오류] "        << e.what() << "\n"; hasError = true; }
+    };
+
+    // 청크 경계(빈 줄)에 브레이크포인트가 설정된 경우 정지하는 헬퍼
+    auto checkGapBreakpoints = [&](int nextChunkStart) {
+        for (int bp : m_breakpoints) {
+            if (bp > m_lastStmtLine && bp <= nextChunkStart) {  // <= : 청크 시작 줄 포함
+                // 실제 소스 줄 텍스트 표시 (빈 줄이면 "(빈 줄)")
+                std::string srcLine;
+                if (bp > 0 && bp <= (int)m_sourceLines.size()) {
+                    srcLine = m_sourceLines[bp - 1];
+                    srcLine.erase(0, srcLine.find_first_not_of(" \t"));
+                }
+                if (srcLine.empty()) srcLine = "(빈 줄)";
+                std::cout << "[DEBUG] " << bp << "번째 줄에서 정지 (breakpoint) -> " << srcLine << "\n";
+                printWatches(*interp);
+                commandLoop();
+                m_lastStmtLine = bp;  // 재발동 방지
+                break;
+            }
+        }
     };
 
     try {
@@ -81,6 +136,8 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
                 }
                 chunkStartLine = i + 1;
             } else {
+                // 새 청크 시작 직전: 갭에 걸린 브레이크포인트 검사
+                if (current.str().empty()) checkGapBreakpoints(i + 1);
                 current << m_sourceLines[i] << '\n';
             }
         }

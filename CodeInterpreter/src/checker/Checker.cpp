@@ -160,5 +160,5 @@ void Checker::resolveVar(const std::string& name, int line) {
             return;
         }
     }
-    throw CheckError(checkErr(line, "선언되지 않은 변수입니다. ('" + name + "')"));
+    // 스코프에 없으면 전역 변수로 간주 — 런타임에서 RuntimeError로 처리
 }
