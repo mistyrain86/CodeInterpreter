@@ -178,9 +178,15 @@ Value Interpreter::visitUnary(UnaryExpr& e) {
 
 Value Interpreter::visitLogical(LogicalExpr& e) {
     Value left = evaluate(*e.left);
-    if (e.op.type == TokenType::KW_OR)  return isTruthy(left) ? left : evaluate(*e.right);
-    if (e.op.type == TokenType::KW_AND) return !isTruthy(left) ? left : evaluate(*e.right);
-    return evaluate(*e.right);
+    if (e.op.type == TokenType::KW_OR) {
+        if (isTruthy(left)) return Value{true};
+        return Value{isTruthy(evaluate(*e.right))};
+    }
+    if (e.op.type == TokenType::KW_AND) {
+        if (!isTruthy(left)) return Value{false};
+        return Value{isTruthy(evaluate(*e.right))};
+    }
+    return Value{false};
 }
 
 Value Interpreter::visitBinary(BinaryExpr& e) {
