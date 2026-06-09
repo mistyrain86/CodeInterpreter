@@ -136,21 +136,20 @@ ExprPtr Parser::parseBinaryLeft(std::initializer_list<TokenType>  ops,
     }
     return e;
 }
-ExprPtr Parser::parseLogicalOr() {
-    ExprPtr e = parseLogicalAnd();
-    while (match({TokenType::KW_OR})) {
+ExprPtr Parser::parseLogicalLeft(std::initializer_list<TokenType> ops,
+                                   std::function<ExprPtr()>        next) {
+    ExprPtr e = next();
+    while (match(ops)) {
         Token op = previous();
-        e = std::make_unique<LogicalExpr>(std::move(e), op, parseLogicalAnd());
+        e = std::make_unique<LogicalExpr>(std::move(e), op, next());
     }
     return e;
 }
+ExprPtr Parser::parseLogicalOr() {
+    return parseLogicalLeft({TokenType::KW_OR},  [this] { return parseLogicalAnd(); });
+}
 ExprPtr Parser::parseLogicalAnd() {
-    ExprPtr e = parseEquality();
-    while (match({TokenType::KW_AND})) {
-        Token op = previous();
-        e = std::make_unique<LogicalExpr>(std::move(e), op, parseEquality());
-    }
-    return e;
+    return parseLogicalLeft({TokenType::KW_AND}, [this] { return parseEquality();   });
 }
 ExprPtr Parser::parseEquality() {
     return parseBinaryLeft({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL},

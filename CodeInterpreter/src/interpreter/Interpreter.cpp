@@ -186,7 +186,7 @@ Value Interpreter::visitLogical(LogicalExpr& e) {
         if (!isTruthy(left)) return Value{false};
         return Value{isTruthy(evaluate(*e.right))};
     }
-    return Value{false};
+    throw RuntimeError(UNIMPLEMENTED_BINARY);
 }
 
 Value Interpreter::visitBinary(BinaryExpr& e) {
