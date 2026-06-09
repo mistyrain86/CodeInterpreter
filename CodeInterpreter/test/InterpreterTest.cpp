@@ -442,3 +442,58 @@ TEST_F(InterpreterFixture, Stringify_Function_PrintsFnName) {
     s.push_back(printStmt(varRef("greet")));
     EXPECT_EQ(runAll(std::move(s)), "<fn greet>\n");
 }
+
+TEST_F(InterpreterFixture, And_BothTruthy_ReturnsTrue) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_AND, "and", litNum(2.0)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, And_LeftFalsy_ReturnsFalse) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_AND, "and", litNum(42.0)))),
+        "false\n");
+}
+TEST_F(InterpreterFixture, And_RightFalsy_ReturnsFalse) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_AND, "and", litBool(false)))),
+        "false\n");
+}
+TEST_F(InterpreterFixture, And_ShortCircuit_SkipsRight) {
+    std::vector<StmtPtr> s;
+    s.push_back(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_AND, "and", varRef("undeclared"))));
+    EXPECT_EQ(runAll(std::move(s)), "false\n");
+}
+TEST_F(InterpreterFixture, Or_LeftTruthy_ReturnsTrue) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_OR, "or", litNum(2.0)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, Or_LeftFalsy_RightTruthy_ReturnsTrue) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_OR, "or", litNum(42.0)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, Or_BothFalsy_ReturnsFalse) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_OR, "or", litBool(false)))),
+        "false\n");
+}
+TEST_F(InterpreterFixture, Or_ShortCircuit_SkipsRight) {
+    std::vector<StmtPtr> s;
+    s.push_back(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_OR, "or", varRef("undeclared"))));
+    EXPECT_EQ(runAll(std::move(s)), "true\n");
+}
+TEST_F(InterpreterFixture, And_Chained_AllTruthy) {
+    auto lhs = logicalExpr(litBool(true), TokenType::KW_AND, "and", litBool(true));
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(std::move(lhs), TokenType::KW_AND, "and", litBool(true)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, Or_Chained_FirstTruthy) {
+    auto lhs = logicalExpr(litBool(false), TokenType::KW_OR, "or", litBool(false));
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(std::move(lhs), TokenType::KW_OR, "or", litBool(true)))),
+        "true\n");
+}

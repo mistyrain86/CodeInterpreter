@@ -24,6 +24,7 @@ enum class TokenType {
     KW_FOR,
     KW_TRUE, KW_FALSE,
     KW_FUNC, KW_RETURN,
+    KW_AND, KW_OR,
 
     END_OF_FILE
 };

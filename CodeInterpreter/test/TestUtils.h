@@ -53,6 +53,10 @@ inline ExprPtr binaryExpr(ExprPtr l, TokenType op, std::string lex, ExprPtr r) {
     return std::make_unique<BinaryExpr>(
         std::move(l), Token{op, std::move(lex), std::monostate{}, 1}, std::move(r));
 }
+inline ExprPtr logicalExpr(ExprPtr l, TokenType op, std::string lex, ExprPtr r) {
+    return std::make_unique<LogicalExpr>(
+        std::move(l), Token{op, std::move(lex), std::monostate{}, 1}, std::move(r));
+}
 inline std::string execSource(const std::string& src) {
     return captureOutput([&]{
         LangFactory factory;

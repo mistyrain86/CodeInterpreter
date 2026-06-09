@@ -358,3 +358,37 @@ TEST(CheckerUnit, GroupingExpr_Checked) {
     auto stmts = stmtList(printStmt(std::make_unique<GroupingExpr>(litNum(42.0))));
     EXPECT_NO_THROW(c.check(stmts));
 }
+
+TEST(CheckerUnit, LogicalExpr_And_NoThrow) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(
+        logicalExpr(litBool(true), TokenType::KW_AND, "and", litBool(false))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+TEST(CheckerUnit, LogicalExpr_Or_NoThrow) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_OR, "or", litBool(true))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+TEST(CheckerUnit, LogicalExpr_WithVars_NoThrow) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("x", litBool(true)));
+    stmts.push_back(varDecl("y", litBool(false)));
+    stmts.push_back(printStmt(
+        logicalExpr(varRef("x"), TokenType::KW_OR, "or", varRef("y"))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+TEST(CheckerUnit, LogicalExpr_UndeclaredVar_Throws) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(
+        logicalExpr(litBool(true), TokenType::KW_AND, "and", varRef("undeclared"))));
+    EXPECT_THROW(c.check(stmts), CheckError);
+}
