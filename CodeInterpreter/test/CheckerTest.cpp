@@ -16,26 +16,23 @@ TEST(CheckerUnit, EmptyProgram_NoThrow) {
 }
 
 TEST(CheckerUnit, GlobalVarDecl_NoThrow) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("a", litNum(10.0)));
+    auto stmts = stmtList(varDecl("a", litNum(10.0)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, DuplicateLocalVar_Throws) {
-    std::vector<StmtPtr> block;
-    block.push_back(varDecl("a", litStr("hi"), 1));
-    block.push_back(varDecl("a", litNum(3.0), 2));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(blockStmt(std::move(block)));
+    auto block = stmtList(
+        varDecl("a", litStr("hi"), 1),
+        varDecl("a", litNum(3.0), 2));
+    auto stmts = stmtList(blockStmt(std::move(block)));
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
 TEST(CheckerUnit, DuplicateLocal_ErrorContainsName) {
-    std::vector<StmtPtr> block;
-    block.push_back(varDecl("myVar", litNum(1.0), 1));
-    block.push_back(varDecl("myVar", litNum(2.0), 2));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(blockStmt(std::move(block)));
+    auto block = stmtList(
+        varDecl("myVar", litNum(1.0), 1),
+        varDecl("myVar", litNum(2.0), 2));
+    auto stmts = stmtList(blockStmt(std::move(block)));
     try { Checker().check(stmts); FAIL(); }
     catch (const CheckError& e) {
         EXPECT_NE(std::string(e.what()).find("myVar"), std::string::npos);
@@ -43,210 +40,194 @@ TEST(CheckerUnit, DuplicateLocal_ErrorContainsName) {
 }
 
 TEST(CheckerUnit, SameName_DifferentScope_NoThrow) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("x", litNum(1.0)));
-    std::vector<StmtPtr> inner;
-    inner.push_back(varDecl("x", litNum(2.0)));
-    stmts.push_back(blockStmt(std::move(inner)));
+    auto inner = stmtList(varDecl("x", litNum(2.0)));
+    auto stmts = stmtList(
+        varDecl("x", litNum(1.0)),
+        blockStmt(std::move(inner)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, NestedBlock_Shadowing_NoThrow) {
-    std::vector<StmtPtr> inner;
-    inner.push_back(varDecl("x", litNum(2.0)));
-    std::vector<StmtPtr> outer;
-    outer.push_back(varDecl("x", litNum(1.0)));
-    outer.push_back(blockStmt(std::move(inner)));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(blockStmt(std::move(outer)));
+    auto inner = stmtList(varDecl("x", litNum(2.0)));
+    auto outer = stmtList(
+        varDecl("x", litNum(1.0)),
+        blockStmt(std::move(inner)));
+    auto stmts = stmtList(blockStmt(std::move(outer)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, DuplicateGlobal_Throws) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("a", litNum(1.0)));
-    stmts.push_back(varDecl("a", litNum(2.0)));
+    auto stmts = stmtList(
+        varDecl("a", litNum(1.0)),
+        varDecl("a", litNum(2.0)));
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
-TEST(CheckerUnit, UndeclaredVar_Throws) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("a", litNum(1.0)));
-    stmts.push_back(printStmt(std::make_unique<VariableExpr>(makeIdent("x", 2))));
-    EXPECT_THROW(Checker().check(stmts), CheckError);
+// 미선언 변수는 Checker가 전역 변수로 간주 — CheckError를 던지지 않음
+// (런타임에서 RuntimeError로 처리)
+TEST(CheckerUnit, UndeclaredVar_NoCheckError) {
+    auto stmts = stmtList(
+        varDecl("a", litNum(1.0)),
+        printStmt(std::make_unique<VariableExpr>(makeIdent("x", 2))));
+    EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-TEST(CheckerUnit, UndeclaredVar_ErrorContainsName) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(std::make_unique<VariableExpr>(makeIdent("missing", 1))));
-    try { Checker().check(stmts); FAIL(); }
-    catch (const CheckError& e) {
-        EXPECT_NE(std::string(e.what()).find("missing"), std::string::npos);
-    }
+TEST(CheckerUnit, UndeclaredVar_NoCheckError_Single) {
+    auto stmts = stmtList(
+        printStmt(std::make_unique<VariableExpr>(makeIdent("missing", 1))));
+    EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, SelfReferenceInInit_Throws) {
-    Token a = makeIdent("a", 1);
-    std::vector<StmtPtr> block;
-    block.push_back(std::make_unique<VarStmt>(
-        a, std::make_unique<VariableExpr>(a)));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(blockStmt(std::move(block)));
+    Token a    = makeIdent("a", 1);
+    auto block = stmtList(
+        std::make_unique<VarStmt>(a, std::make_unique<VariableExpr>(a)));
+    auto stmts = stmtList(blockStmt(std::move(block)));
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
 TEST(CheckerUnit, ValidInit_NoThrow) {
     Token a    = makeIdent("a", 1);
     Token b    = makeIdent("b", 2);
-    Token plus = Token{ TokenType::PLUS, "+", std::monostate{}, 2 };
-    std::vector<StmtPtr> block;
-    block.push_back(varDecl("a", litNum(5.0), 1));
-    block.push_back(std::make_unique<VarStmt>(b,
-        std::make_unique<BinaryExpr>(
-            std::make_unique<VariableExpr>(a), plus, litNum(1.0))));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(blockStmt(std::move(block)));
+    Token plus = makeToken(TokenType::PLUS, "+", 2);
+    auto block = stmtList(
+        varDecl("a", litNum(5.0), 1),
+        std::make_unique<VarStmt>(b,
+            std::make_unique<BinaryExpr>(
+                std::make_unique<VariableExpr>(a), plus, litNum(1.0))));
+    auto stmts = stmtList(blockStmt(std::move(block)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, NestedScope_OuterAccessible) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("a", litNum(1.0)));
-    std::vector<StmtPtr> inner;
-    inner.push_back(printStmt(std::make_unique<VariableExpr>(makeIdent("a"))));
-    stmts.push_back(blockStmt(std::move(inner)));
+    auto inner = stmtList(printStmt(std::make_unique<VariableExpr>(makeIdent("a"))));
+    auto stmts = stmtList(
+        varDecl("a", litNum(1.0)),
+        blockStmt(std::move(inner)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, ForLoopVar_InBody_NoThrow) {
     Token i  = makeIdent("i");
-    Token lt = Token{ TokenType::LESS, "<", std::monostate{}, 1 };
-    Token pl = Token{ TokenType::PLUS, "+", std::monostate{}, 1 };
-    std::vector<StmtPtr> body;
-    body.push_back(printStmt(std::make_unique<VariableExpr>(i)));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ForStmt>(0,
-        varDecl("i", litNum(0.0)),
-        std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(i), lt, litNum(3.0)),
-        std::make_unique<AssignExpr>(i,
-            std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(i), pl, litNum(1.0))),
-        blockStmt(std::move(body))));
+    Token lt = makeToken(TokenType::LESS, "<");
+    Token pl = makeToken(TokenType::PLUS, "+");
+    auto body  = stmtList(printStmt(std::make_unique<VariableExpr>(i)));
+    auto stmts = stmtList(
+        std::make_unique<ForStmt>(0,
+            varDecl("i", litNum(0.0)),
+            std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(i), lt, litNum(3.0)),
+            std::make_unique<AssignExpr>(i,
+                std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(i), pl, litNum(1.0))),
+            blockStmt(std::move(body))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, IfBranch_NoThrow) {
-    std::vector<StmtPtr> thenB;
-    thenB.push_back(varDecl("x", litNum(1.0)));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<IfStmt>(0,
-        litBool(true), blockStmt(std::move(thenB)), nullptr));
+    auto thenB = stmtList(varDecl("x", litNum(1.0)));
+    auto stmts = stmtList(
+        std::make_unique<IfStmt>(0,
+            litBool(true), blockStmt(std::move(thenB)), nullptr));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, VarNoInitializer_NoThrow) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<VarStmt>(makeIdent("a", 1), nullptr));
+    auto stmts = stmtList(std::make_unique<VarStmt>(makeIdent("a", 1), nullptr));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, IfElseBranch_NoThrow) {
-    std::vector<StmtPtr> thenB, elseB;
-    thenB.push_back(varDecl("x", litNum(1.0)));
-    elseB.push_back(varDecl("y", litNum(2.0)));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<IfStmt>(0,
-        litBool(true), blockStmt(std::move(thenB)), blockStmt(std::move(elseB))));
+    auto thenB = stmtList(varDecl("x", litNum(1.0)));
+    auto elseB = stmtList(varDecl("y", litNum(2.0)));
+    auto stmts = stmtList(
+        std::make_unique<IfStmt>(0,
+            litBool(true),
+            blockStmt(std::move(thenB)),
+            blockStmt(std::move(elseB))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, ForAllNullFields_NoThrow) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ForStmt>(0, nullptr, nullptr, nullptr, nullptr));
+    auto stmts = stmtList(
+        std::make_unique<ForStmt>(0, nullptr, nullptr, nullptr, nullptr));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, ExprStmt_NoThrow) {
-    Token plus = Token{ TokenType::PLUS, "+", std::monostate{}, 1 };
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ExprStmt>(
+    Token plus = makeToken(TokenType::PLUS, "+");
+    auto stmts = stmtList(std::make_unique<ExprStmt>(
         std::make_unique<BinaryExpr>(litNum(1.0), plus, litNum(2.0))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, FunctionNoParams_NoThrow) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<FunctionStmt>(
+    auto stmts = stmtList(std::make_unique<FunctionStmt>(
         makeIdent("f", 1), std::vector<Token>{}, std::vector<StmtPtr>{}));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, ReturnNoValue_InFunction_NoThrow) {
-    std::vector<StmtPtr> body;
-    body.push_back(std::make_unique<ReturnStmt>(makeIdent("return", 2), nullptr));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<FunctionStmt>(
+    auto body  = stmtList(std::make_unique<ReturnStmt>(makeIdent("return", 2), nullptr));
+    auto stmts = stmtList(std::make_unique<FunctionStmt>(
         makeIdent("f", 1), std::vector<Token>{}, std::move(body)));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, GroupingExpr_NoThrow) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ExprStmt>(
+    auto stmts = stmtList(std::make_unique<ExprStmt>(
         std::make_unique<GroupingExpr>(litNum(1.0))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, UnaryExpr_NoThrow) {
-    Token minus = Token{ TokenType::MINUS, "-", std::monostate{}, 1 };
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ExprStmt>(
+    Token minus = makeToken(TokenType::MINUS, "-");
+    auto stmts  = stmtList(std::make_unique<ExprStmt>(
         std::make_unique<UnaryExpr>(minus, litNum(1.0))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, CallExprNoArgs_NoThrow) {
-    Token paren = Token{ TokenType::RIGHT_PAREN, ")", std::monostate{}, 1 };
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("foo", litNum(1.0)));
-    stmts.push_back(std::make_unique<ExprStmt>(
-        std::make_unique<CallExpr>(
-            std::make_unique<VariableExpr>(makeIdent("foo")),
-            paren, std::vector<ExprPtr>{})));
+    Token paren = makeToken(TokenType::RIGHT_PAREN, ")");
+    auto stmts  = stmtList(
+        varDecl("foo", litNum(1.0)),
+        std::make_unique<ExprStmt>(
+            std::make_unique<CallExpr>(
+                std::make_unique<VariableExpr>(makeIdent("foo")),
+                paren, std::vector<ExprPtr>{})));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, CallExprWithArgs_NoThrow) {
-    Token paren = Token{ TokenType::RIGHT_PAREN, ")", std::monostate{}, 1 };
+    Token paren = makeToken(TokenType::RIGHT_PAREN, ")");
     std::vector<ExprPtr> args;
     args.push_back(litNum(42.0));
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("foo", litNum(1.0)));
-    stmts.push_back(std::make_unique<ExprStmt>(
-        std::make_unique<CallExpr>(
-            std::make_unique<VariableExpr>(makeIdent("foo")),
-            paren, std::move(args))));
+    auto stmts = stmtList(
+        varDecl("foo", litNum(1.0)),
+        std::make_unique<ExprStmt>(
+            std::make_unique<CallExpr>(
+                std::make_unique<VariableExpr>(makeIdent("foo")),
+                paren, std::move(args))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, IndexGetExpr_NoThrow) {
-    Token bracket = Token{ TokenType::LEFT_BRACKET, "[", std::monostate{}, 1 };
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("arr", litNum(1.0)));
-    stmts.push_back(std::make_unique<ExprStmt>(
-        std::make_unique<IndexGetExpr>(
-            std::make_unique<VariableExpr>(makeIdent("arr")),
-            bracket, litNum(0.0))));
+    Token bracket = makeToken(TokenType::LEFT_BRACKET, "[");
+    auto stmts    = stmtList(
+        varDecl("arr", litNum(1.0)),
+        std::make_unique<ExprStmt>(
+            std::make_unique<IndexGetExpr>(
+                std::make_unique<VariableExpr>(makeIdent("arr")),
+                bracket, litNum(0.0))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, IndexSetExpr_NoThrow) {
-    Token bracket = Token{ TokenType::LEFT_PAREN, "[", std::monostate{}, 1 };
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("arr", litNum(1.0)));
-    stmts.push_back(std::make_unique<ExprStmt>(
-        std::make_unique<IndexSetExpr>(
-            std::make_unique<VariableExpr>(makeIdent("arr")),
-            bracket, litNum(0.0), litNum(99.0))));
+    Token bracket = makeToken(TokenType::LEFT_PAREN, "[");
+    auto stmts    = stmtList(
+        varDecl("arr", litNum(1.0)),
+        std::make_unique<ExprStmt>(
+            std::make_unique<IndexSetExpr>(
+                std::make_unique<VariableExpr>(makeIdent("arr")),
+                bracket, litNum(0.0), litNum(99.0))));
     EXPECT_NO_THROW(Checker().check(stmts));
 }
 
@@ -274,12 +255,8 @@ protected:
 TEST_F(CheckerMockFixture, DuplicateVar_MockParser_Throws) {
     EXPECT_CALL(*m_mpRaw, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
-            std::vector<StmtPtr> block;
-            block.push_back(varDecl("a", litNum(1.0), 1));
-            block.push_back(varDecl("a", litNum(2.0), 2));
-            std::vector<StmtPtr> stmts;
-            stmts.push_back(blockStmt(std::move(block)));
-            return stmts;
+            auto block = stmtList(varDecl("a", litNum(1.0), 1), varDecl("a", litNum(2.0), 2));
+            return stmtList(blockStmt(std::move(block)));
         }));
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(0);
     EXPECT_THROW(m_factory->run(""), CheckError);
@@ -288,9 +265,7 @@ TEST_F(CheckerMockFixture, DuplicateVar_MockParser_Throws) {
 TEST_F(CheckerMockFixture, ValidCode_MockParser_NoThrow) {
     EXPECT_CALL(*m_mpRaw, parse(_))
         .WillOnce(::testing::InvokeWithoutArgs([]() -> std::vector<StmtPtr> {
-            std::vector<StmtPtr> stmts;
-            stmts.push_back(varDecl("a", litNum(10.0)));
-            return stmts;
+            return stmtList(varDecl("a", litNum(10.0)));
         }));
     EXPECT_CALL(*m_miRaw, interpret(_)).Times(1);
     EXPECT_NO_THROW(m_factory->run(""));
@@ -365,26 +340,55 @@ TEST_F(CheckerRealFixture, LocalVar_InBindings) {
 
 TEST(CheckerUnit, ExprStmt_Variable_Checked) {
     Checker c;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(varDecl("x", litNum(1.0)));
-    stmts.push_back(std::make_unique<ExprStmt>(varRef("x")));
+    auto stmts = stmtList(
+        varDecl("x", litNum(1.0)),
+        std::make_unique<ExprStmt>(varRef("x")));
     EXPECT_NO_THROW(c.check(stmts));
 }
 
 TEST(CheckerUnit, UnaryExpr_Bang_Checked) {
     Checker c;
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(printStmt(
-        std::make_unique<UnaryExpr>(
-            Token{TokenType::BANG, "!", std::monostate{}, 1},
-            litBool(true))));
+    auto stmts = stmtList(printStmt(
+        std::make_unique<UnaryExpr>(makeToken(TokenType::BANG, "!"), litBool(true))));
     EXPECT_NO_THROW(c.check(stmts));
 }
 
 TEST(CheckerUnit, GroupingExpr_Checked) {
     Checker c;
+    auto stmts = stmtList(printStmt(std::make_unique<GroupingExpr>(litNum(42.0))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+TEST(CheckerUnit, LogicalExpr_And_NoThrow) {
+    Checker c;
     std::vector<StmtPtr> stmts;
     stmts.push_back(printStmt(
-        std::make_unique<GroupingExpr>(litNum(42.0))));
+        logicalExpr(litBool(true), TokenType::KW_AND, "and", litBool(false))));
     EXPECT_NO_THROW(c.check(stmts));
+}
+
+TEST(CheckerUnit, LogicalExpr_Or_NoThrow) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_OR, "or", litBool(true))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+TEST(CheckerUnit, LogicalExpr_WithVars_NoThrow) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(varDecl("x", litBool(true)));
+    stmts.push_back(varDecl("y", litBool(false)));
+    stmts.push_back(printStmt(
+        logicalExpr(varRef("x"), TokenType::KW_OR, "or", varRef("y"))));
+    EXPECT_NO_THROW(c.check(stmts));
+}
+
+TEST(CheckerUnit, LogicalExpr_UndeclaredVar_Throws) {
+    Checker c;
+    std::vector<StmtPtr> stmts;
+    stmts.push_back(printStmt(
+        logicalExpr(litBool(true), TokenType::KW_AND, "and", varRef("undeclared"))));
+    EXPECT_THROW(c.check(stmts), CheckError);
 }

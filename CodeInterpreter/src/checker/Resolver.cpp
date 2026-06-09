@@ -74,6 +74,10 @@ void Resolver::visitBinary(BinaryExpr& e) {
     e.left->acceptVoid(*this); e.right->acceptVoid(*this);
 }
 
+void Resolver::visitLogical(LogicalExpr& e) {
+    e.left->acceptVoid(*this); e.right->acceptVoid(*this);
+}
+
 void Resolver::visitUnary(UnaryExpr& e) {
     e.right->acceptVoid(*this);
 }

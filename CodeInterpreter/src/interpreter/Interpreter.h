@@ -25,6 +25,7 @@ public:
     Value visitGrouping    (GroupingExpr&)  override;
     Value visitUnary       (UnaryExpr&)     override;
     Value visitBinary      (BinaryExpr&)    override;
+    Value visitLogical     (LogicalExpr&)   override;
     Value visitVariable    (VariableExpr&)  override;
     Value visitAssign      (AssignExpr&)    override;
     Value visitCallExpr    (CallExpr&)      override;

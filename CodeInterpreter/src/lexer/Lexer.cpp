@@ -13,6 +13,8 @@ const std::unordered_map<std::string, TokenType> Lexer::s_keywords = {
     {"false",  TokenType::KW_FALSE},
     {"func",   TokenType::KW_FUNC},
     {"return", TokenType::KW_RETURN},
+    {"and",    TokenType::KW_AND},
+    {"or",     TokenType::KW_OR},
 };
 
 std::vector<Token> Lexer::tokenize(const std::string& source) {

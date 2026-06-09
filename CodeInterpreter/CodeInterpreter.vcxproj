@@ -184,6 +184,7 @@
     <ClInclude Include="src\factory\LangFactory.h" />
     <ClInclude Include="src\shell\Debugger.h" />
     <ClInclude Include="src\shell\Shell.h" />
+    <ClInclude Include="src\shell\ShellUtils.h" />
     <ClInclude Include="test\Mocks.h" />
     <ClInclude Include="test\TestUtils.h" />
     <ClInclude Include="test\TokenStreamBuilder.h" />

@@ -22,6 +22,16 @@ struct BinaryExpr : Expr {
     void  acceptVoid(VoidExprVisitor& v) override { v.visitBinary(*this); }
 };
 
+struct LogicalExpr : Expr {
+    ExprPtr left;
+    Token   op;
+    ExprPtr right;
+    LogicalExpr(ExprPtr l, Token op, ExprPtr r)
+        : left(std::move(l)), op(std::move(op)), right(std::move(r)) {}
+    Value accept    (ExprVisitor& v)     override { return v.visitLogical(*this); }
+    void  acceptVoid(VoidExprVisitor& v) override { v.visitLogical(*this); }
+};
+
 struct GroupingExpr : Expr {
     ExprPtr expression;
     explicit GroupingExpr(ExprPtr e) : expression(std::move(e)) {}

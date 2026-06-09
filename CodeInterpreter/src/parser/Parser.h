@@ -31,6 +31,8 @@ private:
 
     ExprPtr  parseExpression();
     ExprPtr  parseAssignment();
+    ExprPtr  parseLogicalOr();
+    ExprPtr  parseLogicalAnd();
     ExprPtr  parseEquality();
     ExprPtr  parseComparison();
     ExprPtr  parseTerm();
@@ -39,8 +41,10 @@ private:
     ExprPtr  parseCall();
     ExprPtr  finishCall(ExprPtr callee);
     ExprPtr  parsePrimary();
-    ExprPtr  parseBinaryLeft(std::initializer_list<TokenType> ops,
-                              std::function<ExprPtr()>         next);
+    ExprPtr  parseBinaryLeft (std::initializer_list<TokenType> ops,
+                               std::function<ExprPtr()>        next);
+    ExprPtr  parseLogicalLeft(std::initializer_list<TokenType> ops,
+                               std::function<ExprPtr()>        next);
 
     bool         isAtEnd()                const { return m_stream.isAtEnd(); }
     const Token& peek()                   const { return m_stream.peek(); }

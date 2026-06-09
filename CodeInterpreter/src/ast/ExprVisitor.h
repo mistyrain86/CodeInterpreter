@@ -5,6 +5,7 @@ struct LiteralExpr;
 struct GroupingExpr;
 struct UnaryExpr;
 struct BinaryExpr;
+struct LogicalExpr;
 struct VariableExpr;
 struct AssignExpr;
 struct CallExpr;
@@ -17,6 +18,7 @@ struct ExprVisitor {
     virtual Value visitGrouping    (GroupingExpr&)  = 0;
     virtual Value visitUnary       (UnaryExpr&)     = 0;
     virtual Value visitBinary      (BinaryExpr&)    = 0;
+    virtual Value visitLogical     (LogicalExpr&)   = 0;
     virtual Value visitVariable    (VariableExpr&)  = 0;
     virtual Value visitAssign      (AssignExpr&)    = 0;
     virtual Value visitCallExpr    (CallExpr&)      = 0;

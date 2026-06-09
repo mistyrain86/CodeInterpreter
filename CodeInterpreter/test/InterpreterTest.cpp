@@ -28,19 +28,18 @@ TEST_F(InterpreterFixture, PrintBoolFalse) { EXPECT_EQ(run(printStmt(litBool(fal
 
 TEST_F(InterpreterFixture, UnaryMinus) {
     EXPECT_EQ(run(printStmt(
-        std::make_unique<UnaryExpr>(opTok(TokenType::MINUS, "-"), litNum(3.0)))),
+        std::make_unique<UnaryExpr>(makeToken(TokenType::MINUS, "-"), litNum(3.0)))),
         "-3\n");
 }
 TEST_F(InterpreterFixture, UnaryBang_True) {
     EXPECT_EQ(run(printStmt(
-        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"), litBool(true)))),
+        std::make_unique<UnaryExpr>(makeToken(TokenType::BANG, "!"), litBool(true)))),
         "false\n");
 }
 TEST_F(InterpreterFixture, UnaryMinus_OnString_Throws) {
-    std::vector<StmtPtr> stmts;
-    stmts.push_back(std::make_unique<ExprStmt>(
-        std::make_unique<UnaryExpr>(opTok(TokenType::MINUS, "-"), litStr("oops"))));
     Interpreter interp;
+    auto stmts = stmtList(std::make_unique<ExprStmt>(
+        std::make_unique<UnaryExpr>(makeToken(TokenType::MINUS, "-"), litStr("oops"))));
     EXPECT_THROW(interp.interpret(stmts), RuntimeError);
 }
 
@@ -70,45 +69,43 @@ TEST_F(InterpreterFixture, CmpBangEqual_True) {
     EXPECT_EQ(run(printStmt(binaryExpr(litNum(1), TokenType::BANG_EQUAL,    "!=", litNum(2)))), "true\n");
 }
 TEST_F(InterpreterFixture, TypeMismatch_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ExprStmt>(binaryExpr(litNum(1), TokenType::PLUS, "+", litStr("HI"))));
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    auto stmts = stmtList(
+        std::make_unique<ExprStmt>(binaryExpr(litNum(1), TokenType::PLUS, "+", litStr("HI"))));
+    EXPECT_THROW(m_interp.interpret(stmts), RuntimeError);
 }
 TEST_F(InterpreterFixture, DivByZero_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ExprStmt>(binaryExpr(litNum(1), TokenType::SLASH, "/", litNum(0))));
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    auto stmts = stmtList(
+        std::make_unique<ExprStmt>(binaryExpr(litNum(1), TokenType::SLASH, "/", litNum(0))));
+    EXPECT_THROW(m_interp.interpret(stmts), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, VarDeclAndUse) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("a", litNum(10.0)));
-    s.push_back(printStmt(varRef("a")));
-    EXPECT_EQ(runAll(std::move(s)), "10\n");
+    auto stmts = stmtList(
+        varDecl("a", litNum(10.0)),
+        printStmt(varRef("a")));
+    EXPECT_EQ(runAll(std::move(stmts)), "10\n");
 }
 TEST_F(InterpreterFixture, Reassignment) {
-    Token a = makeIdent("a");
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("a", litNum(1.0)));
-    s.push_back(std::make_unique<ExprStmt>(
-        std::make_unique<AssignExpr>(a, litNum(2.0))));
-    s.push_back(printStmt(varRef("a")));
-    EXPECT_EQ(runAll(std::move(s)), "2\n");
+    Token a    = makeIdent("a");
+    auto stmts = stmtList(
+        varDecl("a", litNum(1.0)),
+        std::make_unique<ExprStmt>(std::make_unique<AssignExpr>(a, litNum(2.0))),
+        printStmt(varRef("a")));
+    EXPECT_EQ(runAll(std::move(stmts)), "2\n");
 }
 TEST_F(InterpreterFixture, UndefinedVar_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(printStmt(std::make_unique<VariableExpr>(
-        Token{TokenType::IDENTIFIER, "notDef", std::monostate{}, 3})));
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    auto stmts = stmtList(
+        printStmt(std::make_unique<VariableExpr>(makeIdent("notDef", 3))));
+    EXPECT_THROW(m_interp.interpret(stmts), RuntimeError);
 }
 TEST_F(InterpreterFixture, BlockScope_Isolation) {
-    std::vector<StmtPtr> s;
-    std::vector<StmtPtr> inner;
-    inner.push_back(varDecl("x", litStr("inner")));
-    inner.push_back(printStmt(varRef("x")));
-    s.push_back(blockStmt(std::move(inner)));
-    s.push_back(printStmt(varRef("x")));
-    captureOutput([&]{ EXPECT_THROW(m_interp.interpret(s), RuntimeError); });
+    auto inner = stmtList(
+        varDecl("x", litStr("inner")),
+        printStmt(varRef("x")));
+    auto stmts = stmtList(
+        blockStmt(std::move(inner)),
+        printStmt(varRef("x")));
+    captureOutput([&]{ EXPECT_THROW(m_interp.interpret(stmts), RuntimeError); });
 }
 TEST_F(InterpreterFixture, IfTrue) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(0, litBool(true), printStmt(litStr("yes")), nullptr)), "yes\n");
@@ -118,18 +115,18 @@ TEST_F(InterpreterFixture, IfFalse_GoesElse) {
 }
 TEST_F(InterpreterFixture, UnaryBang_OnNil) {
     EXPECT_EQ(run(printStmt(
-        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"),
+        std::make_unique<UnaryExpr>(makeToken(TokenType::BANG, "!"),
             std::make_unique<LiteralExpr>(Value{std::monostate{}})))),
         "true\n");
 }
 TEST_F(InterpreterFixture, UnaryBang_OnZero) {
     EXPECT_EQ(run(printStmt(
-        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"), litNum(0.0)))),
+        std::make_unique<UnaryExpr>(makeToken(TokenType::BANG, "!"), litNum(0.0)))),
         "true\n");
 }
 TEST_F(InterpreterFixture, UnaryBang_OnString) {
     EXPECT_EQ(run(printStmt(
-        std::make_unique<UnaryExpr>(opTok(TokenType::BANG, "!"), litStr("hello")))),
+        std::make_unique<UnaryExpr>(makeToken(TokenType::BANG, "!"), litStr("hello")))),
         "false\n");
 }
 TEST_F(InterpreterFixture, GroupingExpr_Eval) {
@@ -138,10 +135,10 @@ TEST_F(InterpreterFixture, GroupingExpr_Eval) {
         "7\n");
 }
 TEST_F(InterpreterFixture, VarDecl_NoInitializer) {
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<VarStmt>(makeIdent("x"), nullptr));
-    s.push_back(printStmt(varRef("x")));
-    EXPECT_EQ(runAll(std::move(s)), "null\n");
+    auto stmts = stmtList(
+        std::make_unique<VarStmt>(makeIdent("x"), nullptr),
+        printStmt(varRef("x")));
+    EXPECT_EQ(runAll(std::move(stmts)), "null\n");
 }
 TEST_F(InterpreterFixture, EqualEqual_SameString) {
     EXPECT_EQ(run(printStmt(binaryExpr(litStr("a"), TokenType::EQUAL_EQUAL, "==", litStr("a")))), "true\n");
@@ -152,25 +149,24 @@ TEST_F(InterpreterFixture, BangEqual_DifferentTypes) {
 
 TEST_F(InterpreterFixture, ForLoop_0to2) {
     Token j  = makeIdent("j");
-    Token lt = Token{TokenType::LESS,  "<", std::monostate{}, 1};
-    Token pl = Token{TokenType::PLUS,  "+", std::monostate{}, 1};
-    std::vector<StmtPtr> body;
-    body.push_back(printStmt(std::make_unique<VariableExpr>(j)));
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ForStmt>(0,
-        varDecl("j", litNum(0.0)),
-        std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), lt, litNum(3.0)),
-        std::make_unique<AssignExpr>(j,
-            std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), pl, litNum(1.0))),
-        blockStmt(std::move(body))));
-    EXPECT_EQ(runAll(std::move(s)), "0\n1\n2\n");
+    Token lt = makeToken(TokenType::LESS, "<");
+    Token pl = makeToken(TokenType::PLUS, "+");
+    auto body  = stmtList(printStmt(std::make_unique<VariableExpr>(j)));
+    auto stmts = stmtList(
+        std::make_unique<ForStmt>(0,
+            varDecl("j", litNum(0.0)),
+            std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), lt, litNum(3.0)),
+            std::make_unique<AssignExpr>(j,
+                std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(j), pl, litNum(1.0))),
+            blockStmt(std::move(body))));
+    EXPECT_EQ(runAll(std::move(stmts)), "0\n1\n2\n");
 }
 
 static Token retTok(int line = 1) {
-    return Token{TokenType::KW_RETURN, "return", std::monostate{}, line};
+    return makeToken(TokenType::KW_RETURN, "return", line);
 }
 static Token parenTok(int line = 1) {
-    return Token{TokenType::RIGHT_PAREN, ")", std::monostate{}, line};
+    return makeToken(TokenType::RIGHT_PAREN, ")", line);
 }
 
 static std::unique_ptr<CallExpr> makeCall(
@@ -181,52 +177,39 @@ static std::unique_ptr<CallExpr> makeCall(
 }
 
 TEST_F(InterpreterFixture, Function_NoParams_Call) {
-    std::vector<StmtPtr> body;
-    body.push_back(printStmt(litStr("hello func")));
-
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<FunctionStmt>(
-        makeIdent("greet"), std::vector<Token>{}, std::move(body)));
-    s.push_back(std::make_unique<ExprStmt>(makeCall("greet", {})));
-
-    EXPECT_EQ(runAll(std::move(s)), "hello func\n");
+    auto body  = stmtList(printStmt(litStr("hello func")));
+    auto stmts = stmtList(
+        std::make_unique<FunctionStmt>(makeIdent("greet"), std::vector<Token>{}, std::move(body)),
+        std::make_unique<ExprStmt>(makeCall("greet", {})));
+    EXPECT_EQ(runAll(std::move(stmts)), "hello func\n");
 }
 
 TEST_F(InterpreterFixture, Function_Params_And_Return) {
     std::vector<Token> params = { makeIdent("a"), makeIdent("b") };
-    std::vector<StmtPtr> body;
-    body.push_back(std::make_unique<ReturnStmt>(
-        retTok(), binaryExpr(varRef("a"), TokenType::PLUS, "+", varRef("b"))));
-
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<FunctionStmt>(
-        makeIdent("add"), std::move(params), std::move(body)));
-
     std::vector<ExprPtr> args;
     args.push_back(litNum(3.0));
     args.push_back(litNum(7.0));
-    s.push_back(printStmt(makeCall("add", std::move(args))));
-
-    EXPECT_EQ(runAll(std::move(s)), "10\n");
+    auto body  = stmtList(std::make_unique<ReturnStmt>(
+        retTok(), binaryExpr(varRef("a"), TokenType::PLUS, "+", varRef("b"))));
+    auto stmts = stmtList(
+        std::make_unique<FunctionStmt>(makeIdent("add"), std::move(params), std::move(body)),
+        printStmt(makeCall("add", std::move(args))));
+    EXPECT_EQ(runAll(std::move(stmts)), "10\n");
 }
 
 TEST_F(InterpreterFixture, Function_NoReturn_ReturnsNil) {
-    std::vector<StmtPtr> body;
-    body.push_back(std::make_unique<ExprStmt>(litNum(42.0)));
-
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<FunctionStmt>(
-        makeIdent("noop"), std::vector<Token>{}, std::move(body)));
-    s.push_back(printStmt(makeCall("noop", {})));
-
-    EXPECT_EQ(runAll(std::move(s)), "null\n");
+    auto body  = stmtList(std::make_unique<ExprStmt>(litNum(42.0)));
+    auto stmts = stmtList(
+        std::make_unique<FunctionStmt>(makeIdent("noop"), std::vector<Token>{}, std::move(body)),
+        printStmt(makeCall("noop", {})));
+    EXPECT_EQ(runAll(std::move(stmts)), "null\n");
 }
 
 TEST_F(InterpreterFixture, Function_Recursive_Factorial) {
-    Token n    = makeIdent("n");
-    Token le   = Token{TokenType::LESS_EQUAL, "<=", std::monostate{}, 1};
-    Token star = Token{TokenType::STAR, "*", std::monostate{}, 1};
-    Token minus= Token{TokenType::MINUS, "-", std::monostate{}, 1};
+    Token n     = makeIdent("n");
+    Token le    = makeToken(TokenType::LESS_EQUAL, "<=");
+    Token star  = makeToken(TokenType::STAR, "*");
+    Token minus = makeToken(TokenType::MINUS, "-");
 
     std::vector<ExprPtr> recArgs;
     recArgs.push_back(std::make_unique<BinaryExpr>(
@@ -236,63 +219,53 @@ TEST_F(InterpreterFixture, Function_Recursive_Factorial) {
         std::make_unique<VariableExpr>(n), star,
         makeCall("fact", std::move(recArgs)));
 
-    std::vector<StmtPtr> body;
-    body.push_back(std::make_unique<IfStmt>(0,
-        std::make_unique<BinaryExpr>(
-            std::make_unique<VariableExpr>(n), le, litNum(1.0)),
-        std::make_unique<ReturnStmt>(retTok(), litNum(1.0)),
-        nullptr));
-    body.push_back(std::make_unique<ReturnStmt>(retTok(), std::move(nTimesRec)));
+    auto body  = stmtList(
+        std::make_unique<IfStmt>(0,
+            std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(n), le, litNum(1.0)),
+            std::make_unique<ReturnStmt>(retTok(), litNum(1.0)),
+            nullptr),
+        std::make_unique<ReturnStmt>(retTok(), std::move(nTimesRec)));
 
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<FunctionStmt>(
-        makeIdent("fact"), std::vector<Token>{n}, std::move(body)));
 
     std::vector<ExprPtr> args;
     args.push_back(litNum(5.0));
-    s.push_back(printStmt(makeCall("fact", std::move(args))));
-
-    EXPECT_EQ(runAll(std::move(s)), "120\n");
+    auto stmts = stmtList(
+        std::make_unique<FunctionStmt>(makeIdent("fact"), std::vector<Token>{n}, std::move(body)),
+        printStmt(makeCall("fact", std::move(args))));
+    EXPECT_EQ(runAll(std::move(stmts)), "120\n");
 }
 
 TEST_F(InterpreterFixture, Function_Closure_CapturesOuter) {
-    std::vector<StmtPtr> body;
-    body.push_back(std::make_unique<ReturnStmt>(retTok(), varRef("x")));
-
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("x", litNum(10.0)));
-    s.push_back(std::make_unique<FunctionStmt>(
-        makeIdent("getX"), std::vector<Token>{}, std::move(body)));
-    s.push_back(printStmt(makeCall("getX", {})));
-
-    EXPECT_EQ(runAll(std::move(s)), "10\n");
+    auto body  = stmtList(std::make_unique<ReturnStmt>(retTok(), varRef("x")));
+    auto stmts = stmtList(
+        varDecl("x", litNum(10.0)),
+        std::make_unique<FunctionStmt>(makeIdent("getX"), std::vector<Token>{}, std::move(body)),
+        printStmt(makeCall("getX", {})));
+    EXPECT_EQ(runAll(std::move(stmts)), "10\n");
 }
 
+
 TEST_F(InterpreterFixture, Function_CallNonCallable_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("x", litStr("hello")));
-    s.push_back(std::make_unique<ExprStmt>(makeCall("x", std::vector<ExprPtr>{})));
-    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+    auto stmts = stmtList(
+        varDecl("x", litStr("hello")),
+        std::make_unique<ExprStmt>(makeCall("x", std::vector<ExprPtr>{})));
+    EXPECT_THROW(runAll(std::move(stmts)), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, Function_ArityMismatch_Throws) {
     std::vector<Token> params = { makeIdent("a"), makeIdent("b"), makeIdent("c") };
-    std::vector<StmtPtr> body;
-
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<FunctionStmt>(
-        makeIdent("foo"), std::move(params), std::move(body)));
-
     std::vector<ExprPtr> args;
     args.push_back(litNum(1.0));
     args.push_back(litNum(2.0));
-    s.push_back(std::make_unique<ExprStmt>(makeCall("foo", std::move(args))));
-
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    auto stmts = stmtList(
+        std::make_unique<FunctionStmt>(
+            makeIdent("foo"), std::move(params), std::vector<StmtPtr>{}),
+        std::make_unique<ExprStmt>(makeCall("foo", std::move(args))));
+    EXPECT_THROW(m_interp.interpret(stmts), RuntimeError);
 }
 
 static Token bracketTok(int line = 1) {
-    return Token{TokenType::LEFT_BRACKET, "[", std::monostate{}, line};
+    return makeToken(TokenType::LEFT_BRACKET, "[", line);
 }
 
 static ExprPtr arrayCreate(double size) {
@@ -312,80 +285,77 @@ static ExprPtr indexSet(ExprPtr obj, ExprPtr idx, ExprPtr val) {
 }
 
 TEST_F(InterpreterFixture, Array_Create_And_Print) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("arr", arrayCreate(3.0)));
-    s.push_back(printStmt(indexGet(varRef("arr"), litNum(0.0))));
-    EXPECT_EQ(runAll(std::move(s)), "null\n");
+    auto stmts = stmtList(
+        varDecl("arr", arrayCreate(3.0)),
+        printStmt(indexGet(varRef("arr"), litNum(0.0))));
+    EXPECT_EQ(runAll(std::move(stmts)), "null\n");
 }
 
 TEST_F(InterpreterFixture, Array_Write_And_Read) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("arr", arrayCreate(3.0)));
-    s.push_back(std::make_unique<ExprStmt>(
-        indexSet(varRef("arr"), litNum(0.0), litNum(10.0))));
-    s.push_back(std::make_unique<ExprStmt>(
-        indexSet(varRef("arr"), litNum(1.0), litNum(20.0))));
-    s.push_back(printStmt(indexGet(varRef("arr"), litNum(0.0))));
-    s.push_back(printStmt(indexGet(varRef("arr"), litNum(1.0))));
-    EXPECT_EQ(runAll(std::move(s)), "10\n20\n");
+    auto stmts = stmtList(
+        varDecl("arr", arrayCreate(3.0)),
+        std::make_unique<ExprStmt>(indexSet(varRef("arr"), litNum(0.0), litNum(10.0))),
+        std::make_unique<ExprStmt>(indexSet(varRef("arr"), litNum(1.0), litNum(20.0))),
+        printStmt(indexGet(varRef("arr"), litNum(0.0))),
+        printStmt(indexGet(varRef("arr"), litNum(1.0))));
+    EXPECT_EQ(runAll(std::move(stmts)), "10\n20\n");
 }
 
 TEST_F(InterpreterFixture, Array_DynamicIndex) {
     Token iToken = makeIdent("i");
-    Token minus  = Token{TokenType::MINUS, "-", std::monostate{}, 1};
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("arr", arrayCreate(3.0)));
-    s.push_back(varDecl("i", litNum(2.0)));
+    Token minus  = makeToken(TokenType::MINUS, "-");
     auto dynamicIdx = std::make_unique<BinaryExpr>(
         std::make_unique<VariableExpr>(iToken), minus, litNum(1.0));
-    s.push_back(std::make_unique<ExprStmt>(
-        indexSet(varRef("arr"), std::move(dynamicIdx), litNum(7.0))));
-    s.push_back(printStmt(indexGet(varRef("arr"), litNum(1.0))));
-    EXPECT_EQ(runAll(std::move(s)), "7\n");
+    auto stmts = stmtList(
+        varDecl("arr", arrayCreate(3.0)),
+        varDecl("i", litNum(2.0)),
+        std::make_unique<ExprStmt>(
+            indexSet(varRef("arr"), std::move(dynamicIdx), litNum(7.0))),
+        printStmt(indexGet(varRef("arr"), litNum(1.0))));
+    EXPECT_EQ(runAll(std::move(stmts)), "7\n");
 }
 
 TEST_F(InterpreterFixture, Array_OutOfBounds_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("arr", arrayCreate(2.0)));
-    s.push_back(printStmt(indexGet(varRef("arr"), litNum(5.0))));
-    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+    auto stmts = stmtList(
+        varDecl("arr", arrayCreate(2.0)),
+        printStmt(indexGet(varRef("arr"), litNum(5.0))));
+    EXPECT_THROW(runAll(std::move(stmts)), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, Array_NegativeIndex_Throws) {
-    Token minus = Token{TokenType::MINUS, "-", std::monostate{}, 1};
+    Token minus = makeToken(TokenType::MINUS, "-");
     auto negIdx = std::make_unique<UnaryExpr>(minus, litNum(1.0));
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("arr", arrayCreate(3.0)));
-    s.push_back(printStmt(indexGet(varRef("arr"), std::move(negIdx))));
-    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+    auto stmts  = stmtList(
+        varDecl("arr", arrayCreate(3.0)),
+        printStmt(indexGet(varRef("arr"), std::move(negIdx))));
+    EXPECT_THROW(runAll(std::move(stmts)), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, Array_NonNumericIndex_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("arr", arrayCreate(3.0)));
-    s.push_back(printStmt(indexGet(varRef("arr"), litStr("hello"))));
-    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+    auto stmts = stmtList(
+        varDecl("arr", arrayCreate(3.0)),
+        printStmt(indexGet(varRef("arr"), litStr("hello"))));
+    EXPECT_THROW(runAll(std::move(stmts)), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, Array_NonArrayTarget_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("x", litNum(10.0)));
-    s.push_back(printStmt(indexGet(varRef("x"), litNum(0.0))));
-    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+    auto stmts = stmtList(
+        varDecl("x", litNum(10.0)),
+        printStmt(indexGet(varRef("x"), litNum(0.0))));
+    EXPECT_THROW(runAll(std::move(stmts)), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, Array_NonNumericSize_Throws) {
-    std::vector<StmtPtr> s;
     std::vector<ExprPtr> args;
     args.push_back(litStr("hi"));
-    s.push_back(varDecl("arr", makeCall("Array", std::move(args))));
-    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+    auto stmts = stmtList(
+        varDecl("arr", makeCall("Array", std::move(args))));
+    EXPECT_THROW(runAll(std::move(stmts)), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, Array_TooLargeSize_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("arr", arrayCreate(1000001.0)));
-    EXPECT_THROW(runAll(std::move(s)), RuntimeError);
+    auto stmts = stmtList(varDecl("arr", arrayCreate(1000001.0)));
+    EXPECT_THROW(runAll(std::move(stmts)), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, StaticBinding_Variable_SameResult) {
@@ -396,10 +366,10 @@ TEST_F(InterpreterFixture, StaticBinding_Variable_SameResult) {
     bindings[varPtr] = 0;
     m_interp.setBindings(&bindings);
 
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("x", litNum(10.0)));
-    s.push_back(printStmt(std::move(varExpr)));
-    EXPECT_EQ(runAll(std::move(s)), "10\n");
+    auto stmts = stmtList(
+        varDecl("x", litNum(10.0)),
+        printStmt(std::move(varExpr)));
+    EXPECT_EQ(runAll(std::move(stmts)), "10\n");
 
     m_interp.setBindings(nullptr);
 }
@@ -412,15 +382,14 @@ TEST_F(InterpreterFixture, StaticBinding_Assign_SameResult) {
     bindings[assignPtr] = 0;
     m_interp.setBindings(&bindings);
 
-    std::vector<StmtPtr> s;
-    s.push_back(varDecl("x", litNum(1.0)));
-    s.push_back(std::make_unique<ExprStmt>(std::move(assignExpr)));
-    s.push_back(printStmt(varRef("x")));
-    EXPECT_EQ(runAll(std::move(s)), "99\n");
+    auto stmts = stmtList(
+        varDecl("x", litNum(1.0)),
+        std::make_unique<ExprStmt>(std::move(assignExpr)),
+        printStmt(varRef("x")));
+    EXPECT_EQ(runAll(std::move(stmts)), "99\n");
 
     m_interp.setBindings(nullptr);
 }
-
 
 TEST_F(InterpreterFixture, Truthy_Zero_IsFalse) {
     EXPECT_EQ(run(std::make_unique<IfStmt>(0,
@@ -438,10 +407,9 @@ TEST_F(InterpreterFixture, Truthy_String_IsTrue) {
 }
 
 TEST_F(InterpreterFixture, ForStmt_NullBody_Throws) {
-    std::vector<StmtPtr> s;
-    s.push_back(std::make_unique<ForStmt>(0,
-        nullptr, nullptr, nullptr, nullptr));
-    EXPECT_THROW(m_interp.interpret(s), RuntimeError);
+    auto stmts = stmtList(
+        std::make_unique<ForStmt>(0, nullptr, nullptr, nullptr, nullptr));
+    EXPECT_THROW(m_interp.interpret(stmts), RuntimeError);
 }
 
 TEST_F(InterpreterFixture, Percent_Modulo) {
@@ -473,4 +441,59 @@ TEST_F(InterpreterFixture, Stringify_Function_PrintsFnName) {
         makeIdent("greet"), std::vector<Token>{}, std::move(body)));
     s.push_back(printStmt(varRef("greet")));
     EXPECT_EQ(runAll(std::move(s)), "<fn greet>\n");
+}
+
+TEST_F(InterpreterFixture, And_BothTruthy_ReturnsTrue) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_AND, "and", litNum(2.0)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, And_LeftFalsy_ReturnsFalse) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_AND, "and", litNum(42.0)))),
+        "false\n");
+}
+TEST_F(InterpreterFixture, And_RightFalsy_ReturnsFalse) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_AND, "and", litBool(false)))),
+        "false\n");
+}
+TEST_F(InterpreterFixture, And_ShortCircuit_SkipsRight) {
+    std::vector<StmtPtr> s;
+    s.push_back(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_AND, "and", varRef("undeclared"))));
+    EXPECT_EQ(runAll(std::move(s)), "false\n");
+}
+TEST_F(InterpreterFixture, Or_LeftTruthy_ReturnsTrue) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_OR, "or", litNum(2.0)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, Or_LeftFalsy_RightTruthy_ReturnsTrue) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_OR, "or", litNum(42.0)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, Or_BothFalsy_ReturnsFalse) {
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(litBool(false), TokenType::KW_OR, "or", litBool(false)))),
+        "false\n");
+}
+TEST_F(InterpreterFixture, Or_ShortCircuit_SkipsRight) {
+    std::vector<StmtPtr> s;
+    s.push_back(printStmt(
+        logicalExpr(litNum(1.0), TokenType::KW_OR, "or", varRef("undeclared"))));
+    EXPECT_EQ(runAll(std::move(s)), "true\n");
+}
+TEST_F(InterpreterFixture, And_Chained_AllTruthy) {
+    auto lhs = logicalExpr(litBool(true), TokenType::KW_AND, "and", litBool(true));
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(std::move(lhs), TokenType::KW_AND, "and", litBool(true)))),
+        "true\n");
+}
+TEST_F(InterpreterFixture, Or_Chained_FirstTruthy) {
+    auto lhs = logicalExpr(litBool(false), TokenType::KW_OR, "or", litBool(false));
+    EXPECT_EQ(run(printStmt(
+        logicalExpr(std::move(lhs), TokenType::KW_OR, "or", litBool(true)))),
+        "true\n");
 }
