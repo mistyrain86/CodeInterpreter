@@ -43,11 +43,9 @@ void Shell::runRepl() {
 }
 
 void Shell::runFile(const std::string& path) {
-    std::vector<std::string> lines;
-    try {
-        lines = readFileLines(path);
-    } catch (const std::runtime_error& e) {
-        std::cerr << e.what() << "\n";
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "[오류] 파일을 찾을 수 없습니다: " << path << "\n";
         std::exit(1);
     }
     runFileStream(file, path);
