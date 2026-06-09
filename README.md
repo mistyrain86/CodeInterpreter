@@ -102,13 +102,13 @@ CodeFab Interpreter (REPL 모드)
 
 ### 2. 파일 실행 모드
 
-`.cf` 파일을 작성한 후 `run` 인자와 함께 실행합니다.
+소스 파일을 작성한 후 `run` 인자와 함께 실행합니다.
 
 ```
-CodeInterpreter.exe run scripts/hello.cf
+CodeInterpreter.exe run scripts/hello.txt
 ```
 
-**`hello.cf` 예시:**
+**`hello.txt` 예시:**
 
 ```
 var a = 5;
@@ -132,7 +132,7 @@ print factorial(5);
 
 ```
 CodeFab Interpreter (FILE 모드)
-[FILE] 소스코드 로딩: scripts/hello.cf
+[FILE] 소스코드 로딩: scripts/hello.txt
 8
 a가 더 큽니다
 0
