@@ -1,7 +1,12 @@
 #include <gtest/gtest.h>
+#include <fstream>
 #include <sstream>
 #include "Debugger.h"
 #include "TestUtils.h"
+
+static const char* DBG_TEMP = "._dbg_tmp.txt";
+static void writeDbgTemp(const std::string& s) { std::ofstream f(DBG_TEMP); f << s; }
+static void removeDbgTemp() { std::remove(DBG_TEMP); }
 
 static const std::string SIMPLE =
     "var a = 3;\n"
@@ -110,11 +115,13 @@ TEST_F(DebuggerFixture, NextSkipsLoopBody) {
 }
 
 TEST_F(DebuggerFixture, Inspect_ShowsAllValueTypes) {
-    std::string out = run(ALL_TYPES, "break 5\ncontinue\ninspect\nexit\n");
-    EXPECT_NE(out.find("Number"),  std::string::npos);
-    EXPECT_NE(out.find("String"),  std::string::npos);
-    EXPECT_NE(out.find("Boolean"), std::string::npos);
-    EXPECT_NE(out.find("Array"),   std::string::npos);
+    // break 6: lines 1-5 실행 후 정지 → fnVar(Function) 포함 모든 타입 확인
+    std::string out = run(ALL_TYPES, "break 6\ncontinue\ninspect\nexit\n");
+    EXPECT_NE(out.find("Number"),   std::string::npos);
+    EXPECT_NE(out.find("String"),   std::string::npos);
+    EXPECT_NE(out.find("Boolean"),  std::string::npos);
+    EXPECT_NE(out.find("Array"),    std::string::npos);
+    EXPECT_NE(out.find("Function"), std::string::npos);
 }
 
 TEST_F(DebuggerFixture, ParseError_HandledGracefully) {
@@ -122,5 +129,24 @@ TEST_F(DebuggerFixture, ParseError_HandledGracefully) {
 }
 
 TEST_F(DebuggerFixture, RuntimeError_HandledGracefully) {
-    EXPECT_NO_THROW(run("print undeclaredVar;\n", ""));
+    // var x = 1; x() → RuntimeError catch 경로
+    EXPECT_NO_THROW(run("var x = 1;\nx();\n", "step\nstep\n"));
+}
+
+TEST_F(DebuggerFixture, LexerError_HandledGracefully) {
+    // @ → std::runtime_error catch 경로 (Lexer에서 throw)
+    EXPECT_NO_THROW(run("@invalid;\n", ""));
+}
+
+TEST(DebuggerFileTest, Run_NoArg_ValidFile) {
+    writeDbgTemp("print 7;\n");
+    std::istringstream cmds("exit\n");
+    auto* old = std::cin.rdbuf(cmds.rdbuf());
+    std::string out = captureOutput([]{
+        Debugger dbg(DBG_TEMP);
+        dbg.run();
+    });
+    std::cin.rdbuf(old);
+    removeDbgTemp();
+    EXPECT_NE(out.find("DEBUG"), std::string::npos);
 }
