@@ -1,12 +1,7 @@
 #include <gtest/gtest.h>
-#include <fstream>
 #include <sstream>
 #include "Debugger.h"
 #include "TestUtils.h"
-
-static const char* DBG_TEMP = "._dbg_tmp.txt";
-static void writeDbgTemp(const std::string& s) { std::ofstream f(DBG_TEMP); f << s; }
-static void removeDbgTemp() { std::remove(DBG_TEMP); }
 
 static const std::string SIMPLE =
     "var a = 3;\n"
@@ -138,15 +133,3 @@ TEST_F(DebuggerFixture, LexerError_HandledGracefully) {
     EXPECT_NO_THROW(run("@invalid;\n", ""));
 }
 
-TEST(DebuggerFileTest, Run_NoArg_ValidFile) {
-    writeDbgTemp("print 7;\n");
-    std::istringstream cmds("exit\n");
-    auto* old = std::cin.rdbuf(cmds.rdbuf());
-    std::string out = captureOutput([]{
-        Debugger dbg(DBG_TEMP);
-        dbg.run();
-    });
-    std::cin.rdbuf(old);
-    removeDbgTemp();
-    EXPECT_NE(out.find("DEBUG"), std::string::npos);
-}

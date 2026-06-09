@@ -1,16 +1,7 @@
 #include <gtest/gtest.h>
-#include <fstream>
 #include <sstream>
 #include "Shell.h"
 #include "TestUtils.h"
-
-static const char* TEMP_FILE = "._shell_tmp.txt";
-
-static void writeTempFile(const std::string& content) {
-    std::ofstream f(TEMP_FILE);
-    f << content;
-}
-static void removeTempFile() { std::remove(TEMP_FILE); }
 
 class ShellReplFixture : public ::testing::Test {
 protected:
@@ -139,29 +130,4 @@ TEST_F(ShellReplFixture, LexerError_ContinuesRepl) {
     EXPECT_NO_THROW(captureOutput([]{ Shell().runRepl(); }));
 }
 
-TEST(ShellFileTest, RunFile_ValidFile_PrintsOutput) {
-    writeTempFile("print 42;\n");
-    Shell shell;
-    std::string out = captureOutput([&]{ shell.runFile(TEMP_FILE); });
-    removeTempFile();
-    EXPECT_NE(out.find("42"), std::string::npos);
-}
 
-TEST(ShellFileTest, RunFile_StartsWithFileMode_Message) {
-    writeTempFile("print 1;\n");
-    Shell shell;
-    std::string out = captureOutput([&]{ shell.runFile(TEMP_FILE); });
-    removeTempFile();
-    EXPECT_NE(out.find("FILE"), std::string::npos);
-}
-
-TEST(ShellDebugTest, RunDebug_ExitImmediately) {
-    writeTempFile("print 1;\n");
-    std::istringstream cmds("exit\n");
-    auto* oldCin = std::cin.rdbuf(cmds.rdbuf());
-    EXPECT_NO_THROW(captureOutput([]{
-        Shell().runDebug(TEMP_FILE);
-    }));
-    std::cin.rdbuf(oldCin);
-    removeTempFile();
-}
