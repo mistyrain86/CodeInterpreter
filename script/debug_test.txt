@@ -1,5 +1,5 @@
 // debug_test.txt — 디버그 모드 테스트 예제
-// 실행: CodeInterpreter.exe debug scripts/debug_test.txt
+// 실행: CodeInterpreter.exe debug script/debug_test.txt
 //
 // 권장 디버그 순서:
 //   1. step         → 한 줄씩 실행

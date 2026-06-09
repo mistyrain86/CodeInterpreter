@@ -105,7 +105,7 @@ CodeFab Interpreter (REPL 모드)
 소스 파일을 작성한 후 `run` 인자와 함께 실행합니다.
 
 ```
-CodeInterpreter.exe run scripts/hello.txt
+CodeInterpreter.exe run script/hello.txt
 ```
 
 **`hello.txt` 예시:**
@@ -132,7 +132,7 @@ print factorial(5);
 
 ```
 CodeFab Interpreter (FILE 모드)
-[FILE] 소스코드 로딩: scripts/hello.txt
+[FILE] 소스코드 로딩: script/hello.txt
 8
 a가 더 큽니다
 0
@@ -148,14 +148,14 @@ a가 더 큽니다
 `debug` 인자와 함께 실행하면 문장(Stmt) 단위로 실행을 제어할 수 있습니다.
 
 ```
-CodeInterpreter.exe debug scripts/debug_test.txt
+CodeInterpreter.exe debug script/debug_test.txt
 ```
 
 **`debug_test.txt` 예시:**
 
 ```
 // debug_test.txt — 디버그 모드 테스트 예제
-// 실행: CodeInterpreter.exe debug scripts/debug_test.txt
+// 실행: CodeInterpreter.exe debug script/debug_test.txt
 //
 // 권장 디버그 순서:
 //   1. step         → 한 줄씩 실행
@@ -188,7 +188,7 @@ print msg;
 ```
 CodeFab Interpreter (DEBUG 모드)
 종료: exit 또는 quit
-[DEBUG] 소스코드 로딩: scripts/debug_test.txt
+[DEBUG] 소스코드 로딩: script/debug_test.txt
 [DEBUG] 12번째 줄에서 정지 -> var a = 3;
 >
 ```
