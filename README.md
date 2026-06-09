@@ -60,7 +60,7 @@ CodeInterpreter.exe debug <파일경로>  → 디버그 모드
 아래 단어들은 예약어로, 변수명으로 사용할 수 없습니다.
 
 ```
-var  print  if  else  for  true  false  func  return
+var  print  if  else  for  true  false  func  return  and  or
 ```
 
 **키워드에 해당하지 않는 모든 식별자는 변수명으로 인식됩니다.**
@@ -208,7 +208,7 @@ CodeFab Interpreter (DEBUG 모드)
 ### 연산자 및 우선순위
 
 ```
-단항(-,!)  >  곱셈/나눗셈/나머지(*,/,%)  >  덧셈/뺄셈(+,-)  >  비교(<,<=,>,>=)  >  동등(==,!=)
+단항(-,!)  >  곱셈/나눗셈/나머지(*,/,%)  >  덧셈/뺄셈(+,-)  >  비교(<,<=,>,>=)  >  동등(==,!=)  >  논리곱(and)  >  논리합(or)
 ```
 
 | 분류 | 연산자 | 예시 | 결과 |
@@ -218,6 +218,7 @@ CodeFab Interpreter (DEBUG 모드)
 | 단항 | `-` `!` | `!true` | `false` |
 | 비교 | `<` `<=` `>` `>=` | `3 > 5` | `false` |
 | 동등 | `==` `!=` | `1 == 1` | `true` |
+| 논리 | `and` `or` | `true and false` | `false` |
 | 문자열 연결 | `+` | `"Hi" + "!"` | `Hi!` |
 
 ### 변수
@@ -268,6 +269,37 @@ for (var i = 0; i < 5; i = i + 1) {
     arr[i] = i * 2;
 }
 print arr[3];           // 6
+```
+
+### 논리 연산자
+
+`and` · `or` 는 키워드이며 항상 `true` / `false` 를 반환합니다.
+
+| 연산자 | 의미 | 결과 타입 |
+|--------|------|-----------|
+| `and` | 두 피연산자가 모두 참이면 `true` | `bool` |
+| `or` | 두 피연산자 중 하나라도 참이면 `true` | `bool` |
+
+**단락 평가(Short-circuit)**: 결과가 좌변에서 확정되면 우변은 평가하지 않습니다.
+
+```
+// and — 좌변이 거짓이면 우변 스킵
+print false and true;    // false  (우변 평가 안 함)
+print true  and true;    // true
+
+// or — 좌변이 참이면 우변 스킵
+print true  or false;    // true   (우변 평가 안 함)
+print false or false;    // false
+
+// 우선순위: and가 or보다 높음
+print true or false and false;   // true  → (true or (false and false))
+
+// if 조건에 사용
+var a = 5;
+if (a > 1 and a < 10) print "범위 안";   // 범위 안
+
+var b = 15;
+if (b < 5 or b > 10) print "범위 밖";   // 범위 밖
 ```
 
 ### 제어 흐름
