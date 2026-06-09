@@ -1,0 +1,16 @@
+var score = 0;
+var name = "CodeFab";
+
+func add(a, b) {
+    return a + b;
+}
+
+score = add(10, 5);
+print score;
+
+for (var i = 1; i <= 3; i = i + 1) {
+    score = score + i;
+    print score;
+}
+
+print name;

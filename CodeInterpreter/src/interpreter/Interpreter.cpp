@@ -260,7 +260,7 @@ void Interpreter::visitIfStmt(IfStmt& s) {
 
 void Interpreter::visitForStmt(ForStmt& s) {
     if (!s.m_body)
-        throw RuntimeError("런타임 오류: ForStmt body가 null입니다.");
+        throw RuntimeError("ForStmt body가 null입니다.");
     ScopeGuard guard(m_currentEnv, std::make_shared<Environment>(m_currentEnv));
     m_scopeStack.push_back(m_currentEnv.get());
     struct StackGuard { std::vector<Environment*>& s; ~StackGuard() { s.pop_back(); } }

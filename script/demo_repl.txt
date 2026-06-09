@@ -1,0 +1,15 @@
+1. 기본 연산
+print 1 + 2 * 3;
+
+print "Hello, " + "CodeFab!";
+
+2. 변수 & 블록 스코프
+var x = "global"; { var x = "inner"; print x; }
+print x;
+
+3. 에러 3계층
+print (1 + 2;    ==> 구문오류 (문법위반)  Parser
+
+{ var a = 1; var a = 2; } => 의미 오류 (정적 의미 분석) Checker
+
+print notDefined;
