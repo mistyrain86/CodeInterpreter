@@ -148,13 +148,47 @@ a가 더 큽니다
 `debug` 인자와 함께 실행하면 문장(Stmt) 단위로 실행을 제어할 수 있습니다.
 
 ```
-CodeInterpreter.exe debug scripts/debug_test.cf
+CodeInterpreter.exe debug scripts/debug_test.txt
+```
+
+**`debug_test.txt` 예시:**
+
+```
+// debug_test.txt — 디버그 모드 테스트 예제
+// 실행: CodeInterpreter.exe debug scripts/debug_test.txt
+//
+// 권장 디버그 순서:
+//   1. step         → 한 줄씩 실행
+//   2. watch a      → 변수 a 감시 등록
+//   3. watch count  → 변수 count 감시 등록
+//   4. continue     → breakpoint까지 실행
+//   5. break 20     → 20번째 줄에 breakpoint
+//   6. inspect      → 현재 스코프 변수 전체 출력
+
+var a = 3;
+var b = 7;
+var result = a + b;
+print result;
+
+var count = 0;
+for (var i = 0; i < 5; i = i + 1) {
+    count = count + i;
+}
+print count;
+
+func greet(name) {
+    var message = "안녕하세요, " + name;
+    return message;
+}
+
+var msg = greet("CodeFab");
+print msg;
 ```
 
 ```
 CodeFab Interpreter (DEBUG 모드)
 종료: exit 또는 quit
-[DEBUG] 소스코드 로딩: scripts/debug_test.cf
+[DEBUG] 소스코드 로딩: scripts/debug_test.txt
 [DEBUG] 12번째 줄에서 정지 -> var a = 3;
 >
 ```
