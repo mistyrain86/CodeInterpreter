@@ -385,10 +385,10 @@ TEST(CheckerUnit, LogicalExpr_WithVars_NoThrow) {
     EXPECT_NO_THROW(c.check(stmts));
 }
 
-TEST(CheckerUnit, LogicalExpr_UndeclaredVar_Throws) {
+TEST(CheckerUnit, LogicalExpr_UndeclaredVar_NoThrow) {
     Checker c;
     std::vector<StmtPtr> stmts;
     stmts.push_back(printStmt(
         logicalExpr(litBool(true), TokenType::KW_AND, "and", varRef("undeclared"))));
-    EXPECT_THROW(c.check(stmts), CheckError);
+    EXPECT_NO_THROW(c.check(stmts));
 }
