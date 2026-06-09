@@ -155,7 +155,7 @@ CodeInterpreter.exe debug scripts/debug_test.cf
 CodeFab Interpreter (DEBUG 모드)
 종료: exit 또는 quit
 [DEBUG] 소스코드 로딩: scripts/debug_test.cf
-[DEBUG] 1번째 줄에서 정지 -> var a = 3;
+[DEBUG] 12번째 줄에서 정지 -> var a = 3;
 >
 ```
 
@@ -187,9 +187,10 @@ CodeFab Interpreter (DEBUG 모드)
 [DEBUG] 13번째 줄에서 정지 -> var b = 7;
 [WATCH] a = 3
 > inspect
--- 현재 스코프 변수 ----------
+----- 현재 스코프 변수 -----
 [전역] a = 3 (Number)
 > continue
+[DEBUG] 실행 완료
 ```
 
 ---
@@ -214,7 +215,6 @@ CodeFab Interpreter (DEBUG 모드)
 | 분류 | 연산자 | 예시 | 결과 |
 |------|--------|------|------|
 | 산술 | `+` `-` `*` `/` `%` | `1 + 2 * 3` | `7` |
-| 나머지 | `%` | `10 % 3` | `1` |
 | 단항 | `-` `!` | `!true` | `false` |
 | 비교 | `<` `<=` `>` `>=` | `3 > 5` | `false` |
 | 동등 | `==` `!=` | `1 == 1` | `true` |
