@@ -30,6 +30,7 @@ public:
     void visitGrouping    (GroupingExpr&)  override;
     void visitUnary       (UnaryExpr&)     override;
     void visitBinary      (BinaryExpr&)    override;
+    void visitLogical     (LogicalExpr&)   override;
     void visitVariable    (VariableExpr&)  override;
     void visitAssign      (AssignExpr&)    override;
     void visitCallExpr    (CallExpr&)      override;

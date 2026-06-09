@@ -108,6 +108,10 @@ void Checker::visitBinary(BinaryExpr& e) {
     e.left->acceptVoid(*this); e.right->acceptVoid(*this);
 }
 
+void Checker::visitLogical(LogicalExpr& e) {
+    e.left->acceptVoid(*this); e.right->acceptVoid(*this);
+}
+
 void Checker::visitVariable(VariableExpr& e) {
     resolveVar(e.name.lexeme, e.name.line);
 }

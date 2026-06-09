@@ -38,6 +38,12 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
         return expr;
     }
 
+    if (auto* logical = dynamic_cast<LogicalExpr*>(expr.get())) {
+        logical->left  = foldExpr(std::move(logical->left));
+        logical->right = foldExpr(std::move(logical->right));
+        return expr;
+    }
+
     auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
     if (!bin) return expr;
 

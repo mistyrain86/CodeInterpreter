@@ -111,7 +111,7 @@ StmtPtr Parser::parseExprStmt() {
 }
 ExprPtr Parser::parseExpression() { return parseAssignment(); }
 ExprPtr Parser::parseAssignment() {
-    ExprPtr expr = parseEquality();
+    ExprPtr expr = parseLogicalOr();
     if (match({TokenType::EQUAL})) {
         Token   eq    = previous();  // '=' 토큰 즉시 캡처 — 에러 위치 보고용
         ExprPtr value = parseAssignment();
@@ -133,6 +133,22 @@ ExprPtr Parser::parseBinaryLeft(std::initializer_list<TokenType>  ops,
     while (match(ops)) {
         Token op = previous();
         e = std::make_unique<BinaryExpr>(std::move(e), op, next());
+    }
+    return e;
+}
+ExprPtr Parser::parseLogicalOr() {
+    ExprPtr e = parseLogicalAnd();
+    while (match({TokenType::KW_OR})) {
+        Token op = previous();
+        e = std::make_unique<LogicalExpr>(std::move(e), op, parseLogicalAnd());
+    }
+    return e;
+}
+ExprPtr Parser::parseLogicalAnd() {
+    ExprPtr e = parseEquality();
+    while (match({TokenType::KW_AND})) {
+        Token op = previous();
+        e = std::make_unique<LogicalExpr>(std::move(e), op, parseEquality());
     }
     return e;
 }

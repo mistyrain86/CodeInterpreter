@@ -176,6 +176,13 @@ Value Interpreter::visitUnary(UnaryExpr& e) {
     throw RuntimeError(UNIMPLEMENTED_UNARY);
 }
 
+Value Interpreter::visitLogical(LogicalExpr& e) {
+    Value left = evaluate(*e.left);
+    if (e.op.type == TokenType::KW_OR)  return isTruthy(left) ? left : evaluate(*e.right);
+    if (e.op.type == TokenType::KW_AND) return !isTruthy(left) ? left : evaluate(*e.right);
+    return evaluate(*e.right);
+}
+
 Value Interpreter::visitBinary(BinaryExpr& e) {
     if (m_opSpy) m_opSpy->m_binaryOpCount++;
     Value l = evaluate(*e.left);
