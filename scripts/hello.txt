@@ -1,0 +1,17 @@
+var a = 5;
+var b = 3;
+print a + b;
+
+if (a > b) {
+    print "a가 더 큽니다";
+}
+
+for (var i = 0; i < 3; i = i + 1) {
+    print i;
+}
+
+func factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+print factorial(5);
