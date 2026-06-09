@@ -3,8 +3,13 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
+#include <gtest/gtest.h>
+#include "CheckError.h"
 #include "Expr.h"
 #include "LangFactory.h"
+#include "ParseError.h"
+#include "RuntimeError.h"
 #include "Stmt.h"
 #include "Token.h"
 
@@ -18,6 +23,9 @@ inline std::string captureOutput(std::function<void()> fn) {
 
 inline Token makeIdent(std::string name, int line = 1) {
     return Token{TokenType::IDENTIFIER, std::move(name), std::monostate{}, line};
+}
+inline Token makeToken(TokenType type, std::string lexeme, int line = 1) {
+    return Token{type, std::move(lexeme), std::monostate{}, line};
 }
 inline ExprPtr litNum(double v) {
     return std::make_unique<LiteralExpr>(Value{v});
@@ -50,4 +58,17 @@ inline std::string execSource(const std::string& src) {
         LangFactory factory;
         factory.run(src);
     });
+}
+
+template<typename... Args>
+inline std::vector<StmtPtr> stmtList(Args&&... args) {
+    std::vector<StmtPtr> v;
+    v.reserve(sizeof...(args));
+    (v.push_back(std::forward<Args>(args)), ...);
+    return v;
+}
+
+template<typename E>
+inline void expectError(const std::string& src) {
+    EXPECT_THROW(LangFactory().run(src), E);
 }
