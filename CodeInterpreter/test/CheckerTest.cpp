@@ -63,20 +63,19 @@ TEST(CheckerUnit, DuplicateGlobal_Throws) {
     EXPECT_THROW(Checker().check(stmts), CheckError);
 }
 
-TEST(CheckerUnit, UndeclaredVar_Throws) {
+// 미선언 변수는 Checker가 전역 변수로 간주 — CheckError를 던지지 않음
+// (런타임에서 RuntimeError로 처리)
+TEST(CheckerUnit, UndeclaredVar_NoCheckError) {
     auto stmts = stmtList(
         varDecl("a", litNum(1.0)),
         printStmt(std::make_unique<VariableExpr>(makeIdent("x", 2))));
-    EXPECT_THROW(Checker().check(stmts), CheckError);
+    EXPECT_NO_THROW(Checker().check(stmts));
 }
 
-TEST(CheckerUnit, UndeclaredVar_ErrorContainsName) {
+TEST(CheckerUnit, UndeclaredVar_NoCheckError_Single) {
     auto stmts = stmtList(
         printStmt(std::make_unique<VariableExpr>(makeIdent("missing", 1))));
-    try { Checker().check(stmts); FAIL(); }
-    catch (const CheckError& e) {
-        EXPECT_NE(std::string(e.what()).find("missing"), std::string::npos);
-    }
+    EXPECT_NO_THROW(Checker().check(stmts));
 }
 
 TEST(CheckerUnit, SelfReferenceInInit_Throws) {

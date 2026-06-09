@@ -50,20 +50,91 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
 
     // 각 청크 앞에 빈 줄 prefix를 붙여 파서의 줄 번호를 유지
     bool hasError = false;
-    try {
-        forEachChunk(m_sourceLines, [&](int startLine, const std::string& chunk) -> bool {
-            std::string source(startLine, '\n');
-            source += chunk;
-            try {
-                factory.run(source);
+
+    // 커맨드 루프 헬퍼 (gap 정지 / 오류 전 정지 공용)
+    auto commandLoop = [&]() {
+        std::string input;
+        while (true) {
+            std::cout << "> ";
+            std::cout.flush();
+            if (!std::getline(cmdIn, input)) return;
+            if (input == "step")     { m_stepMode = true;  m_nextDepth = INT_MAX;               return; }
+            if (input == "next")     { m_stepMode = true;  m_nextDepth = interp->executeDepth(); return; }
+            if (input == "continue") { m_stepMode = false; m_nextDepth = 0;                     return; }
+            if (input == "exit" || input == "quit") {
+                std::cout << "[DEBUG] 디버그 세션을 종료합니다.\n";
+                throw DebugSessionExit{};
             }
-            catch (const DebugSessionExit&)    { throw; }
-            catch (const ParseError& e)        { printError(e); hasError = true; }
-            catch (const CheckError& e)        { printError(e); hasError = true; }
-            catch (const RuntimeError& e)      { printError(e); hasError = true; }
-            catch (const std::runtime_error& e){ printError(e); hasError = true; }
-            return !hasError;
-        });
+            processCommand(input, *interp);
+        }
+    };
+
+    // step 모드에서 파싱/의미 오류 발생 전 해당 줄에서 정지
+    auto stepPauseBeforeError = [&](int firstLine) {
+        if (!m_stepMode || interp->executeDepth() > m_nextDepth) return;
+        if (m_lastStmtLine >= firstLine) return;
+        std::string srcLine;
+        if (firstLine > 0 && firstLine <= (int)m_sourceLines.size()) {
+            srcLine = m_sourceLines[firstLine - 1];
+            srcLine.erase(0, srcLine.find_first_not_of(" \t"));
+        }
+        if (srcLine.empty()) srcLine = "(빈 줄)";
+        std::cout << "[DEBUG] " << firstLine << "번째 줄에서 정지 -> " << srcLine << "\n";
+        printWatches(*interp);
+        commandLoop();
+        m_lastStmtLine = firstLine;
+    };
+
+    auto runChunk = [&](int startLine, const std::string& chunk) {
+        std::string source(startLine, '\n');
+        source += chunk;
+        try {
+            factory.run(source);
+        }
+        catch (const DebugSessionExit&)    { throw; }
+        catch (const ParseError& e)        { stepPauseBeforeError(startLine + 1); printError(e); hasError = true; }
+        catch (const CheckError& e)        { stepPauseBeforeError(startLine + 1); printError(e); hasError = true; }
+        catch (const RuntimeError& e)      { printError(e); hasError = true; }
+        catch (const std::runtime_error& e){ printError(e); hasError = true; }
+    };
+
+    // 청크 경계(빈 줄 포함)에 브레이크포인트가 설정된 경우 정지
+    auto checkGapBreakpoints = [&](int nextChunkStart) {
+        for (int bp : m_breakpoints) {
+            if (bp > m_lastStmtLine && bp <= nextChunkStart) {
+                std::string srcLine;
+                if (bp > 0 && bp <= (int)m_sourceLines.size()) {
+                    srcLine = m_sourceLines[bp - 1];
+                    srcLine.erase(0, srcLine.find_first_not_of(" \t"));
+                }
+                if (srcLine.empty()) srcLine = "(빈 줄)";
+                std::cout << "[DEBUG] " << bp << "번째 줄에서 정지 (breakpoint) -> " << srcLine << "\n";
+                printWatches(*interp);
+                commandLoop();
+                m_lastStmtLine = bp;
+                break;
+            }
+        }
+    };
+
+    try {
+        std::ostringstream current;
+        int chunkStartLine = 0;
+        for (int i = 0; i <= (int)m_sourceLines.size(); i++) {
+            if (hasError) break;
+            bool isBlank = (i == (int)m_sourceLines.size()) ||
+                           m_sourceLines[i].find_first_not_of(" \t\r\n") == std::string::npos;
+            if (isBlank) {
+                if (!current.str().empty()) {
+                    runChunk(chunkStartLine, current.str());
+                    current.str(""); current.clear();
+                }
+                chunkStartLine = i + 1;
+            } else {
+                if (current.str().empty()) checkGapBreakpoints(i + 1);
+                current << m_sourceLines[i] << '\n';
+            }
+        }
     }
     catch (const DebugSessionExit&) { return; }
 
