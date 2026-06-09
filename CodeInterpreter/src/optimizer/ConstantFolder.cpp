@@ -24,7 +24,6 @@ std::vector<StmtPtr> ConstantFolder::optimize(std::vector<StmtPtr> stmts) {
 }
 
 ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
-    // GroupingExpr: 내부를 폴딩 후 결과가 LiteralExpr이면 GroupingExpr 제거
     if (auto* group = dynamic_cast<GroupingExpr*>(expr.get())) {
         group->expression = foldExpr(std::move(group->expression));
         if (dynamic_cast<LiteralExpr*>(group->expression.get()))
@@ -32,7 +31,6 @@ ExprPtr ConstantFolder::foldExpr(ExprPtr expr) {
         return expr;
     }
 
-    // AssignExpr: 우변만 폴딩 (좌변은 변수명이므로 건드리지 않음)
     if (auto* assign = dynamic_cast<AssignExpr*>(expr.get())) {
         assign->value = foldExpr(std::move(assign->value));
         return expr;

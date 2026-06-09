@@ -73,7 +73,6 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
         }
     };
 
-    // step 모드에서 파싱/의미 오류 발생 전 해당 줄에서 정지
     auto stepPauseBeforeError = [&](int firstLine) {
         if (!m_stepMode || interp->executeDepth() > m_nextDepth) return;
         if (m_lastStmtLine >= firstLine) return;
@@ -102,7 +101,6 @@ void Debugger::run(const std::string& source, std::istream& cmdIn) {
         catch (const std::runtime_error& e){ printError(e); hasError = true; }
     };
 
-    // 청크 경계(빈 줄 포함)에 브레이크포인트가 설정된 경우 정지
     auto checkGapBreakpoints = [&](int nextChunkStart) {
         for (int bp : m_breakpoints) {
             if (bp > m_lastStmtLine && bp <= nextChunkStart) {

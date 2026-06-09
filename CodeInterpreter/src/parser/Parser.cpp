@@ -77,7 +77,7 @@ StmtPtr Parser::parseIfStmt() {
     consume(TokenType::RIGHT_PAREN, "조건식 뒤에 ')'가 필요합니다.");
     StmtPtr thenB = parseStatement();
     StmtPtr elseB;
-    if (match({TokenType::KW_ELSE})) elseB = parseStatement(); // Greedy 매칭
+    if (match({TokenType::KW_ELSE})) elseB = parseStatement();
     return std::make_unique<IfStmt>(line, std::move(cond), std::move(thenB), std::move(elseB));
 }
 StmtPtr Parser::parseForStmt() {
@@ -113,7 +113,7 @@ ExprPtr Parser::parseExpression() { return parseAssignment(); }
 ExprPtr Parser::parseAssignment() {
     ExprPtr expr = parseLogicalOr();
     if (match({TokenType::EQUAL})) {
-        Token   eq    = previous();  // '=' 토큰 즉시 캡처 — 에러 위치 보고용
+        Token   eq    = previous();
         ExprPtr value = parseAssignment();
         if (auto* v = dynamic_cast<VariableExpr*>(expr.get()))
             return std::make_unique<AssignExpr>(v->name, std::move(value));
