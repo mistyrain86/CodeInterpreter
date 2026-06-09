@@ -25,6 +25,24 @@ TEST(ShellFromSource, PrintsOutput) {
     EXPECT_NE(out.find("42"), std::string::npos);
 }
 
+TEST(ShellFromSource, RunFileStream_PrintsOutput) {
+    std::istringstream in("print 42;\n");
+    Shell shell;
+    std::string out = captureOutput([&]{ shell.runFileStream(in, "virtual.txt"); });
+    EXPECT_NE(out.find("42"), std::string::npos);
+}
+
+TEST(ShellFromSource, RunFileStream_StartsWithFileMode_Message) {
+    std::istringstream in("print 1;\n");
+    Shell shell;
+    std::string out = captureOutput([&]{ shell.runFileStream(in, "virtual.txt"); });
+    EXPECT_NE(out.find("FILE"), std::string::npos);
+}
+
+TEST(ShellFileTest, RunDebug_InvalidPath_NoThrow) {
+    EXPECT_NO_THROW(captureOutput([]{ Shell().runDebug("nonexistent_virtual.cf"); }));
+}
+
 TEST(ShellFromSource, PrintsStartMessages) {
     Shell shell;
     std::string out = captureOutput([&]{

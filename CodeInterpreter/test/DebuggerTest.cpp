@@ -38,6 +38,21 @@ TEST(DebuggerStandalone, InvalidFile_NoThrow) {
     EXPECT_NO_THROW(captureOutput([&]{ dbg.run(); }));
 }
 
+TEST(DebuggerStandalone, Run_IStreamOverload_ExitsGracefully) {
+    std::istringstream src("print 1;\n");
+    std::istringstream cmds("exit\n");
+    Debugger dbg("virtual");
+    EXPECT_NO_THROW(captureOutput([&]{ dbg.run(src, cmds); }));
+}
+
+TEST(DebuggerStandalone, Run_IStreamOverload_ExecutesSource) {
+    std::istringstream src("print 99;\n");
+    std::istringstream cmds("continue\n");
+    Debugger dbg("virtual");
+    std::string out = captureOutput([&]{ dbg.run(src, cmds); });
+    EXPECT_NE(out.find("99"), std::string::npos);
+}
+
 TEST_F(DebuggerFixture, ExitImmediately) {
     std::string out = run(SIMPLE, "exit\n");
     EXPECT_NE(out.find("DEBUG"), std::string::npos);

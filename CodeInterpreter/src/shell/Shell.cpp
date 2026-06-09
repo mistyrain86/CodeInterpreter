@@ -52,9 +52,13 @@ void Shell::runFile(const std::string& path) {
         std::cerr << "[오류] 파일을 찾을 수 없습니다: " << path << "\n";
         std::exit(1);
     }
+    runFileStream(file, path);
+}
+
+void Shell::runFileStream(std::istream& in, const std::string& label) {
     std::ostringstream ss;
-    ss << file.rdbuf();
-    runFromSource(ss.str(), path);
+    ss << in.rdbuf();
+    runFromSource(ss.str(), label);
 }
 
 void Shell::runFromSource(const std::string& rawSource, const std::string& label) {
