@@ -200,3 +200,46 @@ TEST(Integration_Combined, ArrayInLoop) {
         "print arr[0]; print arr[1]; print arr[2];"),
         "0\n2\n4\n");
 }
+
+TEST(Logical_Integration, And_TrueTrue)  { EXPECT_EQ(execSource("print true and true;"),  "true\n");  }
+TEST(Logical_Integration, And_FalseTrue) { EXPECT_EQ(execSource("print false and true;"), "false\n"); }
+TEST(Logical_Integration, And_TrueFalse) { EXPECT_EQ(execSource("print true and false;"), "false\n"); }
+TEST(Logical_Integration, Or_FalseFalse) { EXPECT_EQ(execSource("print false or false;"), "false\n"); }
+TEST(Logical_Integration, Or_TrueFalse)  { EXPECT_EQ(execSource("print true or false;"),  "true\n");  }
+TEST(Logical_Integration, Or_FalseTrue)  { EXPECT_EQ(execSource("print false or true;"),  "true\n");  }
+
+TEST(Logical_Integration, Precedence_AndBeforeOr) {
+    EXPECT_EQ(execSource("print true or false and false;"), "true\n");
+}
+
+TEST(Logical_Integration, ShortCircuit_And_SkipsRight) {
+    EXPECT_EQ(execSource(
+        "var x = 0;"
+        "func inc() { x = x + 1; return true; }"
+        "false and inc();"
+        "print x;"),
+        "0\n");
+}
+
+TEST(Logical_Integration, ShortCircuit_Or_SkipsRight) {
+    EXPECT_EQ(execSource(
+        "var x = 0;"
+        "func inc() { x = x + 1; return true; }"
+        "true or inc();"
+        "print x;"),
+        "0\n");
+}
+
+TEST(Logical_Integration, And_InIfCondition) {
+    EXPECT_EQ(execSource(
+        "var a = 5;"
+        "if (a > 1 and a < 10) print \"in range\";"),
+        "in range\n");
+}
+
+TEST(Logical_Integration, Or_InIfCondition) {
+    EXPECT_EQ(execSource(
+        "var a = 15;"
+        "if (a < 5 or a > 10) print \"out of range\";"),
+        "out of range\n");
+}
