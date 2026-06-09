@@ -4,15 +4,6 @@
 #include "RuntimeError.h"
 #include "TestUtils.h"
 
-static void expectParseError(const std::string& source) {
-    EXPECT_THROW(LangFactory().run(source), ParseError);
-}
-static void expectCheckError(const std::string& source) {
-    EXPECT_THROW(LangFactory().run(source), CheckError);
-}
-static void expectRuntimeError(const std::string& source) {
-    EXPECT_THROW(LangFactory().run(source), RuntimeError);
-}
 
 TEST(Ch2_Integration, BasicFunctionCallAndReturn) {
     EXPECT_EQ(execSource(
@@ -55,19 +46,19 @@ TEST(Ch2_Integration, FunctionMultipleParams) {
 }
 
 TEST(Ch2_Integration, Error_ReturnOutsideFunction) {
-    expectCheckError("return 5;");
+    expectError<CheckError>("return 5;");
 }
 
 TEST(Ch2_Integration, Error_DuplicateParam) {
-    expectCheckError("func foo(a, a) { }");
+    expectError<CheckError>("func foo(a, a) { }");
 }
 
 TEST(Ch2_Integration, Error_CallNonCallable) {
-    expectRuntimeError("var x = \"hello\"; x();");
+    expectError<RuntimeError>("var x = \"hello\"; x();");
 }
 
 TEST(Ch2_Integration, Error_ArityMismatch) {
-    expectRuntimeError(
+    expectError<RuntimeError>(
         "func foo(a, b, c) { }"
         "foo(1, 2);");
 }
@@ -105,27 +96,27 @@ TEST(Ch3_Integration, ArrayInitialValueIsNull) {
 }
 
 TEST(Ch3_Integration, Error_OutOfBounds) {
-    expectRuntimeError(
+    expectError<RuntimeError>(
         "var arr = Array(3);"
         "print arr[5];");
 }
 
 TEST(Ch3_Integration, Error_NonNumericIndex) {
-    expectRuntimeError(
+    expectError<RuntimeError>(
         "var arr = Array(3);"
         "print arr[\"hello\"];");
 }
 
 TEST(Ch3_Integration, Error_IndexOnNonArray) {
-    expectRuntimeError("var x = 10; print x[0];");
+    expectError<RuntimeError>("var x = 10; print x[0];");
 }
 
 TEST(Ch3_Integration, Error_NonNumericSize) {
-    expectRuntimeError("var brr = Array(\"hi\");");
+    expectError<RuntimeError>("var brr = Array(\"hi\");");
 }
 
 TEST(Ch3_Integration, Error_NegativeSize) {
-    expectRuntimeError("var arr = Array(-1);");
+    expectError<RuntimeError>("var arr = Array(-1);");
 }
 
 TEST(Ch4_Integration, ConstantFolding_ArithResult) {
